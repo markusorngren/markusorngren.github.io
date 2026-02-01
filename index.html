@@ -57,7 +57,7 @@
 <div id="game-page" class="hidden">
     <div class="status-header">
         <div id="km-text" style="font-weight: bold; font-size: 1.6rem; color: #d4a017;">GPS...</div>
-        <div id="eaten-text" style="color: #666; font-size: 0.9rem;"></div>
+        <div id="eaten-text" style="display: none;"></div>
     </div>
     
     <div class="apple-grid" id="path">
@@ -145,7 +145,6 @@
         }
 
         document.getElementById('km-text').innerText = `${currentDist.toFixed(1)} km kvar`;
-        document.getElementById('eaten-text').innerText = `Du har åkt ${finishedKm} av ${initialTotalKm} km!`;
 
         if (currentDist < 0.05) {
             mouse.innerHTML = '🐭🧀';
