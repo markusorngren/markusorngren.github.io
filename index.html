@@ -2,23 +2,29 @@
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Marcus Mouse & Cheese Tracker - Pro Edition</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* No-scroll layout */
+        /* Använder svh för att undvika att menyer täcker innehåll */
+        :root {
+            --app-height: 100svh;
+        }
+
         body { 
             font-family: 'Segoe UI', sans-serif; 
             margin: 0; 
             background: #fdf6e3; 
             overflow: hidden; 
-            height: 100vh; 
+            height: var(--app-height); 
             width: 100vw; 
             position: fixed; 
+            display: flex;
+            flex-direction: column;
         }
         
         #map-page, #game-page { 
-            height: 100vh; 
+            height: var(--app-height); 
             width: 100vw; 
             display: flex; 
             flex-direction: column; 
@@ -34,7 +40,7 @@
         .hidden { display: none !important; }
         
         .panel { 
-            padding: 10px 10px 15px 10px; 
+            padding: 10px 10px calc(15px + env(safe-area-inset-bottom)); /* Extra marginal för iPhone-strecket */
             background: white; 
             text-align: center; 
             box-shadow: 0 -4px 15px rgba(0,0,0,0.1); 
@@ -46,39 +52,39 @@
         button { cursor: pointer; font-weight: bold; transition: all 0.2s; border: none; color: #000; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
         button:active { transform: scale(0.95); }
 
-        .save-btn-container { display: flex; justify-content: center; gap: 6px; margin-bottom: 10px; padding: 2px; }
+        .save-btn-container { display: flex; justify-content: center; gap: 6px; margin-bottom: 8px; padding: 2px; }
         .slot-btn { 
-            width: 50px; height: 50px; background: #bbb; box-shadow: 0 3px 6px rgba(0,0,0,0.1); 
+            width: 48px; height: 48px; background: #bbb; box-shadow: 0 3px 6px rgba(0,0,0,0.1); 
             display: flex; align-items: center; justify-content: center; padding: 0 2px; flex-shrink: 0;
         }
 
         .btn-text-container { width: 100%; overflow: hidden; white-space: nowrap; position: relative; }
-        .scrolling-text { display: inline-block; font-size: 0.6rem; text-transform: uppercase; pointer-events: none; }
+        .scrolling-text { display: inline-block; font-size: 0.55rem; text-transform: uppercase; pointer-events: none; }
         .scroll-active { animation: scroll-text 5s linear infinite; padding-left: 100%; }
 
         @keyframes scroll-text { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
 
         #btn-0 { border-radius: 50%; } #btn-0.filled { background: #4CAF50; }
         #btn-1 { border-radius: 8px; } #btn-1.filled { background: #2196F3; }
-        #btn-2 { border-radius: 25px; width: 65px; height: 40px; } #btn-2.filled { background: #FF9800; }
-        #btn-3 { width: 60px; height: 50px; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); padding-top: 10px; } #btn-3.filled { background: #9C27B0; }
+        #btn-2 { border-radius: 25px; width: 65px; height: 38px; } #btn-2.filled { background: #FF9800; }
+        #btn-3 { width: 55px; height: 48px; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); padding-top: 10px; } #btn-3.filled { background: #9C27B0; }
 
         .action-container { 
             display: flex; 
             justify-content: center; 
             gap: 8px; 
             width: 100%; 
-            max-width: 450px; 
+            max-width: 400px; 
             margin: 0 auto; 
         }
-        .action-btn { flex: 1; padding: 10px 5px; border-radius: 40px; font-size: 0.75rem; box-shadow: 0 4px 0 rgba(0,0,0,0.15); min-height: 45px; }
+        .action-btn { flex: 1; padding: 8px 5px; border-radius: 40px; font-size: 0.75rem; box-shadow: 0 4px 0 rgba(0,0,0,0.15); min-height: 42px; }
         
         #locate-btn { background: #007bff; color: white; }
         #voice-btn { background: #444; color: white; }
         #voice-btn.listening { background: #ff4444; animation: pulse 1.5s infinite; }
         #start-btn { background: #ffcc00; color: #000; }
 
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        #dist-info { margin-bottom: 8px; font-weight: bold; font-size: 0.95rem; color: #000; }
 
         #game-page { align-items: center; padding: 5px; }
         .apple-grid { 
@@ -86,17 +92,17 @@
             grid-template-columns: repeat(5, 1fr); 
             gap: 5px; 
             width: 95%; 
-            max-width: 300px; 
+            max-width: 280px; 
             margin-top: 10px; 
             padding: 10px; 
             background: rgba(255,255,255,0.5); 
             border-radius: 15px; 
             position: relative; 
-            max-height: 75vh;
+            max-height: 60vh;
             overflow-y: auto;
         }
-        .step { font-size: 1.5rem; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; }
-        #the-mouse { position: absolute; font-size: 2rem; transition: all 0.8s ease-in-out; z-index: 100; margin-top: -25px; margin-left: -10px; pointer-events: none; }
+        .step { font-size: 1.4rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+        #the-mouse { position: absolute; font-size: 1.8rem; transition: all 0.8s ease-in-out; z-index: 100; margin-top: -22px; margin-left: -8px; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -104,7 +110,7 @@
 <div id="map-page">
     <div id="map"></div>
     <div class="panel">
-        <div id="dist-info" style="margin-bottom:10px; font-weight: bold; font-size: 1rem; color: #000;">Söker din GPS... 📍</div>
+        <div id="dist-info">Söker din GPS... 📍</div>
         
         <div class="save-btn-container">
             <button id="btn-0" class="slot-btn" onclick="handleSlotClick(0)" oncontextmenu="saveCurrentPos(0); return false;"><div class="btn-text-container"><span class="scrolling-text">TOM 1</span></div></button>
@@ -122,12 +128,13 @@
 </div>
 
 <div id="game-page" class="hidden">
-    <button style="background:#ff4444; color:white; margin-top: 10px; border-radius: 20px; padding: 8px 20px; font-size: 0.8rem;" onclick="location.reload()">AVBRYT</button>
+    <button style="background:#ff4444; color:white; margin-top: 10px; border-radius: 20px; padding: 6px 15px; font-size: 0.75rem;" onclick="location.reload()">AVBRYT</button>
     <div class="apple-grid" id="path"><div id="the-mouse">🐭</div></div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+    // Samma JavaScript-logik som tidigare för att behålla alla funktioner
     let map, targetMarker, userMarker, connectionLine, userCoords, initialTotalKm;
     let currentTargetCoords = null;
     let hasZoomedToUser = false;
@@ -244,7 +251,6 @@
         btn.classList.add('listening');
         btn.innerText = "LYSSNAR...";
         recognition.start();
-
         recognition.onresult = async (event) => {
             const query = event.results[0][0].transcript;
             btn.innerText = "SÖKER...";
@@ -284,7 +290,6 @@
         const currentDist = map.distance([pos.coords.latitude, pos.coords.longitude], currentTargetCoords) / 1000;
         const finishedKm = Math.floor(initialTotalKm - currentDist);
         const mouse = document.getElementById('the-mouse');
-
         for (let i = 0; i < initialTotalKm - 1; i++) {
             const step = document.getElementById(`step-${i}`);
             if (step) {
@@ -292,11 +297,8 @@
                 else { step.innerHTML = '🍎'; step.style.opacity = "1"; }
             }
         }
-        if (currentDist < 0.05) {
-            mouse.innerHTML = '🐭🧀'; moveMouse(initialTotalKm - 1);
-        } else {
-            moveMouse(finishedKm >= 0 ? finishedKm : 0); 
-        }
+        if (currentDist < 0.05) { mouse.innerHTML = '🐭🧀'; moveMouse(initialTotalKm - 1); }
+        else { moveMouse(finishedKm >= 0 ? finishedKm : 0); }
     }
 
     function moveMouse(index) {
