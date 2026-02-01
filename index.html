@@ -12,14 +12,15 @@
         .hidden { display: none !important; }
         
         .panel { 
-            padding: 15px 10px 25px 10px; /* Mer padding i botten för att lyfta upp knapparna */
+            /* Lyfter upp knapparna genom att öka botten-padding till 65px */
+            padding: 15px 10px 65px 10px; 
             background: white; 
             text-align: center; 
             box-shadow: 0 -4px 15px rgba(0,0,0,0.1); 
             z-index: 1000; 
             max-height: 45vh; 
             overflow-y: auto;
-            border-radius: 20px 20px 0 0; /* Snygg avrundning upptill */
+            border-radius: 20px 20px 0 0; 
         }
         
         button { cursor: pointer; font-weight: bold; transition: all 0.2s; border: none; color: #000; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
@@ -42,7 +43,15 @@
         #btn-2 { border-radius: 30px; width: 75px; height: 45px; } #btn-2.filled { background: #FF9800; }
         #btn-3 { width: 65px; height: 55px; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); padding-top: 12px; } #btn-3.filled { background: #9C27B0; }
 
-        .action-container { display: flex; justify-content: center; gap: 10px; width: 100%; max-width: 500px; margin: 0 auto; flex-wrap: wrap; }
+        .action-container { 
+            display: flex; 
+            justify-content: center; 
+            gap: 10px; 
+            width: 100%; 
+            max-width: 500px; 
+            margin: 0 auto 15px auto; /* Extra marginal för lyft */
+            flex-wrap: wrap; 
+        }
         .action-btn { flex: 1; min-width: 90px; padding: 12px 5px; border-radius: 50px; font-size: 0.85rem; box-shadow: 0 4px 0 rgba(0,0,0,0.15); min-height: 52px; }
         
         #locate-btn { background: #007bff; color: white; }
