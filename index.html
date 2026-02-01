@@ -12,7 +12,6 @@
         .hidden { display: none !important; }
         
         .panel { 
-            /* Lyfter upp knapparna genom att öka botten-padding till 65px */
             padding: 15px 10px 65px 10px; 
             background: white; 
             text-align: center; 
@@ -49,7 +48,7 @@
             gap: 10px; 
             width: 100%; 
             max-width: 500px; 
-            margin: 0 auto 15px auto; /* Extra marginal för lyft */
+            margin: 0 auto 15px auto; 
             flex-wrap: wrap; 
         }
         .action-btn { flex: 1; min-width: 90px; padding: 12px 5px; border-radius: 50px; font-size: 0.85rem; box-shadow: 0 4px 0 rgba(0,0,0,0.15); min-height: 52px; }
@@ -102,14 +101,21 @@
     let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
     let touchTimer;
 
+    // NYTT LJUD: Ett ljust mus-pip!
     function playClickSound() {
         try {
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            
+            // Mus-ljud parametrar: hög frekvens som går uppåt
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(3000, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(4500, audioCtx.currentTime + 0.05);
+            
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            
             osc.connect(gain); gain.connect(audioCtx.destination);
             osc.start(); osc.stop(audioCtx.currentTime + 0.1);
         } catch(e) {}
@@ -139,7 +145,7 @@
     function zoomToUser() {
         if (userCoords) {
             map.flyTo(userCoords, 16);
-            document.getElementById('dist-info').innerText = "Vart ska vi, Marcus?";
+            document.getElementById('dist-info').innerText = "Vart ska vi åka?";
         }
     }
 
