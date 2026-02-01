@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Marcus Mouse & Cheese Tracker - Pro Edition</title>
+    <title>Marcus Mouse & Cheese Tracker - Universal Edition</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
+        /* Grundinställningar för att allt ska synas oavsett skärm */
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #fdf6e3; overflow: hidden; height: 100vh; }
         #map-page, #game-page { height: 100vh; width: 100vw; display: flex; flex-direction: column; }
         #map { flex-grow: 1; width: 100%; }
         .hidden { display: none !important; }
         
+        /* Panelen anpassad för både tummar och muspekare */
         .panel { 
             padding: 10px; background: white; text-align: center; 
             box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 1000; 
@@ -20,6 +22,7 @@
         button { cursor: pointer; font-weight: bold; transition: all 0.2s; border: none; color: #000; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
         button:active { transform: scale(0.95); }
 
+        /* Flexibel layout för spar-knappar */
         .save-btn-container { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; padding: 5px; flex-wrap: wrap; }
         .slot-btn { 
             width: 55px; height: 55px; background: #bbb; box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
@@ -48,7 +51,7 @@
 
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
-        /* Game Page */
+        /* Game Page anpassning för äppelstigen */
         #game-page { align-items: center; padding: 10px; overflow-y: auto; }
         .apple-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(60px, 1fr)); gap: 10px; width: 90%; max-width: 320px; margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.5); border-radius: 20px; position: relative; }
         .step { font-size: 2rem; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; }
@@ -91,6 +94,7 @@
     let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
     let touchTimer;
 
+    // Ljudfunktion som fungerar på alla enheter
     function playClickSound() {
         try {
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -122,13 +126,13 @@
 
         map.on('click', e => { playClickSound(); setTarget(e.latlng); });
         document.querySelectorAll('button').forEach(btn => btn.addEventListener('click', playClickSound));
-        setupLongPress();
+        setupLongPress(); // Aktiverar spar-funktionen för telefon
     }
 
     function zoomToUser() {
         if (userCoords) {
             map.flyTo(userCoords, 16);
-            document.getElementById('dist-info').innerText = "Vart vill du åka, Marcus?";
+            document.getElementById('dist-info').innerText = "Vart ska vi, Marcus?";
         }
     }
 
@@ -149,12 +153,13 @@
         }
     }
 
+    // Spar-funktion som funkar på både PC och mobil
     function saveCurrentPos(index) {
         if (!currentTargetCoords) {
-            alert("Sätt en punkt på kartan först! 📍");
+            alert("Klicka på kartan först för att välja ett mål! 📍");
             return;
         }
-        const label = prompt("Namnge sparad plats:", "Mål " + (index+1));
+        const label = prompt("Spara som:", "Mål " + (index+1));
         if (label) {
             savedLocations[index] = { coords: currentTargetCoords, name: label };
             localStorage.setItem('mouse_favs', JSON.stringify(savedLocations));
@@ -168,8 +173,6 @@
             setTarget(data.coords);
             map.flyTo(data.coords, 14);
             document.getElementById('dist-info').innerHTML = `Mål: <b>${data.name}</b>`;
-        } else {
-            alert("Håll inne knappen för att spara en plats här!");
         }
     }
 
@@ -193,10 +196,8 @@
         const btns = document.querySelectorAll('.slot-btn');
         btns.forEach((btn, i) => {
             btn.addEventListener('touchstart', (e) => {
-                touchTimer = setTimeout(() => {
-                    saveCurrentPos(i);
-                }, 800);
-            });
+                touchTimer = setTimeout(() => { saveCurrentPos(i); }, 800);
+            }, {passive: true});
             btn.addEventListener('touchend', () => clearTimeout(touchTimer));
         });
     }
