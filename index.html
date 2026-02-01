@@ -61,10 +61,10 @@
     <div class="panel">
         <div id="dist-info">Väntar på din position... 📍</div>
         <div class="save-btn-container">
-            <button id="btn-0" class="slot-btn" onclick="handleSlotClick(0)"><div class="btn-text-container"><span class="scrolling-text">TOM 1</span></div></button>
-            <button id="btn-1" class="slot-btn" onclick="handleSlotClick(1)"><div class="btn-text-container"><span class="scrolling-text">TOM 2</span></div></button>
-            <button id="btn-2" class="slot-btn" onclick="handleSlotClick(2)"><div class="btn-text-container"><span class="scrolling-text">TOM 3</span></div></button>
-            <button id="btn-3" class="slot-btn" onclick="handleSlotClick(3)"><div class="btn-text-container"><span class="scrolling-text">TOM 4</span></div></button>
+            <button id="btn-0" class="slot-btn" onclick="handleSlotClick(0)" oncontextmenu="saveCurrentPos(0); return false;"><div class="btn-text-container"><span class="scrolling-text">TOM 1</span></div></button>
+            <button id="btn-1" class="slot-btn" onclick="handleSlotClick(1)" oncontextmenu="saveCurrentPos(1); return false;"><div class="btn-text-container"><span class="scrolling-text">TOM 2</span></div></button>
+            <button id="btn-2" class="slot-btn" onclick="handleSlotClick(2)" oncontextmenu="saveCurrentPos(2); return false;"><div class="btn-text-container"><span class="scrolling-text">TOM 3</span></div></button>
+            <button id="btn-3" class="slot-btn" onclick="handleSlotClick(3)" oncontextmenu="saveCurrentPos(3); return false;"><div class="btn-text-container"><span class="scrolling-text">TOM 4</span></div></button>
         </div>
         <div class="action-container">
             <button id="locate-btn" class="action-btn" onclick="zoomToUser()">🎯 HITTA MIG</button>
@@ -85,6 +85,7 @@
     let currentTargetCoords = null;
     let hasZoomedToUser = false;
     let isZooming = false;
+    let touchTimer;
     let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
 
     function playClickSound() {
@@ -106,8 +107,8 @@
         map = L.map('map', { zoomControl: false }).setView([62, 15], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         updateButtonUI();
+        setupLongPress();
 
-        // Lyssna på när animationen är klar
         map.on('moveend', () => {
             if (isZooming && userCoords) {
                 isZooming = false;
@@ -118,8 +119,6 @@
         if (navigator.geolocation) {
             navigator.geolocation.watchPosition(pos => {
                 userCoords = [pos.coords.latitude, pos.coords.longitude];
-                
-                // Om vi redan har markören ute, uppdatera den bara
                 if (userMarker) {
                     userMarker.setLatLng(userCoords);
                     updateLogic();
@@ -136,24 +135,14 @@
 
     function showUserMarker() {
         if (!userMarker && userCoords) {
-            userMarker = L.circleMarker(userCoords, {
-                radius: 8, 
-                fillColor: "#007bff", 
-                color: "#fff", 
-                weight: 2, 
-                opacity: 1, 
-                fillOpacity: 0.8
-            }).addTo(map);
+            userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8}).addTo(map);
             document.getElementById('dist-info').innerText = "Vart ska vi åka?";
             updateLogic();
         }
     }
 
     function zoomToUser() {
-        if (userCoords) {
-            isZooming = true;
-            map.flyTo(userCoords, 16, { duration: 1.5 });
-        }
+        if (userCoords) { isZooming = true; map.flyTo(userCoords, 16, { duration: 1.5 }); }
     }
 
     function setTarget(latlng) {
@@ -180,13 +169,31 @@
             map.flyTo(data.coords, 14);
             document.getElementById('dist-info').innerHTML = `Mål: <b>${data.name}</b>`;
         } else if (currentTargetCoords) {
-            const label = prompt("Spara mål som:", "Mål " + (index+1));
-            if (label) {
-                savedLocations[index] = { coords: currentTargetCoords, name: label };
-                localStorage.setItem('mouse_favs', JSON.stringify(savedLocations));
-                updateButtonUI();
-            }
+            saveCurrentPos(index);
         }
+    }
+
+    function saveCurrentPos(index) {
+        if (!currentTargetCoords) return;
+        const label = prompt("Spara mål som:", "Mål " + (index+1));
+        if (label) {
+            savedLocations[index] = { coords: currentTargetCoords, name: label };
+            localStorage.setItem('mouse_favs', JSON.stringify(savedLocations));
+            updateButtonUI();
+        }
+    }
+
+    function setupLongPress() {
+        const btns = document.querySelectorAll('.slot-btn');
+        btns.forEach((btn, i) => {
+            btn.addEventListener('touchstart', (e) => {
+                touchTimer = setTimeout(() => {
+                    saveCurrentPos(i);
+                    playClickSound();
+                }, 800);
+            }, {passive: true});
+            btn.addEventListener('touchend', () => clearTimeout(touchTimer));
+        });
     }
 
     function updateButtonUI() {
@@ -199,6 +206,7 @@
                 btn.classList.add('filled');
                 setTimeout(() => {
                     if (textSpan.offsetWidth > container.offsetWidth) textSpan.classList.add('scroll-active');
+                    else textSpan.classList.remove('scroll-active');
                 }, 100);
             }
         });
