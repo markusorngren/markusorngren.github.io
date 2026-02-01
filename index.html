@@ -6,11 +6,7 @@
     <title>Marcus Mouse & Cheese Tracker - Pro Edition</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* Använder svh för att undvika att menyer täcker innehåll */
-        :root {
-            --app-height: 100svh;
-        }
-
+        :root { --app-height: 100svh; }
         body { 
             font-family: 'Segoe UI', sans-serif; 
             margin: 0; 
@@ -22,25 +18,11 @@
             display: flex;
             flex-direction: column;
         }
-        
-        #map-page, #game-page { 
-            height: var(--app-height); 
-            width: 100vw; 
-            display: flex; 
-            flex-direction: column; 
-            overflow: hidden; 
-        }
-
-        #map { 
-            flex: 1; 
-            width: 100%; 
-            min-height: 0; 
-        }
-        
+        #map-page, #game-page { height: var(--app-height); width: 100vw; display: flex; flex-direction: column; overflow: hidden; }
+        #map { flex: 1; width: 100%; min-height: 0; }
         .hidden { display: none !important; }
-        
         .panel { 
-            padding: 10px 10px calc(15px + env(safe-area-inset-bottom)); /* Extra marginal för iPhone-strecket */
+            padding: 10px 10px calc(15px + env(safe-area-inset-bottom)); 
             background: white; 
             text-align: center; 
             box-shadow: 0 -4px 15px rgba(0,0,0,0.1); 
@@ -48,59 +30,26 @@
             border-radius: 20px 20px 0 0;
             flex-shrink: 0; 
         }
-        
         button { cursor: pointer; font-weight: bold; transition: all 0.2s; border: none; color: #000; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
         button:active { transform: scale(0.95); }
-
         .save-btn-container { display: flex; justify-content: center; gap: 6px; margin-bottom: 8px; padding: 2px; }
-        .slot-btn { 
-            width: 48px; height: 48px; background: #bbb; box-shadow: 0 3px 6px rgba(0,0,0,0.1); 
-            display: flex; align-items: center; justify-content: center; padding: 0 2px; flex-shrink: 0;
-        }
-
+        .slot-btn { width: 48px; height: 48px; background: #bbb; box-shadow: 0 3px 6px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; padding: 0 2px; flex-shrink: 0; }
         .btn-text-container { width: 100%; overflow: hidden; white-space: nowrap; position: relative; }
         .scrolling-text { display: inline-block; font-size: 0.55rem; text-transform: uppercase; pointer-events: none; }
         .scroll-active { animation: scroll-text 5s linear infinite; padding-left: 100%; }
-
         @keyframes scroll-text { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
-
         #btn-0 { border-radius: 50%; } #btn-0.filled { background: #4CAF50; }
         #btn-1 { border-radius: 8px; } #btn-1.filled { background: #2196F3; }
         #btn-2 { border-radius: 25px; width: 65px; height: 38px; } #btn-2.filled { background: #FF9800; }
         #btn-3 { width: 55px; height: 48px; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); padding-top: 10px; } #btn-3.filled { background: #9C27B0; }
-
-        .action-container { 
-            display: flex; 
-            justify-content: center; 
-            gap: 8px; 
-            width: 100%; 
-            max-width: 400px; 
-            margin: 0 auto; 
-        }
+        .action-container { display: flex; justify-content: center; gap: 8px; width: 100%; max-width: 400px; margin: 0 auto; }
         .action-btn { flex: 1; padding: 8px 5px; border-radius: 40px; font-size: 0.75rem; box-shadow: 0 4px 0 rgba(0,0,0,0.15); min-height: 42px; }
-        
         #locate-btn { background: #007bff; color: white; }
         #voice-btn { background: #444; color: white; }
         #voice-btn.listening { background: #ff4444; animation: pulse 1.5s infinite; }
         #start-btn { background: #ffcc00; color: #000; }
-
         #dist-info { margin-bottom: 8px; font-weight: bold; font-size: 0.95rem; color: #000; }
-
-        #game-page { align-items: center; padding: 5px; }
-        .apple-grid { 
-            display: grid; 
-            grid-template-columns: repeat(5, 1fr); 
-            gap: 5px; 
-            width: 95%; 
-            max-width: 280px; 
-            margin-top: 10px; 
-            padding: 10px; 
-            background: rgba(255,255,255,0.5); 
-            border-radius: 15px; 
-            position: relative; 
-            max-height: 60vh;
-            overflow-y: auto;
-        }
+        .apple-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; width: 95%; max-width: 280px; margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.5); border-radius: 15px; position: relative; max-height: 60vh; overflow-y: auto; }
         .step { font-size: 1.4rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
         #the-mouse { position: absolute; font-size: 1.8rem; transition: all 0.8s ease-in-out; z-index: 100; margin-top: -22px; margin-left: -8px; pointer-events: none; }
     </style>
@@ -110,15 +59,13 @@
 <div id="map-page">
     <div id="map"></div>
     <div class="panel">
-        <div id="dist-info">Söker din GPS... 📍</div>
-        
+        <div id="dist-info">Väntar på din position... 📍</div>
         <div class="save-btn-container">
-            <button id="btn-0" class="slot-btn" onclick="handleSlotClick(0)" oncontextmenu="saveCurrentPos(0); return false;"><div class="btn-text-container"><span class="scrolling-text">TOM 1</span></div></button>
-            <button id="btn-1" class="slot-btn" onclick="handleSlotClick(1)" oncontextmenu="saveCurrentPos(1); return false;"><div class="btn-text-container"><span class="scrolling-text">TOM 2</span></div></button>
-            <button id="btn-2" class="slot-btn" onclick="handleSlotClick(2)" oncontextmenu="saveCurrentPos(2); return false;"><div class="btn-text-container"><span class="scrolling-text">TOM 3</span></div></button>
-            <button id="btn-3" class="slot-btn" onclick="handleSlotClick(3)" oncontextmenu="saveCurrentPos(3); return false;"><div class="btn-text-container"><span class="scrolling-text">TOM 4</span></div></button>
+            <button id="btn-0" class="slot-btn" onclick="handleSlotClick(0)"><div class="btn-text-container"><span class="scrolling-text">TOM 1</span></div></button>
+            <button id="btn-1" class="slot-btn" onclick="handleSlotClick(1)"><div class="btn-text-container"><span class="scrolling-text">TOM 2</span></div></button>
+            <button id="btn-2" class="slot-btn" onclick="handleSlotClick(2)"><div class="btn-text-container"><span class="scrolling-text">TOM 3</span></div></button>
+            <button id="btn-3" class="slot-btn" onclick="handleSlotClick(3)"><div class="btn-text-container"><span class="scrolling-text">TOM 4</span></div></button>
         </div>
-
         <div class="action-container">
             <button id="locate-btn" class="action-btn" onclick="zoomToUser()">🎯 HITTA MIG</button>
             <button id="voice-btn" class="action-btn" onclick="startVoiceSearch()">🎤 RÖSTSÖK</button>
@@ -134,12 +81,11 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    // Samma JavaScript-logik som tidigare för att behålla alla funktioner
     let map, targetMarker, userMarker, connectionLine, userCoords, initialTotalKm;
     let currentTargetCoords = null;
     let hasZoomedToUser = false;
+    let isZooming = false;
     let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
-    let touchTimer;
 
     function playClickSound() {
         try {
@@ -161,25 +107,52 @@
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         updateButtonUI();
 
+        // Lyssna på när animationen är klar
+        map.on('moveend', () => {
+            if (isZooming && userCoords) {
+                isZooming = false;
+                showUserMarker();
+            }
+        });
+
         if (navigator.geolocation) {
             navigator.geolocation.watchPosition(pos => {
                 userCoords = [pos.coords.latitude, pos.coords.longitude];
-                if (userMarker) userMarker.setLatLng(userCoords);
-                else userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8}).addTo(map);
-                if (!hasZoomedToUser) { zoomToUser(); hasZoomedToUser = true; }
-                updateLogic();
+                
+                // Om vi redan har markören ute, uppdatera den bara
+                if (userMarker) {
+                    userMarker.setLatLng(userCoords);
+                    updateLogic();
+                } else if (!hasZoomedToUser && !isZooming) {
+                    zoomToUser();
+                    hasZoomedToUser = true;
+                }
             }, null, {enableHighAccuracy: true});
         }
 
         map.on('click', e => { playClickSound(); setTarget(e.latlng); });
         document.querySelectorAll('button').forEach(btn => btn.addEventListener('click', playClickSound));
-        setupLongPress();
+    }
+
+    function showUserMarker() {
+        if (!userMarker && userCoords) {
+            userMarker = L.circleMarker(userCoords, {
+                radius: 8, 
+                fillColor: "#007bff", 
+                color: "#fff", 
+                weight: 2, 
+                opacity: 1, 
+                fillOpacity: 0.8
+            }).addTo(map);
+            document.getElementById('dist-info').innerText = "Vart ska vi åka?";
+            updateLogic();
+        }
     }
 
     function zoomToUser() {
         if (userCoords) {
-            map.flyTo(userCoords, 16);
-            document.getElementById('dist-info').innerText = "Vart ska vi åka?";
+            isZooming = true;
+            map.flyTo(userCoords, 16, { duration: 1.5 });
         }
     }
 
@@ -200,22 +173,19 @@
         }
     }
 
-    function saveCurrentPos(index) {
-        if (!currentTargetCoords) return;
-        const label = prompt("Spara som:", "Mål " + (index+1));
-        if (label) {
-            savedLocations[index] = { coords: currentTargetCoords, name: label };
-            localStorage.setItem('mouse_favs', JSON.stringify(savedLocations));
-            updateButtonUI();
-        }
-    }
-
     function handleSlotClick(index) {
         const data = savedLocations[index];
         if (data) {
             setTarget(data.coords);
             map.flyTo(data.coords, 14);
             document.getElementById('dist-info').innerHTML = `Mål: <b>${data.name}</b>`;
+        } else if (currentTargetCoords) {
+            const label = prompt("Spara mål som:", "Mål " + (index+1));
+            if (label) {
+                savedLocations[index] = { coords: currentTargetCoords, name: label };
+                localStorage.setItem('mouse_favs', JSON.stringify(savedLocations));
+                updateButtonUI();
+            }
         }
     }
 
@@ -231,14 +201,6 @@
                     if (textSpan.offsetWidth > container.offsetWidth) textSpan.classList.add('scroll-active');
                 }, 100);
             }
-        });
-    }
-
-    function setupLongPress() {
-        const btns = document.querySelectorAll('.slot-btn');
-        btns.forEach((btn, i) => {
-            btn.addEventListener('touchstart', () => { touchTimer = setTimeout(() => saveCurrentPos(i), 800); }, {passive: true});
-            btn.addEventListener('touchend', () => clearTimeout(touchTimer));
         });
     }
 
