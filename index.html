@@ -3,27 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Marcus Mouse & Cheese Tracker - Universal Edition</title>
+    <title>Marcus Mouse & Cheese Tracker - Pro Edition</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* Grundinställningar för att allt ska synas oavsett skärm */
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #fdf6e3; overflow: hidden; height: 100vh; }
         #map-page, #game-page { height: 100vh; width: 100vw; display: flex; flex-direction: column; }
         #map { flex-grow: 1; width: 100%; }
         .hidden { display: none !important; }
         
-        /* Panelen anpassad för både tummar och muspekare */
         .panel { 
-            padding: 10px; background: white; text-align: center; 
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 1000; 
-            max-height: 45vh; overflow-y: auto;
+            padding: 15px 10px 25px 10px; /* Mer padding i botten för att lyfta upp knapparna */
+            background: white; 
+            text-align: center; 
+            box-shadow: 0 -4px 15px rgba(0,0,0,0.1); 
+            z-index: 1000; 
+            max-height: 45vh; 
+            overflow-y: auto;
+            border-radius: 20px 20px 0 0; /* Snygg avrundning upptill */
         }
         
         button { cursor: pointer; font-weight: bold; transition: all 0.2s; border: none; color: #000; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
         button:active { transform: scale(0.95); }
 
-        /* Flexibel layout för spar-knappar */
-        .save-btn-container { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; padding: 5px; flex-wrap: wrap; }
+        .save-btn-container { display: flex; justify-content: center; gap: 8px; margin-bottom: 15px; padding: 5px; flex-wrap: wrap; }
         .slot-btn { 
             width: 55px; height: 55px; background: #bbb; box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
             display: flex; align-items: center; justify-content: center; padding: 0 4px; flex-shrink: 0;
@@ -35,14 +37,13 @@
 
         @keyframes scroll-text { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
 
-        /* Formerna */
         #btn-0 { border-radius: 50%; } #btn-0.filled { background: #4CAF50; }
         #btn-1 { border-radius: 10px; } #btn-1.filled { background: #2196F3; }
         #btn-2 { border-radius: 30px; width: 75px; height: 45px; } #btn-2.filled { background: #FF9800; }
         #btn-3 { width: 65px; height: 55px; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); padding-top: 12px; } #btn-3.filled { background: #9C27B0; }
 
-        .action-container { display: flex; justify-content: center; gap: 8px; width: 100%; max-width: 500px; margin: 0 auto; flex-wrap: wrap; }
-        .action-btn { flex: 1; min-width: 90px; padding: 12px 5px; border-radius: 50px; font-size: 0.8rem; box-shadow: 0 4px 0 rgba(0,0,0,0.15); min-height: 48px; }
+        .action-container { display: flex; justify-content: center; gap: 10px; width: 100%; max-width: 500px; margin: 0 auto; flex-wrap: wrap; }
+        .action-btn { flex: 1; min-width: 90px; padding: 12px 5px; border-radius: 50px; font-size: 0.85rem; box-shadow: 0 4px 0 rgba(0,0,0,0.15); min-height: 52px; }
         
         #locate-btn { background: #007bff; color: white; }
         #voice-btn { background: #444; color: white; }
@@ -51,7 +52,6 @@
 
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
-        /* Game Page anpassning för äppelstigen */
         #game-page { align-items: center; padding: 10px; overflow-y: auto; }
         .apple-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(60px, 1fr)); gap: 10px; width: 90%; max-width: 320px; margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.5); border-radius: 20px; position: relative; }
         .step { font-size: 2rem; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; }
@@ -63,7 +63,7 @@
 <div id="map-page">
     <div id="map"></div>
     <div class="panel">
-        <div id="dist-info" style="margin-bottom:10px; font-weight: bold; font-size: 1rem; color: #000;">Söker din GPS... 📍</div>
+        <div id="dist-info" style="margin-bottom:12px; font-weight: bold; font-size: 1.1rem; color: #000;">Söker din GPS... 📍</div>
         
         <div class="save-btn-container">
             <button id="btn-0" class="slot-btn" onclick="handleSlotClick(0)" oncontextmenu="saveCurrentPos(0); return false;"><div class="btn-text-container"><span class="scrolling-text">TOM 1</span></div></button>
@@ -77,7 +77,6 @@
             <button id="voice-btn" class="action-btn" onclick="startVoiceSearch()">🎤 RÖSTSÖK</button>
             <button id="start-btn" class="action-btn hidden" onclick="startGame()">STARTA 🧀</button>
         </div>
-        <div style="font-size: 0.6rem; color: #888; margin-top: 8px;">Tryck för att åka - Håll inne för att spara mål</div>
     </div>
 </div>
 
@@ -94,7 +93,6 @@
     let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
     let touchTimer;
 
-    // Ljudfunktion som fungerar på alla enheter
     function playClickSound() {
         try {
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -126,7 +124,7 @@
 
         map.on('click', e => { playClickSound(); setTarget(e.latlng); });
         document.querySelectorAll('button').forEach(btn => btn.addEventListener('click', playClickSound));
-        setupLongPress(); // Aktiverar spar-funktionen för telefon
+        setupLongPress();
     }
 
     function zoomToUser() {
@@ -153,10 +151,9 @@
         }
     }
 
-    // Spar-funktion som funkar på både PC och mobil
     function saveCurrentPos(index) {
         if (!currentTargetCoords) {
-            alert("Klicka på kartan först för att välja ett mål! 📍");
+            alert("Klicka på kartan först! 📍");
             return;
         }
         const label = prompt("Spara som:", "Mål " + (index+1));
