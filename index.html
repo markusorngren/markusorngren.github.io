@@ -4,103 +4,43 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Marcus Mouse & Cheese Tracker - Pro Edition</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
     <style>
-        /* Använder svh för att undvika att menyer täcker innehåll */
-        :root {
-            --app-height: 100svh;
-        }
-
+        :root { --app-height: 100svh; }
         body { 
-            font-family: 'Segoe UI', sans-serif; 
-            margin: 0; 
-            background: #fdf6e3; 
-            overflow: hidden; 
-            height: var(--app-height); 
-            width: 100vw; 
-            position: fixed; 
-            display: flex;
-            flex-direction: column;
+            font-family: 'Segoe UI', sans-serif; margin: 0; background: #fdf6e3; 
+            overflow: hidden; height: var(--app-height); width: 100vw; 
+            position: fixed; display: flex; flex-direction: column;
         }
-        
-        #map-page, #game-page { 
-            height: var(--app-height); 
-            width: 100vw; 
-            display: flex; 
-            flex-direction: column; 
-            overflow: hidden; 
-        }
-
-        #map { 
-            flex: 1; 
-            width: 100%; 
-            min-height: 0; 
-        }
-        
+        #map-page, #game-page { height: var(--app-height); width: 100vw; display: flex; flex-direction: column; overflow: hidden; }
+        #map { flex: 1; width: 100%; min-height: 0; }
         .hidden { display: none !important; }
-        
         .panel { 
-            padding: 10px 10px calc(15px + env(safe-area-inset-bottom)); /* Extra marginal för iPhone-strecket */
-            background: white; 
-            text-align: center; 
-            box-shadow: 0 -4px 15px rgba(0,0,0,0.1); 
-            z-index: 1000; 
-            border-radius: 20px 20px 0 0;
-            flex-shrink: 0; 
+            padding: 10px 10px calc(15px + env(safe-area-inset-bottom));
+            background: white; text-align: center; box-shadow: 0 -4px 15px rgba(0,0,0,0.1); 
+            z-index: 1000; border-radius: 20px 20px 0 0; flex-shrink: 0; 
         }
-        
         button { cursor: pointer; font-weight: bold; transition: all 0.2s; border: none; color: #000; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
         button:active { transform: scale(0.95); }
-
         .save-btn-container { display: flex; justify-content: center; gap: 6px; margin-bottom: 8px; padding: 2px; }
-        .slot-btn { 
-            width: 48px; height: 48px; background: #bbb; box-shadow: 0 3px 6px rgba(0,0,0,0.1); 
-            display: flex; align-items: center; justify-content: center; padding: 0 2px; flex-shrink: 0;
-        }
-
+        .slot-btn { width: 48px; height: 48px; background: #bbb; box-shadow: 0 3px 6px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; padding: 0 2px; flex-shrink: 0; }
         .btn-text-container { width: 100%; overflow: hidden; white-space: nowrap; position: relative; }
         .scrolling-text { display: inline-block; font-size: 0.55rem; text-transform: uppercase; pointer-events: none; }
         .scroll-active { animation: scroll-text 5s linear infinite; padding-left: 100%; }
-
         @keyframes scroll-text { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
-
         #btn-0 { border-radius: 50%; } #btn-0.filled { background: #4CAF50; }
         #btn-1 { border-radius: 8px; } #btn-1.filled { background: #2196F3; }
         #btn-2 { border-radius: 25px; width: 65px; height: 38px; } #btn-2.filled { background: #FF9800; }
         #btn-3 { width: 55px; height: 48px; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); padding-top: 10px; } #btn-3.filled { background: #9C27B0; }
-
-        .action-container { 
-            display: flex; 
-            justify-content: center; 
-            gap: 8px; 
-            width: 100%; 
-            max-width: 400px; 
-            margin: 0 auto; 
-        }
+        .action-container { display: flex; justify-content: center; gap: 8px; width: 100%; max-width: 400px; margin: 0 auto; }
         .action-btn { flex: 1; padding: 8px 5px; border-radius: 40px; font-size: 0.75rem; box-shadow: 0 4px 0 rgba(0,0,0,0.15); min-height: 42px; }
-        
         #locate-btn { background: #007bff; color: white; }
         #voice-btn { background: #444; color: white; }
         #voice-btn.listening { background: #ff4444; animation: pulse 1.5s infinite; }
         #start-btn { background: #ffcc00; color: #000; }
-
         #dist-info { margin-bottom: 8px; font-weight: bold; font-size: 0.95rem; color: #000; }
-
         #game-page { align-items: center; padding: 5px; }
-        .apple-grid { 
-            display: grid; 
-            grid-template-columns: repeat(5, 1fr); 
-            gap: 5px; 
-            width: 95%; 
-            max-width: 280px; 
-            margin-top: 10px; 
-            padding: 10px; 
-            background: rgba(255,255,255,0.5); 
-            border-radius: 15px; 
-            position: relative; 
-            max-height: 60vh;
-            overflow-y: auto;
-        }
+        .apple-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; width: 95%; max-width: 280px; margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.5); border-radius: 15px; position: relative; max-height: 60vh; overflow-y: auto; }
         .step { font-size: 1.4rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
         #the-mouse { position: absolute; font-size: 1.8rem; transition: all 0.8s ease-in-out; z-index: 100; margin-top: -22px; margin-left: -8px; pointer-events: none; }
     </style>
@@ -111,14 +51,12 @@
     <div id="map"></div>
     <div class="panel">
         <div id="dist-info">Söker din GPS... 📍</div>
-        
         <div class="save-btn-container">
             <button id="btn-0" class="slot-btn" onclick="handleSlotClick(0)" oncontextmenu="saveCurrentPos(0); return false;"><div class="btn-text-container"><span class="scrolling-text">TOM 1</span></div></button>
             <button id="btn-1" class="slot-btn" onclick="handleSlotClick(1)" oncontextmenu="saveCurrentPos(1); return false;"><div class="btn-text-container"><span class="scrolling-text">TOM 2</span></div></button>
             <button id="btn-2" class="slot-btn" onclick="handleSlotClick(2)" oncontextmenu="saveCurrentPos(2); return false;"><div class="btn-text-container"><span class="scrolling-text">TOM 3</span></div></button>
             <button id="btn-3" class="slot-btn" onclick="handleSlotClick(3)" oncontextmenu="saveCurrentPos(3); return false;"><div class="btn-text-container"><span class="scrolling-text">TOM 4</span></div></button>
         </div>
-
         <div class="action-container">
             <button id="locate-btn" class="action-btn" onclick="zoomToUser()">🎯 HITTA MIG</button>
             <button id="voice-btn" class="action-btn" onclick="startVoiceSearch()">🎤 RÖSTSÖK</button>
@@ -132,10 +70,9 @@
     <div class="apple-grid" id="path"><div id="the-mouse">🐭</div></div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
 <script>
-    // Samma JavaScript-logik som tidigare för att behålla alla funktioner
-    let map, targetMarker, userMarker, connectionLine, userCoords, initialTotalKm;
+    let map, targetMarker, userMarker, userCoords, initialTotalKm;
     let currentTargetCoords = null;
     let hasZoomedToUser = false;
     let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
@@ -148,7 +85,6 @@
             const gain = audioCtx.createGain();
             osc.type = 'triangle';
             osc.frequency.setValueAtTime(3000, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(4500, audioCtx.currentTime + 0.05);
             gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
             osc.connect(gain); gain.connect(audioCtx.destination);
@@ -157,45 +93,77 @@
     }
 
     function initMap() {
-        map = L.map('map', { zoomControl: false }).setView([62, 15], 5);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        updateButtonUI();
+        // Vi använder en detaljerad Street-view stil från en öppen källa
+        map = new maplibregl.Map({
+            container: 'map',
+            style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json', 
+            center: [15, 62],
+            zoom: 5,
+            attributionControl: false // Tar bort alla länkar/reklam
+        });
 
+        map.on('load', () => {
+            updateButtonUI();
+            startTracking();
+        });
+
+        map.on('click', e => { 
+            playClickSound(); 
+            setTarget(e.lngLat); 
+        });
+
+        setupLongPress();
+    }
+
+    function startTracking() {
         if (navigator.geolocation) {
             navigator.geolocation.watchPosition(pos => {
-                userCoords = [pos.coords.latitude, pos.coords.longitude];
-                if (userMarker) userMarker.setLatLng(userCoords);
-                else userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8}).addTo(map);
+                userCoords = [pos.coords.longitude, pos.coords.latitude];
+                if (!userMarker) {
+                    const el = document.createElement('div');
+                    el.style.width = '18px'; el.style.height = '18px';
+                    el.style.background = '#007bff'; el.style.borderRadius = '50%';
+                    el.style.border = '3px solid white';
+                    el.style.boxShadow = '0 0 10px rgba(0,0,0,0.3)';
+                    userMarker = new maplibregl.Marker(el).setLngLat(userCoords).addTo(map);
+                } else {
+                    userMarker.setLngLat(userCoords);
+                }
                 if (!hasZoomedToUser) { zoomToUser(); hasZoomedToUser = true; }
                 updateLogic();
             }, null, {enableHighAccuracy: true});
         }
-
-        map.on('click', e => { playClickSound(); setTarget(e.latlng); });
-        document.querySelectorAll('button').forEach(btn => btn.addEventListener('click', playClickSound));
-        setupLongPress();
     }
 
     function zoomToUser() {
         if (userCoords) {
-            map.flyTo(userCoords, 16);
+            map.flyTo({ center: userCoords, zoom: 14, speed: 1.5 });
             document.getElementById('dist-info').innerText = "Vart ska vi åka?";
         }
     }
 
-    function setTarget(latlng) {
-        currentTargetCoords = latlng;
-        if (targetMarker) targetMarker.setLatLng(latlng);
-        else targetMarker = L.marker(latlng).addTo(map);
+    function setTarget(lngLat) {
+        currentTargetCoords = lngLat;
+        if (!targetMarker) {
+            targetMarker = new maplibregl.Marker({color: "#ff4444"}).setLngLat(lngLat).addTo(map);
+        } else {
+            targetMarker.setLngLat(lngLat);
+        }
         updateLogic();
+    }
+
+    function calculateDistance(c1, c2) {
+        const R = 6371;
+        const dLat = (c2.lat - c1.lat) * Math.PI / 180;
+        const dLon = (c2.lng - c1.lng) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(c1.lat * Math.PI / 180) * Math.cos(c2.lat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
     function updateLogic() {
         if (userCoords && currentTargetCoords) {
-            const d = map.distance(userCoords, currentTargetCoords) / 1000;
-            if (connectionLine) connectionLine.setLatLngs([userCoords, currentTargetCoords]);
-            else connectionLine = L.polyline([userCoords, currentTargetCoords], {color: '#007bff', weight: 3, dashArray: '10, 10'}).addTo(map);
-            document.getElementById('dist-info').innerHTML = `<b>${d.toFixed(1)} km</b> kvar!`;
+            const dist = calculateDistance({lat: userCoords[1], lng: userCoords[0]}, {lat: currentTargetCoords.lat, lng: currentTargetCoords.lng});
+            document.getElementById('dist-info').innerHTML = `<b>${dist.toFixed(1)} km</b> kvar!`;
             document.getElementById('start-btn').classList.remove('hidden');
         }
     }
@@ -214,7 +182,7 @@
         const data = savedLocations[index];
         if (data) {
             setTarget(data.coords);
-            map.flyTo(data.coords, 14);
+            map.flyTo({ center: data.coords, zoom: 14 });
             document.getElementById('dist-info').innerHTML = `Mål: <b>${data.name}</b>`;
         }
     }
@@ -227,9 +195,7 @@
             if (loc) {
                 textSpan.innerText = loc.name;
                 btn.classList.add('filled');
-                setTimeout(() => {
-                    if (textSpan.offsetWidth > container.offsetWidth) textSpan.classList.add('scroll-active');
-                }, 100);
+                setTimeout(() => { if (textSpan.offsetWidth > container.offsetWidth) textSpan.classList.add('scroll-active'); }, 100);
             }
         });
     }
@@ -248,8 +214,7 @@
         const recognition = new SpeechRecognition();
         recognition.lang = 'sv-SE';
         const btn = document.getElementById('voice-btn');
-        btn.classList.add('listening');
-        btn.innerText = "LYSSNAR...";
+        btn.classList.add('listening'); btn.innerText = "LYSSNAR...";
         recognition.start();
         recognition.onresult = async (event) => {
             const query = event.results[0][0].transcript;
@@ -259,9 +224,7 @@
                 const data = await res.json();
                 if (data.length > 0) {
                     const pos = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-                    setTarget(pos);
-                    map.flyTo(pos, 14);
-                    btn.innerText = "KLART! ✅";
+                    setTarget(pos); map.flyTo({ center: pos, zoom: 14 }); btn.innerText = "KLART! ✅";
                 }
             } catch (e) { btn.innerText = "FEL ❌"; }
             btn.classList.remove('listening');
@@ -270,8 +233,8 @@
     }
 
     function startGame() {
-        const d = map.distance(userCoords, currentTargetCoords) / 1000;
-        initialTotalKm = Math.ceil(d);
+        const dist = calculateDistance({lat: userCoords[1], lng: userCoords[0]}, {lat: currentTargetCoords.lat, lng: currentTargetCoords.lng});
+        initialTotalKm = Math.ceil(dist);
         document.getElementById('map-page').classList.add('hidden');
         document.getElementById('game-page').classList.remove('hidden');
         const grid = document.getElementById('path');
@@ -287,7 +250,7 @@
     }
 
     function updateProgress(pos) {
-        const currentDist = map.distance([pos.coords.latitude, pos.coords.longitude], currentTargetCoords) / 1000;
+        const currentDist = calculateDistance({lat: pos.coords.latitude, lng: pos.coords.longitude}, {lat: currentTargetCoords.lat, lng: currentTargetCoords.lng});
         const finishedKm = Math.floor(initialTotalKm - currentDist);
         const mouse = document.getElementById('the-mouse');
         for (let i = 0; i < initialTotalKm - 1; i++) {
@@ -309,7 +272,6 @@
             mouse.style.top = targetStep.offsetTop + "px";
         }
     }
-
     window.onload = initMap;
 </script>
 </body>
