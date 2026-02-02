@@ -6,57 +6,128 @@
     <title>Marcus Mouse & Cheese Tracker - Pro Edition</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        :root { --app-height: 100svh; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #fdf6e3; overflow: hidden; height: var(--app-height); width: 100vw; position: fixed; display: flex; flex-direction: column; }
-        #map-page, #game-page { height: var(--app-height); width: 100vw; display: flex; flex-direction: column; overflow: hidden; }
-        #map { flex: 1; width: 100%; min-height: 0; }
+        :root {
+            --app-height: 100svh;
+        }
+
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            margin: 0; 
+            background: #fdf6e3; 
+            overflow: hidden; 
+            height: var(--app-height); 
+            width: 100vw; 
+            position: fixed; 
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #map-page, #game-page { 
+            height: var(--app-height); 
+            width: 100vw; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+        }
+
+        #map { 
+            flex: 1; 
+            width: 100%; 
+            min-height: 0; 
+        }
+        
         .hidden { display: none !important; }
-        .panel { padding: 10px 10px calc(15px + env(safe-area-inset-bottom)); background: white; text-align: center; box-shadow: 0 -4px 15px rgba(0,0,0,0.1); z-index: 1000; border-radius: 20px 20px 0 0; flex-shrink: 0; }
+        
+        .panel { 
+            padding: 10px 10px calc(15px + env(safe-area-inset-bottom)); 
+            background: white; 
+            text-align: center; 
+            box-shadow: 0 -4px 15px rgba(0,0,0,0.1); 
+            z-index: 1000; 
+            border-radius: 20px 20px 0 0;
+            flex-shrink: 0; 
+        }
+        
         button { cursor: pointer; font-weight: bold; transition: all 0.2s; border: none; color: #000; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
         button:active { transform: scale(0.95); }
+
         .save-btn-container { display: flex; justify-content: center; gap: 6px; margin-bottom: 8px; padding: 2px; }
-        .slot-btn { width: 48px; height: 48px; background: #bbb; box-shadow: 0 3px 6px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; padding: 0 2px; flex-shrink: 0; }
+        .slot-btn { 
+            width: 48px; height: 48px; background: #bbb; box-shadow: 0 3px 6px rgba(0,0,0,0.1); 
+            display: flex; align-items: center; justify-content: center; padding: 0 2px; flex-shrink: 0;
+        }
+
         .btn-text-container { width: 100%; overflow: hidden; white-space: nowrap; position: relative; }
         .scrolling-text { display: inline-block; font-size: 0.55rem; text-transform: uppercase; pointer-events: none; }
         .scroll-active { animation: scroll-text 5s linear infinite; padding-left: 100%; }
+
         @keyframes scroll-text { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+
         #btn-0 { border-radius: 50%; } #btn-0.filled { background: #4CAF50; }
         #btn-1 { border-radius: 8px; } #btn-1.filled { background: #2196F3; }
         #btn-2 { border-radius: 25px; width: 65px; height: 38px; } #btn-2.filled { background: #FF9800; }
         #btn-3 { width: 55px; height: 48px; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); padding-top: 10px; } #btn-3.filled { background: #9C27B0; }
-        #search-container { display: flex; gap: 5px; margin-bottom: 10px; transition: all 0.3s ease; }
-        #text-search-input { flex: 1; padding: 8px 15px; border-radius: 20px; border: 2px solid #ddd; font-size: 16px; outline: none; }
-        #go-btn { background: #17a2b8; color: white; border-radius: 50%; width: 40px; height: 40px; font-size: 1.2rem; }
-        .action-container { display: flex; justify-content: center; gap: 8px; width: 100%; max-width: 400px; margin: 0 auto; }
+
+        /* SÖKFÄLT */
+        #search-container {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+        #text-search-input {
+            flex: 1;
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: 2px solid #ddd;
+            font-size: 16px; 
+            outline: none;
+        }
+        #text-search-input:focus { border-color: #17a2b8; }
+        #go-btn {
+            background: #17a2b8;
+            color: white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+        }
+
+        .action-container { 
+            display: flex; 
+            justify-content: center; 
+            gap: 8px; 
+            width: 100%; 
+            max-width: 400px; 
+            margin: 0 auto; 
+        }
         .action-btn { flex: 1; padding: 8px 5px; border-radius: 40px; font-size: 0.75rem; box-shadow: 0 4px 0 rgba(0,0,0,0.15); min-height: 42px; }
+        
         #locate-btn { background: #007bff; color: white; }
         #text-btn { background: #17a2b8; color: white; } 
         #voice-btn { background: #444; color: white; }
+        #voice-btn.listening { background: #ff4444; animation: pulse 1.5s infinite; }
         #start-btn { background: #ffcc00; color: #000; }
+
         #dist-info { margin-bottom: 8px; font-weight: bold; font-size: 0.95rem; color: #000; }
+
         #game-page { align-items: center; padding: 5px; }
-        .apple-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; width: 95%; max-width: 280px; margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.5); border-radius: 15px; position: relative; max-height: 60vh; overflow-y: auto; }
+        .apple-grid { 
+            display: grid; 
+            grid-template-columns: repeat(5, 1fr); 
+            gap: 5px; 
+            width: 95%; 
+            max-width: 280px; 
+            margin-top: 10px; 
+            padding: 10px; 
+            background: rgba(255,255,255,0.5); 
+            border-radius: 15px; 
+            position: relative; 
+            max-height: 60vh;
+            overflow-y: auto;
+        }
         .step { font-size: 1.4rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
         #the-mouse { position: absolute; font-size: 1.8rem; transition: all 0.8s ease-in-out; z-index: 100; margin-top: -22px; margin-left: -8px; pointer-events: none; }
-        
-        /* ULTRA-FIX FÖR ATT DÖLJA BLÅ PRICKAR OCH VISA EMOJIS */
-        .mouse-icon-div, .cheese-icon-div {
-            display: flex !important;
-            align-items: center;
-            justify-content: center;
-            font-size: 45px !important;
-            width: 60px !important;
-            height: 60px !important;
-            background: none !important;
-            border: none !important;
-            text-shadow: 2px 2px 5px rgba(0,0,0,0.4);
-        }
-        /* Tvingar bort alla standard-stilar från Leaflet-markörer */
-        .leaflet-marker-icon { 
-            background: none !important; 
-            border: none !important; 
-            box-shadow: none !important;
-        }
     </style>
 </head>
 <body>
@@ -65,16 +136,19 @@
     <div id="map"></div>
     <div class="panel">
         <div id="dist-info">Söker din GPS... 📍</div>
+        
         <div class="save-btn-container">
             <button id="btn-0" class="slot-btn" onclick="handleSlotClick(0)" oncontextmenu="saveCurrentPos(0); return false;"><div class="btn-text-container"><span class="scrolling-text">TOM 1</span></div></button>
             <button id="btn-1" class="slot-btn" onclick="handleSlotClick(1)" oncontextmenu="saveCurrentPos(1); return false;"><div class="btn-text-container"><span class="scrolling-text">TOM 2</span></div></button>
             <button id="btn-2" class="slot-btn" onclick="handleSlotClick(2)" oncontextmenu="saveCurrentPos(2); return false;"><div class="btn-text-container"><span class="scrolling-text">TOM 3</span></div></button>
             <button id="btn-3" class="slot-btn" onclick="handleSlotClick(3)" oncontextmenu="saveCurrentPos(3); return false;"><div class="btn-text-container"><span class="scrolling-text">TOM 4</span></div></button>
         </div>
+
         <div id="search-container" class="hidden">
             <input type="text" id="text-search-input" placeholder="Var ska vi åka?">
             <button id="go-btn" onclick="executeTextSearch()">➔</button>
         </div>
+
         <div class="action-container">
             <button id="locate-btn" class="action-btn" onclick="zoomToUser()">🎯 HITTA MIG</button>
             <button id="text-btn" class="action-btn" onclick="toggleSearchUI()">🔍 SÖK</button> 
@@ -85,7 +159,7 @@
 </div>
 
 <div id="game-page" class="hidden">
-    <button style="background:#ff4444; color:white; margin-top: 10px; border-radius: 20px; padding: 10px 20px; font-size: 1rem;" onclick="location.reload()">AVBRYT</button>
+    <button style="background:#ff4444; color:white; margin-top: 10px; border-radius: 20px; padding: 6px 15px; font-size: 0.75rem;" onclick="location.reload()">AVBRYT</button>
     <div class="apple-grid" id="path"><div id="the-mouse">🐭</div></div>
 </div>
 
@@ -93,24 +167,24 @@
 <script>
     let map, targetMarker, userMarker, connectionLine, userCoords, initialTotalKm;
     let currentTargetCoords = null;
-    let lastSearchName = ""; 
     let hasZoomedToUser = false;
     let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
     let touchTimer;
 
-    const mouseIcon = L.divIcon({
-        className: 'custom-mouse',
-        html: '<div class="mouse-icon-div">🐭</div>',
-        iconSize: [60, 60],
-        iconAnchor: [30, 30]
-    });
-
-    const cheeseIcon = L.divIcon({
-        className: 'custom-cheese',
-        html: '<div class="cheese-icon-div">🧀</div>',
-        iconSize: [60, 60],
-        iconAnchor: [30, 50]
-    });
+    function playClickSound() {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(3000, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(4500, audioCtx.currentTime + 0.05);
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+        } catch(e) {}
+    }
 
     function initMap() {
         map = L.map('map', { zoomControl: false }).setView([62, 15], 5);
@@ -120,32 +194,51 @@
         if (navigator.geolocation) {
             navigator.geolocation.watchPosition(pos => {
                 userCoords = [pos.coords.latitude, pos.coords.longitude];
-                if (!hasZoomedToUser) { zoomToUser(); hasZoomedToUser = true; } 
                 
-                if (!userMarker) {
-                    userMarker = L.marker(userCoords, {icon: mouseIcon, zIndexOffset: 2000}).addTo(map);
-                } else {
+                // Om vi INTE har zoomat in än, gör det först (utan att rita pricken)
+                if (!hasZoomedToUser) { 
+                    zoomToUser(); 
+                    hasZoomedToUser = true; 
+                } 
+                // Om pricken redan finns, flytta den bara
+                else if (userMarker) {
                     userMarker.setLatLng(userCoords);
                 }
+                
                 updateLogic();
             }, null, {enableHighAccuracy: true});
         }
 
-        map.on('click', e => { lastSearchName = ""; setTarget(e.latlng); });
+        map.on('click', e => { playClickSound(); setTarget(e.latlng); });
+        document.querySelectorAll('button').forEach(btn => btn.addEventListener('click', playClickSound));
+        
+        document.getElementById('text-search-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') executeTextSearch();
+        });
+
         setupLongPress();
     }
 
     function zoomToUser() {
-        if (userCoords) map.flyTo(userCoords, 16);
+        if (userCoords) {
+            // Starta flygturen
+            map.flyTo(userCoords, 16);
+            
+            // Lyssna EFTER att flygturen är klar (bara en gång)
+            map.once('moveend', () => {
+                // Skapa/visa pricken först nu när vi är framme
+                if (!userMarker) {
+                    userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8}).addTo(map);
+                }
+                document.getElementById('dist-info').innerText = "Vart ska vi åka?";
+            });
+        }
     }
 
     function setTarget(latlng) {
         currentTargetCoords = latlng;
-        if (targetMarker) {
-            targetMarker.setLatLng(latlng);
-        } else {
-            targetMarker = L.marker(latlng, {icon: cheeseIcon, zIndexOffset: 1000}).addTo(map);
-        }
+        if (targetMarker) targetMarker.setLatLng(latlng);
+        else targetMarker = L.marker(latlng).addTo(map);
         updateLogic();
     }
 
@@ -153,7 +246,7 @@
         if (userCoords && currentTargetCoords) {
             const d = map.distance(userCoords, currentTargetCoords) / 1000;
             if (connectionLine) connectionLine.setLatLngs([userCoords, currentTargetCoords]);
-            else connectionLine = L.polyline([userCoords, currentTargetCoords], {color: '#007bff', weight: 4, dashArray: '10, 10'}).addTo(map);
+            else connectionLine = L.polyline([userCoords, currentTargetCoords], {color: '#007bff', weight: 3, dashArray: '10, 10'}).addTo(map);
             document.getElementById('dist-info').innerHTML = `<b>${d.toFixed(1)} km</b> kvar!`;
             document.getElementById('start-btn').classList.remove('hidden');
         }
@@ -161,8 +254,7 @@
 
     function saveCurrentPos(index) {
         if (!currentTargetCoords) return;
-        const defaultName = lastSearchName || "Mål " + (index+1);
-        const label = prompt("Spara plats som:", defaultName);
+        const label = prompt("Spara som:", "Mål " + (index+1));
         if (label) {
             savedLocations[index] = { coords: currentTargetCoords, name: label };
             localStorage.setItem('mouse_favs', JSON.stringify(savedLocations));
@@ -173,7 +265,6 @@
     function handleSlotClick(index) {
         const data = savedLocations[index];
         if (data) {
-            lastSearchName = data.name; 
             setTarget(data.coords);
             map.flyTo(data.coords, 14);
             document.getElementById('dist-info').innerHTML = `Mål: <b>${data.name}</b>`;
@@ -183,10 +274,14 @@
     function updateButtonUI() {
         savedLocations.forEach((loc, i) => {
             const btn = document.getElementById(`btn-${i}`);
+            const textSpan = btn.querySelector('.scrolling-text');
+            const container = btn.querySelector('.btn-text-container');
             if (loc) {
-                const textSpan = btn.querySelector('.scrolling-text');
                 textSpan.innerText = loc.name;
                 btn.classList.add('filled');
+                setTimeout(() => {
+                    if (textSpan.offsetWidth > container.offsetWidth) textSpan.classList.add('scroll-active');
+                }, 100);
             }
         });
     }
@@ -202,25 +297,38 @@
     function toggleSearchUI() {
         const container = document.getElementById('search-container');
         container.classList.toggle('hidden');
-        if (!container.classList.contains('hidden')) document.getElementById('text-search-input').focus();
+        if (!container.classList.contains('hidden')) {
+            document.getElementById('text-search-input').focus();
+        }
     }
 
     async function executeTextSearch() {
         const input = document.getElementById('text-search-input');
         const query = input.value;
+        const btn = document.getElementById('text-btn');
+
         if (!query) return;
+
+        btn.innerText = "⏳";
         try {
             const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
             const data = await res.json();
             if (data.length > 0) {
-                lastSearchName = query; 
                 const pos = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
                 setTarget(pos);
                 map.flyTo(pos, 14);
                 document.getElementById('search-container').classList.add('hidden');
                 input.value = ""; 
+                btn.innerText = "🔍 SÖK";
+            } else {
+                alert("Hittade inget! 🐭");
+                btn.innerText = "❓";
+                setTimeout(() => btn.innerText = "🔍 SÖK", 2000);
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { 
+            btn.innerText = "FEL ❌"; 
+            setTimeout(() => btn.innerText = "🔍 SÖK", 2000);
+        }
     }
 
     async function startVoiceSearch() {
@@ -228,10 +336,17 @@
         if (!SpeechRecognition) return;
         const recognition = new SpeechRecognition();
         recognition.lang = 'sv-SE';
+        const btn = document.getElementById('voice-btn');
+        btn.classList.add('listening');
+        btn.innerText = "LYSSNAR...";
         recognition.start();
         recognition.onresult = async (event) => {
-            document.getElementById('text-search-input').value = event.results[0][0].transcript;
+            const query = event.results[0][0].transcript;
+            btn.innerText = "SÖKER...";
+            document.getElementById('text-search-input').value = query;
             executeTextSearch();
+            btn.classList.remove('listening');
+            setTimeout(() => btn.innerText = "🎤 RÖSTSÖK", 2000);
         };
     }
 
@@ -248,7 +363,7 @@
             step.innerHTML = (i === initialTotalKm - 1) ? '🧀' : '🍎';
             grid.appendChild(step);
         }
-        navigator.geolocation.watchPosition(updateProgress);
+        navigator.geolocation.watchPosition(updateProgress, null, {enableHighAccuracy: true});
         setTimeout(() => moveMouse(0), 100);
     }
 
@@ -270,7 +385,10 @@
     function moveMouse(index) {
         const mouse = document.getElementById('the-mouse');
         const targetStep = document.getElementById(`step-${index}`);
-        if (targetStep) { mouse.style.left = targetStep.offsetLeft + "px"; mouse.style.top = targetStep.offsetTop + "px"; }
+        if (targetStep) {
+            mouse.style.left = targetStep.offsetLeft + "px";
+            mouse.style.top = targetStep.offsetTop + "px";
+        }
     }
 
     window.onload = initMap;
