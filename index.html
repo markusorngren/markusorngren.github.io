@@ -6,7 +6,6 @@
     <title>Marcus Mouse & Cheese Tracker - Pro Edition</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        /* Använder svh för att undvika att menyer täcker innehåll */
         :root {
             --app-height: 100svh;
         }
@@ -40,7 +39,7 @@
         .hidden { display: none !important; }
         
         .panel { 
-            padding: 10px 10px calc(15px + env(safe-area-inset-bottom)); /* Extra marginal för iPhone-strecket */
+            padding: 10px 10px calc(15px + env(safe-area-inset-bottom)); 
             background: white; 
             text-align: center; 
             box-shadow: 0 -4px 15px rgba(0,0,0,0.1); 
@@ -69,6 +68,31 @@
         #btn-2 { border-radius: 25px; width: 65px; height: 38px; } #btn-2.filled { background: #FF9800; }
         #btn-3 { width: 55px; height: 48px; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); padding-top: 10px; } #btn-3.filled { background: #9C27B0; }
 
+        /* NY STIL FÖR SÖKFÄLTET */
+        #search-container {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+        #text-search-input {
+            flex: 1;
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: 2px solid #ddd;
+            font-size: 16px; /* Förhindrar zoom på iPhone */
+            outline: none;
+        }
+        #text-search-input:focus { border-color: #17a2b8; }
+        #go-btn {
+            background: #17a2b8;
+            color: white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+        }
+
         .action-container { 
             display: flex; 
             justify-content: center; 
@@ -80,6 +104,7 @@
         .action-btn { flex: 1; padding: 8px 5px; border-radius: 40px; font-size: 0.75rem; box-shadow: 0 4px 0 rgba(0,0,0,0.15); min-height: 42px; }
         
         #locate-btn { background: #007bff; color: white; }
+        #text-btn { background: #17a2b8; color: white; } /* NY KNAPP FÄRG */
         #voice-btn { background: #444; color: white; }
         #voice-btn.listening { background: #ff4444; animation: pulse 1.5s infinite; }
         #start-btn { background: #ffcc00; color: #000; }
@@ -119,8 +144,14 @@
             <button id="btn-3" class="slot-btn" onclick="handleSlotClick(3)" oncontextmenu="saveCurrentPos(3); return false;"><div class="btn-text-container"><span class="scrolling-text">TOM 4</span></div></button>
         </div>
 
+        <div id="search-container" class="hidden">
+            <input type="text" id="text-search-input" placeholder="Var ska vi åka?">
+            <button id="go-btn" onclick="executeTextSearch()">➔</button>
+        </div>
+
         <div class="action-container">
             <button id="locate-btn" class="action-btn" onclick="zoomToUser()">🎯 HITTA MIG</button>
+            <button id="text-btn" class="action-btn" onclick="toggleSearchUI()">🔍 SÖK</button> 
             <button id="voice-btn" class="action-btn" onclick="startVoiceSearch()">🎤 RÖSTSÖK</button>
             <button id="start-btn" class="action-btn hidden" onclick="startGame()">STARTA 🧀</button>
         </div>
@@ -134,7 +165,6 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    // Samma JavaScript-logik som tidigare för att behålla alla funktioner
     let map, targetMarker, userMarker, connectionLine, userCoords, initialTotalKm;
     let currentTargetCoords = null;
     let hasZoomedToUser = false;
@@ -173,6 +203,12 @@
 
         map.on('click', e => { playClickSound(); setTarget(e.latlng); });
         document.querySelectorAll('button').forEach(btn => btn.addEventListener('click', playClickSound));
+        
+        // Lyssna på Enter i sökfältet
+        document.getElementById('text-search-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') executeTextSearch();
+        });
+
         setupLongPress();
     }
 
@@ -242,6 +278,46 @@
         });
     }
 
+    // --- NY SÖKFUNKTION ---
+    function toggleSearchUI() {
+        const container = document.getElementById('search-container');
+        container.classList.toggle('hidden');
+        if (!container.classList.contains('hidden')) {
+            document.getElementById('text-search-input').focus();
+        }
+    }
+
+    async function executeTextSearch() {
+        const input = document.getElementById('text-search-input');
+        const query = input.value;
+        const btn = document.getElementById('text-btn'); // Feedback på sök-knappen
+
+        if (!query) return;
+
+        btn.innerText = "⏳";
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+            const data = await res.json();
+            if (data.length > 0) {
+                const pos = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+                setTarget(pos);
+                map.flyTo(pos, 14);
+                // Göm sökfältet efter lyckad sökning
+                document.getElementById('search-container').classList.add('hidden');
+                input.value = ""; // Rensa
+                btn.innerText = "🔍 SÖK";
+            } else {
+                alert("Hittade inget! 🐭");
+                btn.innerText = "❓";
+                setTimeout(() => btn.innerText = "🔍 SÖK", 2000);
+            }
+        } catch (e) { 
+            btn.innerText = "FEL ❌"; 
+            setTimeout(() => btn.innerText = "🔍 SÖK", 2000);
+        }
+    }
+    // ---------------------
+
     async function startVoiceSearch() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) return;
@@ -254,16 +330,10 @@
         recognition.onresult = async (event) => {
             const query = event.results[0][0].transcript;
             btn.innerText = "SÖKER...";
-            try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
-                const data = await res.json();
-                if (data.length > 0) {
-                    const pos = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-                    setTarget(pos);
-                    map.flyTo(pos, 14);
-                    btn.innerText = "KLART! ✅";
-                }
-            } catch (e) { btn.innerText = "FEL ❌"; }
+            // Återanvänder logik genom att sätta värdet i input och klicka go (fusk men funkar)
+            document.getElementById('text-search-input').value = query;
+            executeTextSearch();
+            
             btn.classList.remove('listening');
             setTimeout(() => btn.innerText = "🎤 RÖSTSÖK", 2000);
         };
