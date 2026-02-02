@@ -68,7 +68,7 @@
         #btn-2 { border-radius: 25px; width: 65px; height: 38px; } #btn-2.filled { background: #FF9800; }
         #btn-3 { width: 55px; height: 48px; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); padding-top: 10px; } #btn-3.filled { background: #9C27B0; }
 
-        /* NY STIL FÖR SÖKFÄLTET */
+        /* SÖKFÄLT */
         #search-container {
             display: flex;
             gap: 5px;
@@ -80,7 +80,7 @@
             padding: 8px 15px;
             border-radius: 20px;
             border: 2px solid #ddd;
-            font-size: 16px; /* Förhindrar zoom på iPhone */
+            font-size: 16px; 
             outline: none;
         }
         #text-search-input:focus { border-color: #17a2b8; }
@@ -104,7 +104,7 @@
         .action-btn { flex: 1; padding: 8px 5px; border-radius: 40px; font-size: 0.75rem; box-shadow: 0 4px 0 rgba(0,0,0,0.15); min-height: 42px; }
         
         #locate-btn { background: #007bff; color: white; }
-        #text-btn { background: #17a2b8; color: white; } /* NY KNAPP FÄRG */
+        #text-btn { background: #17a2b8; color: white; } 
         #voice-btn { background: #444; color: white; }
         #voice-btn.listening { background: #ff4444; animation: pulse 1.5s infinite; }
         #start-btn { background: #ffcc00; color: #000; }
@@ -194,9 +194,17 @@
         if (navigator.geolocation) {
             navigator.geolocation.watchPosition(pos => {
                 userCoords = [pos.coords.latitude, pos.coords.longitude];
-                if (userMarker) userMarker.setLatLng(userCoords);
-                else userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8}).addTo(map);
-                if (!hasZoomedToUser) { zoomToUser(); hasZoomedToUser = true; }
+                
+                // Om vi INTE har zoomat in än, gör det först (utan att rita pricken)
+                if (!hasZoomedToUser) { 
+                    zoomToUser(); 
+                    hasZoomedToUser = true; 
+                } 
+                // Om pricken redan finns, flytta den bara
+                else if (userMarker) {
+                    userMarker.setLatLng(userCoords);
+                }
+                
                 updateLogic();
             }, null, {enableHighAccuracy: true});
         }
@@ -204,7 +212,6 @@
         map.on('click', e => { playClickSound(); setTarget(e.latlng); });
         document.querySelectorAll('button').forEach(btn => btn.addEventListener('click', playClickSound));
         
-        // Lyssna på Enter i sökfältet
         document.getElementById('text-search-input').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') executeTextSearch();
         });
@@ -214,8 +221,17 @@
 
     function zoomToUser() {
         if (userCoords) {
+            // Starta flygturen
             map.flyTo(userCoords, 16);
-            document.getElementById('dist-info').innerText = "Vart ska vi åka?";
+            
+            // Lyssna EFTER att flygturen är klar (bara en gång)
+            map.once('moveend', () => {
+                // Skapa/visa pricken först nu när vi är framme
+                if (!userMarker) {
+                    userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8}).addTo(map);
+                }
+                document.getElementById('dist-info').innerText = "Vart ska vi åka?";
+            });
         }
     }
 
@@ -278,7 +294,6 @@
         });
     }
 
-    // --- NY SÖKFUNKTION ---
     function toggleSearchUI() {
         const container = document.getElementById('search-container');
         container.classList.toggle('hidden');
@@ -290,7 +305,7 @@
     async function executeTextSearch() {
         const input = document.getElementById('text-search-input');
         const query = input.value;
-        const btn = document.getElementById('text-btn'); // Feedback på sök-knappen
+        const btn = document.getElementById('text-btn');
 
         if (!query) return;
 
@@ -302,9 +317,8 @@
                 const pos = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
                 setTarget(pos);
                 map.flyTo(pos, 14);
-                // Göm sökfältet efter lyckad sökning
                 document.getElementById('search-container').classList.add('hidden');
-                input.value = ""; // Rensa
+                input.value = ""; 
                 btn.innerText = "🔍 SÖK";
             } else {
                 alert("Hittade inget! 🐭");
@@ -316,7 +330,6 @@
             setTimeout(() => btn.innerText = "🔍 SÖK", 2000);
         }
     }
-    // ---------------------
 
     async function startVoiceSearch() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -330,10 +343,8 @@
         recognition.onresult = async (event) => {
             const query = event.results[0][0].transcript;
             btn.innerText = "SÖKER...";
-            // Återanvänder logik genom att sätta värdet i input och klicka go (fusk men funkar)
             document.getElementById('text-search-input').value = query;
             executeTextSearch();
-            
             btn.classList.remove('listening');
             setTimeout(() => btn.innerText = "🎤 RÖSTSÖK", 2000);
         };
