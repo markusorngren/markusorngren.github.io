@@ -39,14 +39,18 @@
         .step { font-size: 1.4rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
         #the-mouse { position: absolute; font-size: 1.8rem; transition: all 0.8s ease-in-out; z-index: 100; margin-top: -22px; margin-left: -8px; pointer-events: none; }
         
-        /* CSS för de nya kart-ikonerna */
+        /* FIX FÖR IKONER I MOBIL */
         .mouse-icon-div, .cheese-icon-div {
-            display: flex;
+            display: flex !important;
             align-items: center;
             justify-content: center;
-            font-size: 30px; /* Justera storleken här om du vill */
+            font-size: 30px;
+            width: 32px;
+            height: 32px;
+            line-height: 1;
             text-shadow: 0px 2px 4px rgba(0,0,0,0.3);
         }
+        .leaflet-marker-icon { background: none !important; border: none !important; }
     </style>
 </head>
 <body>
@@ -88,34 +92,19 @@
     let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
     let touchTimer;
 
-    // --- NYA IKON-DEFINITIONER ---
-    // Skapar ikoner baserade på emojis (divIcon)
     const mouseIcon = L.divIcon({
-        className: 'custom-div-icon',
+        className: 'mouse-marker',
         html: '<div class="mouse-icon-div">🐭</div>',
-        iconSize: [30, 30],
-        iconAnchor: [15, 15] // Centrerad
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
     });
 
     const cheeseIcon = L.divIcon({
-        className: 'custom-div-icon',
+        className: 'cheese-marker',
         html: '<div class="cheese-icon-div">🧀</div>',
-        iconSize: [30, 30],
-        iconAnchor: [15, 30] // Botten-centrerad (som en knappnål)
+        iconSize: [32, 32],
+        iconAnchor: [16, 28]
     });
-
-    function playClickSound() {
-        try {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(3000, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.01, audioCtx.currentTime);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
-        } catch(e) {}
-    }
 
     function initMap() {
         map = L.map('map', { zoomControl: false }).setView([62, 15], 5);
@@ -126,36 +115,30 @@
             navigator.geolocation.watchPosition(pos => {
                 userCoords = [pos.coords.latitude, pos.coords.longitude];
                 if (!hasZoomedToUser) { zoomToUser(); hasZoomedToUser = true; } 
-                else if (userMarker) userMarker.setLatLng(userCoords);
+                
+                if (!userMarker) {
+                    userMarker = L.marker(userCoords, {icon: mouseIcon, zIndexOffset: 2000}).addTo(map);
+                } else {
+                    userMarker.setLatLng(userCoords);
+                }
                 updateLogic();
             }, null, {enableHighAccuracy: true});
         }
 
-        map.on('click', e => { playClickSound(); lastSearchName = ""; setTarget(e.latlng); });
-        document.getElementById('text-search-input').addEventListener('keypress', e => { if (e.key === 'Enter') executeTextSearch(); });
+        map.on('click', e => { lastSearchName = ""; setTarget(e.latlng); });
         setupLongPress();
     }
 
     function zoomToUser() {
-        if (userCoords) {
-            map.flyTo(userCoords, 16);
-            map.once('moveend', () => {
-                // ÄNDRAT: Använder nu mouseIcon istället för blå cirkel
-                if (!userMarker) {
-                    userMarker = L.marker(userCoords, {icon: mouseIcon, zIndexOffset: 1000}).addTo(map);
-                }
-            });
-        }
+        if (userCoords) map.flyTo(userCoords, 16);
     }
 
     function setTarget(latlng) {
         currentTargetCoords = latlng;
-        // ÄNDRAT: Använder nu cheeseIcon istället för standard-markör
         if (targetMarker) {
             targetMarker.setLatLng(latlng);
-            targetMarker.setIcon(cheeseIcon); 
         } else {
-            targetMarker = L.marker(latlng, {icon: cheeseIcon}).addTo(map);
+            targetMarker = L.marker(latlng, {icon: cheeseIcon, zIndexOffset: 1000}).addTo(map);
         }
         updateLogic();
     }
@@ -194,13 +177,10 @@
     function updateButtonUI() {
         savedLocations.forEach((loc, i) => {
             const btn = document.getElementById(`btn-${i}`);
-            const textSpan = btn.querySelector('.scrolling-text');
-            const container = btn.querySelector('.btn-text-container');
             if (loc) {
+                const textSpan = btn.querySelector('.scrolling-text');
                 textSpan.innerText = loc.name;
                 btn.classList.add('filled');
-                textSpan.classList.remove('scroll-active');
-                setTimeout(() => { if (textSpan.offsetWidth > container.offsetWidth) textSpan.classList.add('scroll-active'); }, 100);
             }
         });
     }
@@ -223,7 +203,6 @@
         const input = document.getElementById('text-search-input');
         const query = input.value;
         if (!query) return;
-
         try {
             const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
             const data = await res.json();
@@ -245,8 +224,7 @@
         recognition.lang = 'sv-SE';
         recognition.start();
         recognition.onresult = async (event) => {
-            const query = event.results[0][0].transcript;
-            document.getElementById('text-search-input').value = query;
+            document.getElementById('text-search-input').value = event.results[0][0].transcript;
             executeTextSearch();
         };
     }
