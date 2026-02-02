@@ -38,6 +38,15 @@
         .apple-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; width: 95%; max-width: 280px; margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.5); border-radius: 15px; position: relative; max-height: 60vh; overflow-y: auto; }
         .step { font-size: 1.4rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
         #the-mouse { position: absolute; font-size: 1.8rem; transition: all 0.8s ease-in-out; z-index: 100; margin-top: -22px; margin-left: -8px; pointer-events: none; }
+        
+        /* CSS för de nya kart-ikonerna */
+        .mouse-icon-div, .cheese-icon-div {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px; /* Justera storleken här om du vill */
+            text-shadow: 0px 2px 4px rgba(0,0,0,0.3);
+        }
     </style>
 </head>
 <body>
@@ -74,10 +83,26 @@
 <script>
     let map, targetMarker, userMarker, connectionLine, userCoords, initialTotalKm;
     let currentTargetCoords = null;
-    let lastSearchName = ""; // Sparar senaste sökningen här
+    let lastSearchName = ""; 
     let hasZoomedToUser = false;
     let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
     let touchTimer;
+
+    // --- NYA IKON-DEFINITIONER ---
+    // Skapar ikoner baserade på emojis (divIcon)
+    const mouseIcon = L.divIcon({
+        className: 'custom-div-icon',
+        html: '<div class="mouse-icon-div">🐭</div>',
+        iconSize: [30, 30],
+        iconAnchor: [15, 15] // Centrerad
+    });
+
+    const cheeseIcon = L.divIcon({
+        className: 'custom-div-icon',
+        html: '<div class="cheese-icon-div">🧀</div>',
+        iconSize: [30, 30],
+        iconAnchor: [15, 30] // Botten-centrerad (som en knappnål)
+    });
 
     function playClickSound() {
         try {
@@ -115,15 +140,23 @@
         if (userCoords) {
             map.flyTo(userCoords, 16);
             map.once('moveend', () => {
-                if (!userMarker) userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8}).addTo(map);
+                // ÄNDRAT: Använder nu mouseIcon istället för blå cirkel
+                if (!userMarker) {
+                    userMarker = L.marker(userCoords, {icon: mouseIcon, zIndexOffset: 1000}).addTo(map);
+                }
             });
         }
     }
 
     function setTarget(latlng) {
         currentTargetCoords = latlng;
-        if (targetMarker) targetMarker.setLatLng(latlng);
-        else targetMarker = L.marker(latlng).addTo(map);
+        // ÄNDRAT: Använder nu cheeseIcon istället för standard-markör
+        if (targetMarker) {
+            targetMarker.setLatLng(latlng);
+            targetMarker.setIcon(cheeseIcon); 
+        } else {
+            targetMarker = L.marker(latlng, {icon: cheeseIcon}).addTo(map);
+        }
         updateLogic();
     }
 
@@ -139,7 +172,6 @@
 
     function saveCurrentPos(index) {
         if (!currentTargetCoords) return;
-        // Använder senaste sökordet som förslag om det finns
         const defaultName = lastSearchName || "Mål " + (index+1);
         const label = prompt("Spara plats som:", defaultName);
         if (label) {
@@ -196,7 +228,7 @@
             const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
             const data = await res.json();
             if (data.length > 0) {
-                lastSearchName = query; // Kom ihåg namnet!
+                lastSearchName = query; 
                 const pos = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
                 setTarget(pos);
                 map.flyTo(pos, 14);
