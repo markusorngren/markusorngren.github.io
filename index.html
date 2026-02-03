@@ -20,6 +20,8 @@
             position: fixed; 
             display: flex;
             flex-direction: column;
+            /* Förhindrar studs på iOS */
+            overscroll-behavior: none;
         }
         
         #map-page, #game-page { 
@@ -33,7 +35,10 @@
         #map { 
             flex: 1; 
             width: 100%; 
-            min-height: 0; 
+            min-height: 0;
+            /* Viktigt för mobilen: hindrar sidan från att scrolla när man drar i kartan */
+            touch-action: none; 
+            z-index: 1;
         }
         
         .hidden { display: none !important; }
@@ -48,7 +53,7 @@
             flex-shrink: 0; 
         }
         
-        button { cursor: pointer; font-weight: bold; transition: all 0.2s; border: none; color: #000; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+        button { cursor: pointer; font-weight: bold; transition: all 0.2s; border: none; color: #000; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; -webkit-tap-highlight-color: transparent; }
         button:active { transform: scale(0.95); }
 
         .save-btn-container { display: flex; justify-content: center; gap: 6px; margin-bottom: 8px; padding: 2px; }
@@ -168,12 +173,26 @@
     let map, targetMarker, userMarker, connectionLine, userCoords, initialTotalKm;
     let currentTargetCoords = null;
     let hasZoomedToUser = false;
-    let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
     let touchTimer;
+    
+    // Säkrare hantering av localStorage
+    let savedLocations = [null, null, null, null];
+    try {
+        const stored = localStorage.getItem('mouse_favs');
+        if (stored) savedLocations = JSON.parse(stored);
+    } catch (e) { console.error("Kunde inte ladda sparade platser", e); }
 
     function playClickSound() {
         try {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            const audioCtx = new AudioContext();
+            
+            // Hantera "suspended" state som är vanligt på mobiler
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'triangle';
@@ -183,30 +202,45 @@
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
             osc.connect(gain); gain.connect(audioCtx.destination);
             osc.start(); osc.stop(audioCtx.currentTime + 0.1);
-        } catch(e) {}
+        } catch(e) { /* Tyst felhantering */ }
     }
 
     function initMap() {
+        // Initiera kartan
         map = L.map('map', { zoomControl: false }).setView([62, 15], 5);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+        
         updateButtonUI();
 
         if (navigator.geolocation) {
-            navigator.geolocation.watchPosition(pos => {
-                userCoords = [pos.coords.latitude, pos.coords.longitude];
-                
-                // Om vi INTE har zoomat in än, gör det först (utan att rita pricken)
-                if (!hasZoomedToUser) { 
-                    zoomToUser(); 
-                    hasZoomedToUser = true; 
-                } 
-                // Om pricken redan finns, flytta den bara
-                else if (userMarker) {
-                    userMarker.setLatLng(userCoords);
-                }
-                
-                updateLogic();
-            }, null, {enableHighAccuracy: true});
+            navigator.geolocation.watchPosition(
+                // Success
+                pos => {
+                    userCoords = [pos.coords.latitude, pos.coords.longitude];
+                    
+                    // Rita ut markören direkt
+                    updateUserMarker(userCoords);
+
+                    // Om vi INTE har zoomat in än, gör det nu
+                    if (!hasZoomedToUser) { 
+                        map.setView(userCoords, 16); // setView är stabilare än flyTo vid start
+                        hasZoomedToUser = true; 
+                        document.getElementById('dist-info').innerText = "Vart ska vi åka?";
+                    }
+                    
+                    updateLogic();
+                }, 
+                // Error
+                err => {
+                    console.error(err);
+                    document.getElementById('dist-info').innerText = "Kunde inte hitta GPS ❌";
+                }, 
+                {enableHighAccuracy: true}
+            );
+        } else {
+            document.getElementById('dist-info').innerText = "GPS stöds ej ❌";
         }
 
         map.on('click', e => { playClickSound(); setTarget(e.latlng); });
@@ -219,19 +253,27 @@
         setupLongPress();
     }
 
+    function updateUserMarker(coords) {
+        if (userMarker) {
+            userMarker.setLatLng(coords);
+        } else {
+            userMarker = L.circleMarker(coords, {
+                radius: 8, 
+                fillColor: "#007bff", 
+                color: "#fff", 
+                weight: 2, 
+                opacity: 1, 
+                fillOpacity: 0.8
+            }).addTo(map);
+        }
+    }
+
     function zoomToUser() {
         if (userCoords) {
-            // Starta flygturen
             map.flyTo(userCoords, 16);
-            
-            // Lyssna EFTER att flygturen är klar (bara en gång)
-            map.once('moveend', () => {
-                // Skapa/visa pricken först nu när vi är framme
-                if (!userMarker) {
-                    userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8}).addTo(map);
-                }
-                document.getElementById('dist-info').innerText = "Vart ska vi åka?";
-            });
+            document.getElementById('dist-info').innerText = "Vart ska vi åka?";
+        } else {
+            alert("Väntar på GPS-signal...");
         }
     }
 
@@ -247,6 +289,8 @@
             const d = map.distance(userCoords, currentTargetCoords) / 1000;
             if (connectionLine) connectionLine.setLatLngs([userCoords, currentTargetCoords]);
             else connectionLine = L.polyline([userCoords, currentTargetCoords], {color: '#007bff', weight: 3, dashArray: '10, 10'}).addTo(map);
+            
+            // Visa avstånd med en decimal
             document.getElementById('dist-info').innerHTML = `<b>${d.toFixed(1)} km</b> kvar!`;
             document.getElementById('start-btn').classList.remove('hidden');
         }
@@ -279,8 +323,10 @@
             if (loc) {
                 textSpan.innerText = loc.name;
                 btn.classList.add('filled');
+                // Återställ animation för att mäta rätt
+                textSpan.classList.remove('scroll-active');
                 setTimeout(() => {
-                    if (textSpan.offsetWidth > container.offsetWidth) textSpan.classList.add('scroll-active');
+                    if (textSpan.scrollWidth > container.clientWidth) textSpan.classList.add('scroll-active');
                 }, 100);
             }
         });
@@ -311,7 +357,10 @@
 
         btn.innerText = "⏳";
         try {
+            // Använd Headers om möjligt för bättre kompatibilitet
             const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+            if (!res.ok) throw new Error("Network response was not ok");
+            
             const data = await res.json();
             if (data.length > 0) {
                 const pos = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
@@ -326,6 +375,7 @@
                 setTimeout(() => btn.innerText = "🔍 SÖK", 2000);
             }
         } catch (e) { 
+            console.error(e);
             btn.innerText = "FEL ❌"; 
             setTimeout(() => btn.innerText = "🔍 SÖK", 2000);
         }
@@ -333,30 +383,44 @@
 
     async function startVoiceSearch() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) return;
+        if (!SpeechRecognition) {
+            alert("Din webbläsare stöder inte röstsök. Prova Chrome eller Safari.");
+            return;
+        }
         const recognition = new SpeechRecognition();
         recognition.lang = 'sv-SE';
         const btn = document.getElementById('voice-btn');
-        btn.classList.add('listening');
-        btn.innerText = "LYSSNAR...";
-        recognition.start();
+        
+        recognition.onstart = () => {
+            btn.classList.add('listening');
+            btn.innerText = "LYSSNAR...";
+        };
+
+        recognition.onend = () => {
+            btn.classList.remove('listening');
+            setTimeout(() => { 
+                if(btn.innerText === "LYSSNAR...") btn.innerText = "🎤 RÖSTSÖK"; 
+            }, 1000);
+        };
+
         recognition.onresult = async (event) => {
             const query = event.results[0][0].transcript;
             btn.innerText = "SÖKER...";
             document.getElementById('text-search-input').value = query;
             executeTextSearch();
-            btn.classList.remove('listening');
-            setTimeout(() => btn.innerText = "🎤 RÖSTSÖK", 2000);
         };
+
+        recognition.start();
     }
 
     function startGame() {
         const d = map.distance(userCoords, currentTargetCoords) / 1000;
-        initialTotalKm = Math.ceil(d);
+        initialTotalKm = Math.max(1, Math.ceil(d)); // Minst 1 "steg"
         document.getElementById('map-page').classList.add('hidden');
         document.getElementById('game-page').classList.remove('hidden');
         const grid = document.getElementById('path');
         grid.innerHTML = '<div id="the-mouse">🐭</div>';
+        
         for (let i = 0; i < initialTotalKm; i++) {
             const step = document.createElement('div');
             step.className = 'step'; step.id = `step-${i}`;
@@ -368,8 +432,12 @@
     }
 
     function updateProgress(pos) {
+        if (!currentTargetCoords) return;
         const currentDist = map.distance([pos.coords.latitude, pos.coords.longitude], currentTargetCoords) / 1000;
-        const finishedKm = Math.floor(initialTotalKm - currentDist);
+        // Räkna ut hur många "km-steg" vi klarat
+        let finishedKm = initialTotalKm - Math.ceil(currentDist);
+        if (finishedKm < 0) finishedKm = 0;
+
         const mouse = document.getElementById('the-mouse');
         for (let i = 0; i < initialTotalKm - 1; i++) {
             const step = document.getElementById(`step-${i}`);
@@ -378,14 +446,23 @@
                 else { step.innerHTML = '🍎'; step.style.opacity = "1"; }
             }
         }
-        if (currentDist < 0.05) { mouse.innerHTML = '🐭🧀'; moveMouse(initialTotalKm - 1); }
-        else { moveMouse(finishedKm >= 0 ? finishedKm : 0); }
+        
+        // Om vi är riktigt nära (mindre än 50 meter)
+        if (currentDist < 0.05) { 
+            mouse.innerHTML = '🐭🧀'; 
+            moveMouse(initialTotalKm - 1); 
+        }
+        else { 
+            moveMouse(finishedKm >= 0 ? finishedKm : 0); 
+        }
     }
 
     function moveMouse(index) {
         const mouse = document.getElementById('the-mouse');
         const targetStep = document.getElementById(`step-${index}`);
         if (targetStep) {
+            // Använd transform istället för top/left för bättre prestanda
+            // Men för enkelhetens skull behåller vi offset men kollar så elementet finns
             mouse.style.left = targetStep.offsetLeft + "px";
             mouse.style.top = targetStep.offsetTop + "px";
         }
