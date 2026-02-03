@@ -59,9 +59,6 @@
 
         .btn-text-container { width: 100%; overflow: hidden; white-space: nowrap; position: relative; }
         .scrolling-text { display: inline-block; font-size: 0.55rem; text-transform: uppercase; pointer-events: none; }
-        .scroll-active { animation: scroll-text 5s linear infinite; padding-left: 100%; }
-
-        @keyframes scroll-text { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
 
         #btn-0 { border-radius: 50%; } #btn-0.filled { background: #4CAF50; }
         #btn-1 { border-radius: 8px; } #btn-1.filled { background: #2196F3; }
@@ -102,7 +99,7 @@
         }
         .action-btn { flex: 1; padding: 8px 5px; border-radius: 40px; font-size: 0.75rem; box-shadow: 0 4px 0 rgba(0,0,0,0.15); min-height: 42px; }
         
-        #locate-btn { background: #007bff; color: white; }
+        #locate-btn { background: #007bff; color: white; text-transform: uppercase; }
         #text-btn { background: #17a2b8; color: white; } 
         #voice-btn { background: #444; color: white; }
         #voice-btn.listening { background: #ff4444; animation: pulse 1.5s infinite; }
@@ -128,7 +125,6 @@
         
         .step { font-size: 1.4rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; transition: all 0.5s ease; }
         
-        /* Mouse and Apple Animations */
         @keyframes mouseWobble {
             0%, 100% { transform: rotate(0deg); }
             25% { transform: rotate(-10deg); }
@@ -151,15 +147,9 @@
             opacity: 0.3 !important;
         }
 
-        /* Full screen Victory Animation */
         @keyframes victoryPop {
             0% { transform: scale(1) translate(-50%, -50%); opacity: 0; }
             100% { transform: scale(10) translate(-5%, -5%); opacity: 1; }
-        }
-
-        @keyframes munch {
-            0%, 100% { transform: scale(10) rotate(0deg); }
-            50% { transform: scale(11) rotate(5deg); }
         }
 
         #the-mouse.victory {
@@ -168,7 +158,7 @@
             left: 50%;
             z-index: 9999;
             font-size: 5rem;
-            animation: victoryPop 1.5s forwards, munch 0.5s 1.5s infinite;
+            animation: victoryPop 1.5s forwards;
             margin: 0;
             background: rgba(253, 246, 227, 0.9);
             width: 100vw;
@@ -199,7 +189,7 @@
         </div>
 
         <div class="action-container">
-            <button id="locate-btn" class="action-btn" onclick="zoomToUser()">🎯 HITTA MIG</button>
+            <button id="locate-btn" class="action-btn" onclick="toggleView()">🎯 HITTA MIG</button>
             <button id="text-btn" class="action-btn" onclick="toggleSearchUI()">🔍 SÖK</button> 
             <button id="voice-btn" class="action-btn" onclick="startVoiceSearch()">🎤 RÖSTSÖK</button>
             <button id="start-btn" class="action-btn hidden" onclick="startGame()">STARTA 🧀</button>
@@ -216,7 +206,9 @@
 <script>
     let map, targetMarker, userMarker, connectionLine, userCoords, initialTotalKm;
     let currentTargetCoords = null;
-    let hasZoomedToUser = false;
+    let currentTargetName = "MÅLET";
+    let initialZoomPerformed = false; // Ny flagga för första inzoomningen
+    let isShowingUser = true; 
     let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
     let lastTarget = JSON.parse(localStorage.getItem('mouse_last_target'));
     let touchTimer;
@@ -242,36 +234,71 @@
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         updateButtonUI();
 
+        // 1. Kolla om det finns en sparad plats först
         if (lastTarget) {
+            currentTargetName = lastTarget.name || "Mål";
             setTarget(lastTarget.coords, false);
-            if (lastTarget.name) {
-                document.getElementById('dist-info').innerHTML = `Senaste: <b>${lastTarget.name}</b>`;
-            }
+            map.setView(lastTarget.coords, 14); // Zooma till målet direkt
+            initialZoomPerformed = true;
+            isShowingUser = true; // Sätter status till "visar mål"
+            updateLocateBtnText();
         }
 
+        // 2. Starta GPS-bevakning
         if (navigator.geolocation) {
             navigator.geolocation.watchPosition(pos => {
                 userCoords = [pos.coords.latitude, pos.coords.longitude];
-                if (!hasZoomedToUser) { zoomToUser(); hasZoomedToUser = true; } 
-                else if (userMarker) { userMarker.setLatLng(userCoords); }
+                
+                // Om vi inte zoomat till ett mål än, zooma till användaren nu
+                if (!initialZoomPerformed) { 
+                    zoomToUser(); 
+                    initialZoomPerformed = true; 
+                }
+                
+                if (!userMarker) {
+                    userMarker = L.circleMarker(userCoords, {
+                        radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8
+                    }).addTo(map);
+                } else {
+                    userMarker.setLatLng(userCoords);
+                }
                 updateLogic();
             }, null, {enableHighAccuracy: true});
         }
 
-        map.on('click', e => { playClickSound(); setTarget(e.latlng, true); });
+        map.on('click', e => { 
+            playClickSound(); 
+            currentTargetName = "Markerad plats";
+            setTarget(e.latlng, true); 
+        });
         document.querySelectorAll('button').forEach(btn => btn.addEventListener('click', playClickSound));
         document.getElementById('text-search-input').addEventListener('keypress', e => { if (e.key === 'Enter') executeTextSearch(); });
         setupLongPress();
     }
 
+    function toggleView() {
+        if (!currentTargetCoords || isShowingUser) {
+            zoomToUser();
+            isShowingUser = false;
+        } else {
+            map.flyTo(currentTargetCoords, 14);
+            isShowingUser = true;
+        }
+        updateLocateBtnText();
+    }
+
+    function updateLocateBtnText() {
+        const btn = document.getElementById('locate-btn');
+        if (!currentTargetCoords || isShowingUser) {
+            btn.innerHTML = "🎯 HITTA MIG";
+        } else {
+            btn.innerHTML = `🏁 ${currentTargetName.toUpperCase()}`;
+        }
+    }
+
     function zoomToUser() {
         if (userCoords) {
             map.flyTo(userCoords, 16);
-            map.once('moveend', () => {
-                if (!userMarker) {
-                    userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8}).addTo(map);
-                }
-            });
         }
     }
 
@@ -279,13 +306,15 @@
         currentTargetCoords = latlng;
         if (targetMarker) targetMarker.setLatLng(latlng);
         else targetMarker = L.marker(latlng).addTo(map);
+        
         if (shouldSave) {
             localStorage.setItem('mouse_last_target', JSON.stringify({
                 coords: latlng,
-                name: document.getElementById('text-search-input').value || "Markerad plats"
+                name: currentTargetName
             }));
         }
         updateLogic();
+        updateLocateBtnText();
     }
 
     function updateLogic() {
@@ -293,7 +322,7 @@
             const d = map.distance(userCoords, currentTargetCoords) / 1000;
             if (connectionLine) connectionLine.setLatLngs([userCoords, currentTargetCoords]);
             else connectionLine = L.polyline([userCoords, currentTargetCoords], {color: '#007bff', weight: 3, dashArray: '10, 10'}).addTo(map);
-            document.getElementById('dist-info').innerHTML = `<b>${d.toFixed(1)} km</b> kvar!`;
+            document.getElementById('dist-info').innerHTML = `<b>${d.toFixed(1)} km</b> till ${currentTargetName}`;
             document.getElementById('start-btn').classList.remove('hidden');
         }
     }
@@ -311,9 +340,10 @@
     function handleSlotClick(index) {
         const data = savedLocations[index];
         if (data) {
+            currentTargetName = data.name;
             setTarget(data.coords, true);
             map.flyTo(data.coords, 14);
-            document.getElementById('dist-info').innerHTML = `Mål: <b>${data.name}</b>`;
+            isShowingUser = true; 
         }
     }
 
@@ -345,27 +375,20 @@
     async function executeTextSearch() {
         const input = document.getElementById('text-search-input');
         const query = input.value;
-        const btn = document.getElementById('text-btn');
         if (!query) return;
-        btn.innerText = "⏳";
         try {
             const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
             const data = await res.json();
             if (data.length > 0) {
                 const pos = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-                const locationName = data[0].display_name.split(',')[0];
-                localStorage.setItem('mouse_last_target', JSON.stringify({ coords: pos, name: locationName }));
-                setTarget(pos, false); 
+                currentTargetName = data[0].display_name.split(',')[0];
+                setTarget(pos, true); 
                 map.flyTo(pos, 14);
                 document.getElementById('search-container').classList.add('hidden');
                 input.value = ""; 
-                btn.innerText = "🔍 SÖK";
-                document.getElementById('dist-info').innerHTML = `Mål: <b>${locationName}</b>`;
-            } else {
-                alert("Hittade inget! 🐭");
-                btn.innerText = "🔍 SÖK";
+                isShowingUser = true;
             }
-        } catch (e) { btn.innerText = "🔍 SÖK"; }
+        } catch (e) {}
     }
 
     async function startVoiceSearch() {
@@ -377,8 +400,7 @@
         btn.classList.add('listening');
         recognition.start();
         recognition.onresult = async (event) => {
-            const query = event.results[0][0].transcript;
-            document.getElementById('text-search-input').value = query;
+            document.getElementById('text-search-input').value = event.results[0][0].transcript;
             executeTextSearch();
             btn.classList.remove('listening');
         };
