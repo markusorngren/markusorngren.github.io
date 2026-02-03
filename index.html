@@ -2,419 +2,222 @@
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Marcus Mouse & Cheese Tracker - Pro Edition</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Musen äter äpplet - Med Ljud!</title>
     <style>
-        :root {
-            --app-height: 100svh;
-        }
-
-        body { 
-            font-family: 'Segoe UI', sans-serif; 
-            margin: 0; 
-            background: #fdf6e3; 
-            overflow: hidden; 
-            height: var(--app-height); 
-            width: 100vw; 
-            position: fixed; 
+        body {
             display: flex;
-            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #87CEEB;
+            margin: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        .ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 30vh;
+            background-color: #4CAF50;
+            z-index: 1;
+        }
+
+        .scene {
+            position: relative;
+            width: 600px;
+            height: 200px;
+            z-index: 2;
+        }
+
+        .apple {
+            font-size: 80px;
+            position: absolute;
+            left: 50%;
+            bottom: 20px;
+            transform: translateX(-50%);
+            opacity: 1;
+        }
+
+        .mouse {
+            font-size: 80px;
+            position: absolute;
+            bottom: 20px;
+            left: -150px;
+            transform: scaleX(1);
+        }
+
+        /* Vi använder klasser för att starta animationen när man klickar */
+        .run-animation .apple {
+            animation: apple-eaten 4s forwards;
+            animation-delay: 2s; 
+        }
+
+        .run-animation .mouse {
+            animation: mouse-sequence 6s forwards;
+        }
+
+        @keyframes mouse-sequence {
+            0% { left: -150px; transform: scaleX(1); }
+            30% { left: 42%; transform: scaleX(1); } /* Framme */
+            35% { transform: scaleX(1) rotate(-10deg); } /* Tugga 1 */
+            40% { transform: scaleX(1) rotate(0deg); }
+            45% { transform: scaleX(1) rotate(-10deg); } /* Tugga 2 */
+            50% { transform: scaleX(1) rotate(0deg); }
+            60% { left: 42%; transform: scaleX(1); } /* Paus */
+            65% { transform: scaleX(-1); } /* Vänd */
+            100% { left: -150px; transform: scaleX(-1); } /* Stick iväg */
+        }
+
+        @keyframes apple-eaten {
+            0% { opacity: 1; transform: translateX(-50%) scale(1); }
+            20% { opacity: 0.8; transform: translateX(-50%) scale(0.9) rotate(5deg); }
+            40% { opacity: 0.5; transform: translateX(-50%) scale(0.7) rotate(-5deg); }
+            60% { opacity: 0.2; transform: translateX(-50%) scale(0.4); }
+            100% { opacity: 0; transform: translateX(-50%) scale(0); }
+        }
+
+        .cloud {
+            position: absolute;
+            top: 50px;
+            font-size: 60px;
+            opacity: 0.8;
+            animation: float 20s linear infinite;
         }
         
-        #map-page, #game-page { 
-            height: var(--app-height); 
-            width: 100vw; 
-            display: flex; 
-            flex-direction: column; 
-            overflow: hidden; 
+        @keyframes float {
+            from { left: -100px; }
+            to { left: 100%; }
         }
 
-        #map { 
-            flex: 1; 
-            width: 100%; 
-            min-height: 0; 
-        }
-        
-        .hidden { display: none !important; }
-        
-        .panel { 
-            padding: 10px 10px calc(15px + env(safe-area-inset-bottom)); 
-            background: white; 
-            text-align: center; 
-            box-shadow: 0 -4px 15px rgba(0,0,0,0.1); 
-            z-index: 1000; 
-            border-radius: 20px 20px 0 0;
-            flex-shrink: 0; 
-        }
-        
-        button { cursor: pointer; font-weight: bold; transition: all 0.2s; border: none; color: #000; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
-        button:active { transform: scale(0.95); }
-
-        .save-btn-container { display: flex; justify-content: center; gap: 6px; margin-bottom: 8px; padding: 2px; }
-        .slot-btn { 
-            width: 48px; height: 48px; background: #bbb; box-shadow: 0 3px 6px rgba(0,0,0,0.1); 
-            display: flex; align-items: center; justify-content: center; padding: 0 2px; flex-shrink: 0;
-        }
-
-        .btn-text-container { width: 100%; overflow: hidden; white-space: nowrap; position: relative; }
-        .scrolling-text { display: inline-block; font-size: 0.55rem; text-transform: uppercase; pointer-events: none; }
-        .scroll-active { animation: scroll-text 5s linear infinite; padding-left: 100%; }
-
-        @keyframes scroll-text { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
-
-        #btn-0 { border-radius: 50%; } #btn-0.filled { background: #4CAF50; }
-        #btn-1 { border-radius: 8px; } #btn-1.filled { background: #2196F3; }
-        #btn-2 { border-radius: 25px; width: 65px; height: 38px; } #btn-2.filled { background: #FF9800; }
-        #btn-3 { width: 55px; height: 48px; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); padding-top: 10px; } #btn-3.filled { background: #9C27B0; }
-
-        #search-container {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 10px;
-            transition: all 0.3s ease;
-        }
-        #text-search-input {
-            flex: 1;
-            padding: 8px 15px;
-            border-radius: 20px;
-            border: 2px solid #ddd;
-            font-size: 16px; 
-            outline: none;
-        }
-        #text-search-input:focus { border-color: #17a2b8; }
-        #go-btn {
-            background: #17a2b8;
+        /* Start-knappen */
+        #startBtn {
+            position: absolute;
+            z-index: 10;
+            padding: 15px 30px;
+            font-size: 24px;
+            background-color: #ff9800;
             color: white;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            font-size: 1.2rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
+        #startBtn:hover {
+            transform: scale(1.1);
+            background-color: #f57c00;
+        }
+        #startBtn.hidden {
+            display: none;
         }
 
-        .action-container { 
-            display: flex; 
-            justify-content: center; 
-            gap: 8px; 
-            width: 100%; 
-            max-width: 400px; 
-            margin: 0 auto; 
-        }
-        .action-btn { flex: 1; padding: 8px 5px; border-radius: 40px; font-size: 0.75rem; box-shadow: 0 4px 0 rgba(0,0,0,0.15); min-height: 42px; }
-        
-        #locate-btn { background: #007bff; color: white; }
-        #text-btn { background: #17a2b8; color: white; } 
-        #voice-btn { background: #444; color: white; }
-        #voice-btn.listening { background: #ff4444; animation: pulse 1.5s infinite; }
-        #start-btn { background: #ffcc00; color: #000; }
-
-        #dist-info { margin-bottom: 8px; font-weight: bold; font-size: 0.95rem; color: #000; }
-
-        #game-page { align-items: center; padding: 5px; }
-        .apple-grid { 
-            display: grid; 
-            grid-template-columns: repeat(5, 1fr); 
-            gap: 5px; 
-            width: 95%; 
-            max-width: 280px; 
-            margin-top: 10px; 
-            padding: 10px; 
-            background: rgba(255,255,255,0.5); 
-            border-radius: 15px; 
-            position: relative; 
-            max-height: 60vh;
-            overflow-y: auto;
-        }
-        .step { font-size: 1.4rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
-        #the-mouse { position: absolute; font-size: 1.8rem; transition: all 0.8s ease-in-out; z-index: 100; margin-top: -22px; margin-left: -8px; pointer-events: none; }
     </style>
 </head>
 <body>
 
-<div id="map-page">
-    <div id="map"></div>
-    <div class="panel">
-        <div id="dist-info">Söker din GPS... 📍</div>
-        
-        <div class="save-btn-container">
-            <button id="btn-0" class="slot-btn" onclick="handleSlotClick(0)" oncontextmenu="saveCurrentPos(0); return false;"><div class="btn-text-container"><span class="scrolling-text">TOM 1</span></div></button>
-            <button id="btn-1" class="slot-btn" onclick="handleSlotClick(1)" oncontextmenu="saveCurrentPos(1); return false;"><div class="btn-text-container"><span class="scrolling-text">TOM 2</span></div></button>
-            <button id="btn-2" class="slot-btn" onclick="handleSlotClick(2)" oncontextmenu="saveCurrentPos(2); return false;"><div class="btn-text-container"><span class="scrolling-text">TOM 3</span></div></button>
-            <button id="btn-3" class="slot-btn" onclick="handleSlotClick(3)" oncontextmenu="saveCurrentPos(3); return false;"><div class="btn-text-container"><span class="scrolling-text">TOM 4</span></div></button>
-        </div>
+    <button id="startBtn">▶ Starta showen</button>
 
-        <div id="search-container" class="hidden">
-            <input type="text" id="text-search-input" placeholder="Var ska vi åka?">
-            <button id="go-btn" onclick="executeTextSearch()">➔</button>
-        </div>
+    <div class="cloud" style="animation-duration: 25s; top: 30px;">☁️</div>
+    <div class="cloud" style="animation-duration: 35s; top: 80px; font-size: 40px;">☁️</div>
 
-        <div class="action-container">
-            <button id="locate-btn" class="action-btn" onclick="zoomToUser()">🎯 HITTA MIG</button>
-            <button id="text-btn" class="action-btn" onclick="toggleSearchUI()">🔍 SÖK</button> 
-            <button id="voice-btn" class="action-btn" onclick="startVoiceSearch()">🎤 RÖSTSÖK</button>
-            <button id="start-btn" class="action-btn hidden" onclick="startGame()">STARTA 🧀</button>
-        </div>
+    <div class="scene" id="scene">
+        <div class="apple">🍎</div>
+        <div class="mouse">🐭</div>
     </div>
-</div>
 
-<div id="game-page" class="hidden">
-    <button style="background:#ff4444; color:white; margin-top: 10px; border-radius: 20px; padding: 6px 15px; font-size: 0.75rem;" onclick="location.reload()">AVBRYT</button>
-    <div class="apple-grid" id="path"><div id="the-mouse">🐭</div></div>
-</div>
+    <div class="ground"></div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-    let map, targetMarker, userMarker, connectionLine, userCoords, initialTotalKm;
-    let currentTargetCoords = null;
-    let hasZoomedToUser = false;
-    // Laddar sparade favoriter OCH senaste målet
-    let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
-    let lastTarget = JSON.parse(localStorage.getItem('mouse_last_target'));
-    let touchTimer;
+    <script>
+        const startBtn = document.getElementById('startBtn');
+        const scene = document.getElementById('scene');
 
-    function playClickSound() {
-        try {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // Funktion för att skapa ljud (Synthesizer)
+        // Detta är lite "Audio Magic" för att slippa ladda ner filer
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
             const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(3000, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(4500, audioCtx.currentTime + 0.05);
-            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
-        } catch(e) {}
-    }
+            const gainNode = audioCtx.createGain();
 
-    function initMap() {
-        map = L.map('map', { zoomControl: false }).setView([62, 15], 5);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        updateButtonUI();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
 
-        // Om det finns ett sparat mål från förra sessionen, sätt det direkt
-        if (lastTarget) {
-            setTarget(lastTarget.coords, false);
-            if (lastTarget.name) {
-                document.getElementById('dist-info').innerHTML = `Senaste: <b>${lastTarget.name}</b>`;
-            }
-        }
-
-        if (navigator.geolocation) {
-            navigator.geolocation.watchPosition(pos => {
-                userCoords = [pos.coords.latitude, pos.coords.longitude];
-                
-                if (!hasZoomedToUser) { 
-                    zoomToUser(); 
-                    hasZoomedToUser = true; 
-                } 
-                else if (userMarker) {
-                    userMarker.setLatLng(userCoords);
+            if (type === 'squeak') {
+                // Pip-ljud
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'crunch') {
+                // Krispigt tuggljud (Brus)
+                const bufferSize = audioCtx.sampleRate * 0.2; // 0.2 sekunder
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1; // Vitt brus
                 }
+
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
                 
-                updateLogic();
-            }, null, {enableHighAccuracy: true});
-        }
+                // Filter för att få det att låta mer som en tugga och mindre som statiskt brus
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 1000;
 
-        map.on('click', e => { 
-            playClickSound(); 
-            setTarget(e.latlng, true);
-        });
-        document.querySelectorAll('button').forEach(btn => btn.addEventListener('click', playClickSound));
-        
-        document.getElementById('text-search-input').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') executeTextSearch();
-        });
+                noise.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
 
-        setupLongPress();
-    }
-
-    function zoomToUser() {
-        if (userCoords) {
-            map.flyTo(userCoords, 16);
-            map.once('moveend', () => {
-                if (!userMarker) {
-                    userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8}).addTo(map);
-                }
-                if (!lastTarget) {
-                    document.getElementById('dist-info').innerText = "Vart ska vi åka?";
-                }
-            });
-        }
-    }
-
-    // Uppdaterad setTarget för att spara till localStorage
-    function setTarget(latlng, shouldSave = true) {
-        currentTargetCoords = latlng;
-        if (targetMarker) targetMarker.setLatLng(latlng);
-        else targetMarker = L.marker(latlng).addTo(map);
-
-        if (shouldSave) {
-            localStorage.setItem('mouse_last_target', JSON.stringify({
-                coords: latlng,
-                name: document.getElementById('text-search-input').value || "Markerad plats"
-            }));
-        }
-
-        updateLogic();
-    }
-
-    function updateLogic() {
-        if (userCoords && currentTargetCoords) {
-            const d = map.distance(userCoords, currentTargetCoords) / 1000;
-            if (connectionLine) connectionLine.setLatLngs([userCoords, currentTargetCoords]);
-            else connectionLine = L.polyline([userCoords, currentTargetCoords], {color: '#007bff', weight: 3, dashArray: '10, 10'}).addTo(map);
-            document.getElementById('dist-info').innerHTML = `<b>${d.toFixed(1)} km</b> kvar!`;
-            document.getElementById('start-btn').classList.remove('hidden');
-        }
-    }
-
-    function saveCurrentPos(index) {
-        if (!currentTargetCoords) return;
-        const label = prompt("Spara som:", "Mål " + (index+1));
-        if (label) {
-            savedLocations[index] = { coords: currentTargetCoords, name: label };
-            localStorage.setItem('mouse_favs', JSON.stringify(savedLocations));
-            updateButtonUI();
-        }
-    }
-
-    function handleSlotClick(index) {
-        const data = savedLocations[index];
-        if (data) {
-            setTarget(data.coords, true); // Sparar även favoriten som "senaste"
-            map.flyTo(data.coords, 14);
-            document.getElementById('dist-info').innerHTML = `Mål: <b>${data.name}</b>`;
-        }
-    }
-
-    function updateButtonUI() {
-        savedLocations.forEach((loc, i) => {
-            const btn = document.getElementById(`btn-${i}`);
-            const textSpan = btn.querySelector('.scrolling-text');
-            const container = btn.querySelector('.btn-text-container');
-            if (loc) {
-                textSpan.innerText = loc.name;
-                btn.classList.add('filled');
-                setTimeout(() => {
-                    if (textSpan.offsetWidth > container.offsetWidth) textSpan.classList.add('scroll-active');
-                }, 100);
-            }
-        });
-    }
-
-    function setupLongPress() {
-        const btns = document.querySelectorAll('.slot-btn');
-        btns.forEach((btn, i) => {
-            btn.addEventListener('touchstart', () => { touchTimer = setTimeout(() => saveCurrentPos(i), 800); }, {passive: true});
-            btn.addEventListener('touchend', () => clearTimeout(touchTimer));
-        });
-    }
-
-    function toggleSearchUI() {
-        const container = document.getElementById('search-container');
-        container.classList.toggle('hidden');
-        if (!container.classList.contains('hidden')) {
-            document.getElementById('text-search-input').focus();
-        }
-    }
-
-    async function executeTextSearch() {
-        const input = document.getElementById('text-search-input');
-        const query = input.value;
-        const btn = document.getElementById('text-btn');
-
-        if (!query) return;
-
-        btn.innerText = "⏳";
-        try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
-            const data = await res.json();
-            if (data.length > 0) {
-                const pos = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-                const locationName = data[0].display_name.split(',')[0];
+                gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
                 
-                // Sparar sökresultatet som senaste målet i localStorage
-                localStorage.setItem('mouse_last_target', JSON.stringify({ coords: pos, name: locationName }));
-                
-                setTarget(pos, false); 
-                map.flyTo(pos, 14);
-                document.getElementById('search-container').classList.add('hidden');
-                input.value = ""; 
-                btn.innerText = "🔍 SÖK";
-                document.getElementById('dist-info').innerHTML = `Mål: <b>${locationName}</b>`;
-            } else {
-                alert("Hittade inget! 🐭");
-                btn.innerText = "❓";
-                setTimeout(() => btn.innerText = "🔍 SÖK", 2000);
-            }
-        } catch (e) { 
-            btn.innerText = "FEL ❌"; 
-            setTimeout(() => btn.innerText = "🔍 SÖK", 2000);
-        }
-    }
-
-    async function startVoiceSearch() {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) return;
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'sv-SE';
-        const btn = document.getElementById('voice-btn');
-        btn.classList.add('listening');
-        btn.innerText = "LYSSNAR...";
-        recognition.start();
-        recognition.onresult = async (event) => {
-            const query = event.results[0][0].transcript;
-            btn.innerText = "SÖKER...";
-            document.getElementById('text-search-input').value = query;
-            executeTextSearch();
-            btn.classList.remove('listening');
-            setTimeout(() => btn.innerText = "🎤 RÖSTSÖK", 2000);
-        };
-    }
-
-    function startGame() {
-        const d = map.distance(userCoords, currentTargetCoords) / 1000;
-        initialTotalKm = Math.ceil(d);
-        document.getElementById('map-page').classList.add('hidden');
-        document.getElementById('game-page').classList.remove('hidden');
-        const grid = document.getElementById('path');
-        grid.innerHTML = '<div id="the-mouse">🐭</div>';
-        for (let i = 0; i < initialTotalKm; i++) {
-            const step = document.createElement('div');
-            step.className = 'step'; step.id = `step-${i}`;
-            step.innerHTML = (i === initialTotalKm - 1) ? '🧀' : '🍎';
-            grid.appendChild(step);
-        }
-        navigator.geolocation.watchPosition(updateProgress, null, {enableHighAccuracy: true});
-        setTimeout(() => moveMouse(0), 100);
-    }
-
-    function updateProgress(pos) {
-        const currentDist = map.distance([pos.coords.latitude, pos.coords.longitude], currentTargetCoords) / 1000;
-        const finishedKm = Math.floor(initialTotalKm - currentDist);
-        const mouse = document.getElementById('the-mouse');
-        for (let i = 0; i < initialTotalKm - 1; i++) {
-            const step = document.getElementById(`step-${i}`);
-            if (step) {
-                if (i < finishedKm) { step.innerHTML = '🍏'; step.style.opacity = "0.4"; }
-                else { step.innerHTML = '🍎'; step.style.opacity = "1"; }
+                noise.start();
             }
         }
-        if (currentDist < 0.05) { mouse.innerHTML = '🐭🧀'; moveMouse(initialTotalKm - 1); }
-        else { moveMouse(finishedKm >= 0 ? finishedKm : 0); }
-    }
 
-    function moveMouse(index) {
-        const mouse = document.getElementById('the-mouse');
-        const targetStep = document.getElementById(`step-${index}`);
-        if (targetStep) {
-            mouse.style.left = targetStep.offsetLeft + "px";
-            mouse.style.top = targetStep.offsetTop + "px";
-        }
-    }
+        startBtn.addEventListener('click', () => {
+            // Göm knappen
+            startBtn.classList.add('hidden');
+            
+            // Starta animationen
+            scene.classList.add('run-animation');
 
-    window.onload = initMap;
-</script>
+            // --- SYNKRONISERING AV LJUD (Timing) ---
+            
+            // 1. Musen kommer in (lite pip)
+            setTimeout(() => playSound('squeak'), 100);
+            setTimeout(() => playSound('squeak'), 800);
+
+            // 2. Äter äpplet (Tugg-ljud vid ca 2 sekunder)
+            // Vi matchar detta med CSS-animationen
+            setTimeout(() => playSound('crunch'), 2100);
+            setTimeout(() => playSound('crunch'), 2600);
+            setTimeout(() => playSound('crunch'), 3100);
+
+            // 3. Springer iväg (lite pip till)
+            setTimeout(() => {
+                playSound('squeak');
+            }, 4500);
+
+            // Återställ allt efter 7 sekunder så man kan köra igen
+            setTimeout(() => {
+                scene.classList.remove('run-animation');
+                startBtn.classList.remove('hidden');
+                // Tvinga en "reflow" för att CSS-animationen ska kunna starta om
+                void scene.offsetWidth; 
+            }, 7000);
+        });
+    </script>
 </body>
 </html>
