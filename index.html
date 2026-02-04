@@ -147,9 +147,17 @@
             opacity: 0.3 !important;
         }
 
+        /* VICTORY ANIMATIONS */
         @keyframes victoryPop {
-            0% { transform: scale(1) translate(-50%, -50%); opacity: 0; }
-            100% { transform: scale(1.8) translate(-5%, -5%); opacity: 1; }
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            80% { transform: translate(-50%, -50%) scale(2.0); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.8); opacity: 1; }
+        }
+
+        @keyframes victoryWobble {
+            0%, 100% { transform: translate(-50%, -50%) scale(1.8) rotate(0deg); }
+            25% { transform: translate(-50%, -50%) scale(1.8) rotate(-15deg); }
+            75% { transform: translate(-50%, -50%) scale(1.8) rotate(15deg); }
         }
 
         #the-mouse.victory {
@@ -158,14 +166,16 @@
             left: 50%;
             z-index: 9999;
             font-size: 5rem;
-            animation: victoryPop 1.5s forwards;
+            /* Pop one time, then wobble forever */
+            animation: victoryPop 0.6s ease-out forwards, victoryWobble 1s infinite ease-in-out 0.6s;
             margin: 0;
-            background: rgba(253, 246, 227, 0.9);
+            background: rgba(253, 246, 227, 0.95);
             width: 100vw;
             height: 100svh;
             display: flex;
             align-items: center;
             justify-content: center;
+            border-radius: 0;
         }
     </style>
 </head>
@@ -207,16 +217,30 @@
     let map, targetMarker, userMarker, connectionLine, userCoords, initialTotalKm;
     let currentTargetCoords = null;
     let currentTargetName = "MÅLET";
-    let initialZoomPerformed = false; // Ny flagga för första inzoomningen
+    let initialZoomPerformed = false; 
     let isShowingUser = true; 
     let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
     let lastTarget = JSON.parse(localStorage.getItem('mouse_last_target'));
     let touchTimer;
     let isFinished = false;
 
+    // --- LJUDMOTOR (Sound Engine) ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+
+    function initAudio() {
+        if (!audioCtx && AudioContext) {
+            audioCtx = new AudioContext();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
     function playClickSound() {
         try {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            initAudio();
+            if (!audioCtx) return;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'triangle';
@@ -229,27 +253,57 @@
         } catch(e) {}
     }
 
+    function playVictoryFanfare() {
+        try {
+            initAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            
+            // Noter: C4, E4, G4, C5 (C-Dur arpeggio)
+            const notes = [523.25, 659.25, 783.99, 1046.50];
+            
+            notes.forEach((freq, index) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = 'square'; // Lite "Nintendo"-känsla
+                osc.frequency.value = freq;
+                
+                const startTime = now + (index * 0.15);
+                const duration = (index === notes.length - 1) ? 0.6 : 0.12; // Sista tonen är lång
+                
+                gain.gain.setValueAtTime(0.1, startTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start(startTime);
+                osc.stop(startTime + duration);
+            });
+
+        } catch(e) { console.log("Fanfar fel:", e); }
+    }
+    // --------------------------------
+
     function initMap() {
-        map = L.map('map', { zoomControl: false }).setView([62, 15], 5);
+        map = L.map('map', { zoomControl: false }).setView([59.3, 14.1], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         updateButtonUI();
 
-        // 1. Kolla om det finns en sparad plats först
         if (lastTarget) {
             currentTargetName = lastTarget.name || "Mål";
             setTarget(lastTarget.coords, false);
-            map.setView(lastTarget.coords, 14); // Zooma till målet direkt
+            map.setView(lastTarget.coords, 14); 
             initialZoomPerformed = true;
-            isShowingUser = true; // Sätter status till "visar mål"
+            isShowingUser = true; 
             updateLocateBtnText();
         }
 
-        // 2. Starta GPS-bevakning
         if (navigator.geolocation) {
             navigator.geolocation.watchPosition(pos => {
                 userCoords = [pos.coords.latitude, pos.coords.longitude];
                 
-                // Om vi inte zoomat till ett mål än, zooma till användaren nu
                 if (!initialZoomPerformed) { 
                     zoomToUser(); 
                     initialZoomPerformed = true; 
@@ -274,6 +328,10 @@
         document.querySelectorAll('button').forEach(btn => btn.addEventListener('click', playClickSound));
         document.getElementById('text-search-input').addEventListener('keypress', e => { if (e.key === 'Enter') executeTextSearch(); });
         setupLongPress();
+        
+        // Initiera ljud vid första interaktion för att "låsa upp" AudioContext i webbläsaren
+        document.body.addEventListener('click', initAudio, {once:true});
+        document.body.addEventListener('touchstart', initAudio, {once:true});
     }
 
     function toggleView() {
@@ -408,6 +466,7 @@
 
     function startGame() {
         isFinished = false;
+        initAudio(); // Säkerställ att ljudmotorn är redo när spelet startar
         const d = map.distance(userCoords, currentTargetCoords) / 1000;
         initialTotalKm = Math.ceil(d);
         document.getElementById('map-page').classList.add('hidden');
@@ -439,7 +498,7 @@
             isFinished = true;
             mouse.innerHTML = '🐭🧀'; 
             mouse.classList.add('victory');
-            moveMouse(initialTotalKm - 1); 
+            playVictoryFanfare(); // SPELA FANFAREN HÄR! 🎵
         } else { 
             moveMouse(finishedKm >= 0 ? finishedKm : 0); 
         }
@@ -458,19 +517,3 @@
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
