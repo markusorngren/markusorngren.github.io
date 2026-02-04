@@ -88,7 +88,7 @@
         .slot-btn { 
             width: 50px; height: 50px; box-shadow: 0 3px 6px rgba(0,0,0,0.2); 
             display: flex; align-items: center; justify-content: center; padding: 0 2px; flex-shrink: 0;
-            opacity: 0.8; /* Lite blekare innan de är sparade */
+            opacity: 0.8; 
             border: 2px solid transparent;
         }
         .slot-btn.filled { 
@@ -100,11 +100,10 @@
         .btn-text-container { width: 100%; overflow: hidden; white-space: nowrap; position: relative; }
         .scrolling-text { display: inline-block; font-size: 0.55rem; text-transform: uppercase; pointer-events: none; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
 
-        /* FAST FÄRGSÄTTNING */
-        #btn-0 { border-radius: 50%; background: #4CAF50; } /* Grön */
-        #btn-1 { border-radius: 8px; background: #2196F3; } /* Blå */
-        #btn-2 { border-radius: 25px; width: 65px; height: 40px; background: #FF9800; } /* Orange */
-        #btn-3 { width: 55px; height: 50px; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); padding-top: 10px; background: #9C27B0; } /* Lila */
+        #btn-0 { border-radius: 50%; background: #4CAF50; } 
+        #btn-1 { border-radius: 8px; background: #2196F3; } 
+        #btn-2 { border-radius: 25px; width: 65px; height: 40px; background: #FF9800; } 
+        #btn-3 { width: 55px; height: 50px; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); padding-top: 10px; background: #9C27B0; } 
 
         #search-container {
             display: flex;
@@ -223,11 +222,11 @@
 
 <div id="welcome-overlay">
     <div class="welcome-content">
-        <h2>Hej! 🐭🧀</h2>
+        <h2>Hej! 🐭</h2>
         <p>Hjälp musen att hitta osten!</p>
         <ul>
-            <li>📍 <b>Klicka på kartan</b> för att välja mål.</li>
-            <li>💾 <b>Håll inne</b> en färgknapp för att spara platsen.</li>
+            <li>📍 <b>Klicka på kartan eller sök</b> för att välja resmål.</li>
+            <li>💾 <b>Håll inne en färgknapp</b> om du vill spara platsen.</li>
             <li>🚀 Tryck på <b>STARTA</b> för att börja resan!</li>
         </ul>
         <button class="ok-btn" onclick="closeInstructions()">Okej, jag fattar!</button>
@@ -261,7 +260,7 @@
 </div>
 
 <div id="game-page" class="hidden">
-    <button style="background:#ff4444; color:white; margin-top: 10px; border-radius: 20px; padding: 6px 15px; font-size: 0.75rem; z-index: 10000; position: relative;" onclick="location.reload()">AVBRYT</button>
+    <button style="background:#ff4444; color:white; margin-top: 10px; border-radius: 20px; padding: 6px 15px; font-size: 0.75rem; z-index: 10000; position: relative;" onclick="stopGame()">AVBRYT</button>
     <div class="apple-grid" id="path"><div id="the-mouse">🐭</div></div>
 </div>
 
@@ -279,6 +278,8 @@
     function closeInstructions() {
         playClickSound();
         document.getElementById('welcome-overlay').classList.add('hidden');
+        // Spara att vi har sett introt för denna session
+        sessionStorage.setItem('introSeen', 'true');
     }
 
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -325,6 +326,11 @@
     }
 
     function initMap() {
+        // Kolla om vi redan sett introt
+        if(sessionStorage.getItem('introSeen')) {
+            document.getElementById('welcome-overlay').classList.add('hidden');
+        }
+
         map = L.map('map', { zoomControl: false }).setView([59.3, 14.1], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         updateButtonUI();
@@ -474,6 +480,14 @@
         }
         navigator.geolocation.watchPosition(updateProgress, null, {enableHighAccuracy: true});
         setTimeout(() => moveMouse(0), 100);
+    }
+
+    // NY FUNKTION: Stoppar spelet utan att ladda om sidan
+    function stopGame() {
+        playClickSound();
+        isFinished = true;
+        document.getElementById('game-page').classList.add('hidden');
+        document.getElementById('map-page').classList.remove('hidden');
     }
 
     function updateProgress(pos) {
