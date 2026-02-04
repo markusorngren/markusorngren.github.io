@@ -38,6 +38,39 @@
         
         .hidden { display: none !important; }
         
+        /* INSTRUKTIONSRUTA */
+        #welcome-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .welcome-content {
+            background: white;
+            padding: 25px;
+            border-radius: 25px;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .welcome-content h2 { margin-top: 0; color: #ff9800; }
+        .welcome-content ul { text-align: left; margin: 20px 0; line-height: 1.6; }
+        .ok-btn {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            width: 100%;
+            border: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
         .panel { 
             padding: 10px 10px calc(15px + env(safe-area-inset-bottom)); 
             background: white; 
@@ -51,19 +84,27 @@
         button { cursor: pointer; font-weight: bold; transition: all 0.2s; border: none; color: #000; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
         button:active { transform: scale(0.95); }
 
-        .save-btn-container { display: flex; justify-content: center; gap: 6px; margin-bottom: 8px; padding: 2px; }
+        .save-btn-container { display: flex; justify-content: center; gap: 10px; margin-bottom: 8px; padding: 2px; }
         .slot-btn { 
-            width: 48px; height: 48px; background: #bbb; box-shadow: 0 3px 6px rgba(0,0,0,0.1); 
+            width: 50px; height: 50px; box-shadow: 0 3px 6px rgba(0,0,0,0.2); 
             display: flex; align-items: center; justify-content: center; padding: 0 2px; flex-shrink: 0;
+            opacity: 0.8; /* Lite blekare innan de är sparade */
+            border: 2px solid transparent;
+        }
+        .slot-btn.filled { 
+            opacity: 1; 
+            border: 2px solid rgba(0,0,0,0.3);
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
 
         .btn-text-container { width: 100%; overflow: hidden; white-space: nowrap; position: relative; }
-        .scrolling-text { display: inline-block; font-size: 0.55rem; text-transform: uppercase; pointer-events: none; }
+        .scrolling-text { display: inline-block; font-size: 0.55rem; text-transform: uppercase; pointer-events: none; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
 
-        #btn-0 { border-radius: 50%; } #btn-0.filled { background: #4CAF50; }
-        #btn-1 { border-radius: 8px; } #btn-1.filled { background: #2196F3; }
-        #btn-2 { border-radius: 25px; width: 65px; height: 38px; } #btn-2.filled { background: #FF9800; }
-        #btn-3 { width: 55px; height: 48px; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); padding-top: 10px; } #btn-3.filled { background: #9C27B0; }
+        /* FAST FÄRGSÄTTNING */
+        #btn-0 { border-radius: 50%; background: #4CAF50; } /* Grön */
+        #btn-1 { border-radius: 8px; background: #2196F3; } /* Blå */
+        #btn-2 { border-radius: 25px; width: 65px; height: 40px; background: #FF9800; } /* Orange */
+        #btn-3 { width: 55px; height: 50px; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); padding-top: 10px; background: #9C27B0; } /* Lila */
 
         #search-container {
             display: flex;
@@ -162,11 +203,10 @@
 
         #the-mouse.victory {
             position: fixed;
-            top: 50% !important; /* Tvinga mitten */
-            left: 50% !important; /* Tvinga mitten */
+            top: 50% !important;
+            left: 50% !important;
             z-index: 9999;
             font-size: 5rem;
-            /* Pop one time, then wobble forever */
             animation: victoryPop 0.6s ease-out forwards, victoryWobble 1s infinite ease-in-out 0.6s;
             margin: 0;
             background: rgba(253, 246, 227, 0.95);
@@ -180,6 +220,19 @@
     </style>
 </head>
 <body>
+
+<div id="welcome-overlay">
+    <div class="welcome-content">
+        <h2>Hej Marcus & Isidora! 🐭🧀</h2>
+        <p>Hjälp musen att hitta osten!</p>
+        <ul>
+            <li>📍 <b>Klicka på kartan</b> för att välja mål.</li>
+            <li>💾 <b>Håll inne</b> en färgknapp för att spara platsen.</li>
+            <li>🚀 Tryck på <b>STARTA</b> för att börja resan!</li>
+        </ul>
+        <button class="ok-btn" onclick="closeInstructions()">Okej, jag fattar!</button>
+    </div>
+</div>
 
 <div id="map-page">
     <div id="map"></div>
@@ -221,20 +274,17 @@
     let isShowingUser = true; 
     let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
     let lastTarget = JSON.parse(localStorage.getItem('mouse_last_target'));
-    let touchTimer;
-    let isFinished = false;
+    let touchTimer, audioCtx, isFinished = false;
 
-    // --- LJUDMOTOR (Sound Engine) ---
+    function closeInstructions() {
+        playClickSound();
+        document.getElementById('welcome-overlay').classList.add('hidden');
+    }
+
     const AudioContext = window.AudioContext || window.webkitAudioContext;
-    let audioCtx;
-
     function initAudio() {
-        if (!audioCtx && AudioContext) {
-            audioCtx = new AudioContext();
-        }
-        if (audioCtx && audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
+        if (!audioCtx && AudioContext) audioCtx = new AudioContext();
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
     }
 
     function playClickSound() {
@@ -258,33 +308,21 @@
             initAudio();
             if (!audioCtx) return;
             const now = audioCtx.currentTime;
-            
-            // Noter: C4, E4, G4, C5 (C-Dur arpeggio)
             const notes = [523.25, 659.25, 783.99, 1046.50];
-            
             notes.forEach((freq, index) => {
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
-                
-                osc.type = 'square'; // Lite "Nintendo"-känsla
+                osc.type = 'square';
                 osc.frequency.value = freq;
-                
                 const startTime = now + (index * 0.15);
-                const duration = (index === notes.length - 1) ? 0.6 : 0.12; // Sista tonen är lång
-                
+                const duration = (index === notes.length - 1) ? 0.6 : 0.12;
                 gain.gain.setValueAtTime(0.1, startTime);
                 gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-                
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                
-                osc.start(startTime);
-                osc.stop(startTime + duration);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(startTime); osc.stop(startTime + duration);
             });
-
-        } catch(e) { console.log("Fanfar fel:", e); }
+        } catch(e) {}
     }
-    // --------------------------------
 
     function initMap() {
         map = L.map('map', { zoomControl: false }).setView([59.3, 14.1], 5);
@@ -296,23 +334,15 @@
             setTarget(lastTarget.coords, false);
             map.setView(lastTarget.coords, 14); 
             initialZoomPerformed = true;
-            isShowingUser = true; 
             updateLocateBtnText();
         }
 
         if (navigator.geolocation) {
             navigator.geolocation.watchPosition(pos => {
                 userCoords = [pos.coords.latitude, pos.coords.longitude];
-                
-                if (!initialZoomPerformed) { 
-                    zoomToUser(); 
-                    initialZoomPerformed = true; 
-                }
-                
+                if (!initialZoomPerformed) { zoomToUser(); initialZoomPerformed = true; }
                 if (!userMarker) {
-                    userMarker = L.circleMarker(userCoords, {
-                        radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8
-                    }).addTo(map);
+                    userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8}).addTo(map);
                 } else {
                     userMarker.setLatLng(userCoords);
                 }
@@ -320,59 +350,31 @@
             }, null, {enableHighAccuracy: true});
         }
 
-        map.on('click', e => { 
-            playClickSound(); 
-            currentTargetName = "Markerad plats";
-            setTarget(e.latlng, true); 
-        });
+        map.on('click', e => { playClickSound(); currentTargetName = "Markerad plats"; setTarget(e.latlng, true); });
         document.querySelectorAll('button').forEach(btn => btn.addEventListener('click', playClickSound));
-        document.getElementById('text-search-input').addEventListener('keypress', e => { if (e.key === 'Enter') executeTextSearch(); });
         setupLongPress();
-        
-        // Initiera ljud vid första interaktion för att "låsa upp" AudioContext i webbläsaren
-        document.body.addEventListener('click', initAudio, {once:true});
         document.body.addEventListener('touchstart', initAudio, {once:true});
     }
 
     function toggleView() {
-        if (!currentTargetCoords || isShowingUser) {
-            zoomToUser();
-            isShowingUser = false;
-        } else {
-            map.flyTo(currentTargetCoords, 14);
-            isShowingUser = true;
-        }
+        if (!currentTargetCoords || isShowingUser) { zoomToUser(); isShowingUser = false; }
+        else { map.flyTo(currentTargetCoords, 14); isShowingUser = true; }
         updateLocateBtnText();
     }
 
     function updateLocateBtnText() {
         const btn = document.getElementById('locate-btn');
-        if (!currentTargetCoords || isShowingUser) {
-            btn.innerHTML = "🎯 HITTA MIG";
-        } else {
-            btn.innerHTML = `🏁 ${currentTargetName.toUpperCase()}`;
-        }
+        btn.innerHTML = (!currentTargetCoords || isShowingUser) ? "🎯 HITTA MIG" : `🏁 ${currentTargetName.toUpperCase()}`;
     }
 
-    function zoomToUser() {
-        if (userCoords) {
-            map.flyTo(userCoords, 16);
-        }
-    }
+    function zoomToUser() { if (userCoords) map.flyTo(userCoords, 16); }
 
     function setTarget(latlng, shouldSave = true) {
         currentTargetCoords = latlng;
         if (targetMarker) targetMarker.setLatLng(latlng);
         else targetMarker = L.marker(latlng).addTo(map);
-        
-        if (shouldSave) {
-            localStorage.setItem('mouse_last_target', JSON.stringify({
-                coords: latlng,
-                name: currentTargetName
-            }));
-        }
-        updateLogic();
-        updateLocateBtnText();
+        if (shouldSave) localStorage.setItem('mouse_last_target', JSON.stringify({coords: latlng, name: currentTargetName}));
+        updateLogic(); updateLocateBtnText();
     }
 
     function updateLogic() {
@@ -397,28 +399,24 @@
 
     function handleSlotClick(index) {
         const data = savedLocations[index];
-        if (data) {
-            currentTargetName = data.name;
-            setTarget(data.coords, true);
-            map.flyTo(data.coords, 14);
-            isShowingUser = true; 
-        }
+        if (data) { currentTargetName = data.name; setTarget(data.coords, true); map.flyTo(data.coords, 14); isShowingUser = true; }
     }
 
     function updateButtonUI() {
         savedLocations.forEach((loc, i) => {
             const btn = document.getElementById(`btn-${i}`);
-            const textSpan = btn.querySelector('.scrolling-text');
-            if (loc) {
-                textSpan.innerText = loc.name;
-                btn.classList.add('filled');
+            if (loc) { 
+                btn.querySelector('.scrolling-text').innerText = loc.name; 
+                btn.classList.add('filled'); 
+            } else {
+                btn.querySelector('.scrolling-text').innerText = "Spara " + (i+1);
+                btn.classList.remove('filled');
             }
         });
     }
 
     function setupLongPress() {
-        const btns = document.querySelectorAll('.slot-btn');
-        btns.forEach((btn, i) => {
+        document.querySelectorAll('.slot-btn').forEach((btn, i) => {
             btn.addEventListener('touchstart', () => { touchTimer = setTimeout(() => saveCurrentPos(i), 800); }, {passive: true});
             btn.addEventListener('touchend', () => clearTimeout(touchTimer));
         });
@@ -431,8 +429,7 @@
     }
 
     async function executeTextSearch() {
-        const input = document.getElementById('text-search-input');
-        const query = input.value;
+        const query = document.getElementById('text-search-input').value;
         if (!query) return;
         try {
             const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
@@ -440,33 +437,29 @@
             if (data.length > 0) {
                 const pos = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
                 currentTargetName = data[0].display_name.split(',')[0];
-                setTarget(pos, true); 
-                map.flyTo(pos, 14);
+                setTarget(pos, true); map.flyTo(pos, 14);
                 document.getElementById('search-container').classList.add('hidden');
-                input.value = ""; 
                 isShowingUser = true;
             }
         } catch (e) {}
     }
 
-    async function startVoiceSearch() {
+    function startVoiceSearch() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) return;
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'sv-SE';
-        const btn = document.getElementById('voice-btn');
-        btn.classList.add('listening');
-        recognition.start();
-        recognition.onresult = async (event) => {
-            document.getElementById('text-search-input').value = event.results[0][0].transcript;
+        const rec = new SpeechRecognition();
+        rec.lang = 'sv-SE';
+        document.getElementById('voice-btn').classList.add('listening');
+        rec.start();
+        rec.onresult = (e) => {
+            document.getElementById('text-search-input').value = e.results[0][0].transcript;
             executeTextSearch();
-            btn.classList.remove('listening');
+            document.getElementById('voice-btn').classList.remove('listening');
         };
     }
 
     function startGame() {
-        isFinished = false;
-        initAudio(); 
+        isFinished = false; initAudio();
         const d = map.distance(userCoords, currentTargetCoords) / 1000;
         initialTotalKm = Math.ceil(d);
         document.getElementById('map-page').classList.add('hidden');
@@ -488,21 +481,14 @@
         const currentDist = map.distance([pos.coords.latitude, pos.coords.longitude], currentTargetCoords) / 1000;
         const finishedKm = Math.floor(initialTotalKm - currentDist);
         const mouse = document.getElementById('the-mouse');
-        
         for (let i = 0; i < initialTotalKm - 1; i++) {
             const step = document.getElementById(`step-${i}`);
             if (step && i < finishedKm) step.classList.add('eat-animation');
         }
-
         if (currentDist < 0.05) { 
             isFinished = true;
             mouse.innerHTML = '🐭🧀'; 
-            
-            // --- NYTT: Rensa gamla positioner så den hamnar i mitten ---
-            mouse.style.left = '';
-            mouse.style.top = '';
-            // ----------------------------------------------------------
-
+            mouse.style.left = ''; mouse.style.top = '';
             mouse.classList.add('victory');
             playVictoryFanfare(); 
         } else { 
