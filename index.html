@@ -162,8 +162,8 @@
 
         #the-mouse.victory {
             position: fixed;
-            top: 50%;
-            left: 50%;
+            top: 50% !important; /* Tvinga mitten */
+            left: 50% !important; /* Tvinga mitten */
             z-index: 9999;
             font-size: 5rem;
             /* Pop one time, then wobble forever */
@@ -466,7 +466,7 @@
 
     function startGame() {
         isFinished = false;
-        initAudio(); // Säkerställ att ljudmotorn är redo när spelet startar
+        initAudio(); 
         const d = map.distance(userCoords, currentTargetCoords) / 1000;
         initialTotalKm = Math.ceil(d);
         document.getElementById('map-page').classList.add('hidden');
@@ -497,8 +497,14 @@
         if (currentDist < 0.05) { 
             isFinished = true;
             mouse.innerHTML = '🐭🧀'; 
+            
+            // --- NYTT: Rensa gamla positioner så den hamnar i mitten ---
+            mouse.style.left = '';
+            mouse.style.top = '';
+            // ----------------------------------------------------------
+
             mouse.classList.add('victory');
-            playVictoryFanfare(); // SPELA FANFAREN HÄR! 🎵
+            playVictoryFanfare(); 
         } else { 
             moveMouse(finishedKm >= 0 ? finishedKm : 0); 
         }
