@@ -38,7 +38,6 @@
         
         .hidden { display: none !important; }
         
-        /* INSTRUKTIONSRUTA */
         #welcome-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -187,7 +186,6 @@
             opacity: 0.3 !important;
         }
 
-        /* VICTORY ANIMATIONS */
         @keyframes victoryPop {
             0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
             80% { transform: translate(-50%, -50%) scale(2.0); opacity: 1; }
@@ -278,7 +276,6 @@
     function closeInstructions() {
         playClickSound();
         document.getElementById('welcome-overlay').classList.add('hidden');
-        // Spara att vi har sett introt för denna session
         sessionStorage.setItem('introSeen', 'true');
     }
 
@@ -326,7 +323,6 @@
     }
 
     function initMap() {
-        // Kolla om vi redan sett introt
         if(sessionStorage.getItem('introSeen')) {
             document.getElementById('welcome-overlay').classList.add('hidden');
         }
@@ -346,7 +342,17 @@
         if (navigator.geolocation) {
             navigator.geolocation.watchPosition(pos => {
                 userCoords = [pos.coords.latitude, pos.coords.longitude];
-                if (!initialZoomPerformed) { zoomToUser(); initialZoomPerformed = true; }
+                
+                if (!initialZoomPerformed) { 
+                    zoomToUser(); 
+                    initialZoomPerformed = true; 
+                    isShowingUser = true;
+                }
+
+                if (isShowingUser && !isFinished) {
+                    map.panTo(userCoords);
+                }
+
                 if (!userMarker) {
                     userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8}).addTo(map);
                 } else {
@@ -356,24 +362,59 @@
             }, null, {enableHighAccuracy: true});
         }
 
-        map.on('click', e => { playClickSound(); currentTargetName = "Markerad plats"; setTarget(e.latlng, true); });
+        // UPPDATERAD LOGIK: Hämta närmaste platsnamn vid klick
+        map.on('click', async e => { 
+            playClickSound(); 
+            currentTargetName = "Söker plats..."; 
+            updateLocateBtnText();
+
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${e.latlng.lat}&lon=${e.latlng.lng}`);
+                const data = await res.json();
+                if (data && data.display_name) {
+                    currentTargetName = data.display_name.split(',')[0];
+                } else {
+                    currentTargetName = "Markerad plats";
+                }
+            } catch (err) {
+                currentTargetName = "Markerad plats";
+            }
+            
+            setTarget(e.latlng, true); 
+        });
+
+        map.on('dragstart', () => {
+            if (isShowingUser) {
+                isShowingUser = false;
+                updateLocateBtnText();
+            }
+        });
+
         document.querySelectorAll('button').forEach(btn => btn.addEventListener('click', playClickSound));
         setupLongPress();
         document.body.addEventListener('touchstart', initAudio, {once:true});
     }
 
     function toggleView() {
-        if (!currentTargetCoords || isShowingUser) { zoomToUser(); isShowingUser = false; }
-        else { map.flyTo(currentTargetCoords, 14); isShowingUser = true; }
+        if (!currentTargetCoords || !isShowingUser) { 
+            zoomToUser(); 
+            isShowingUser = true; 
+        } else { 
+            map.flyTo(currentTargetCoords, 14); 
+            isShowingUser = false; 
+        }
         updateLocateBtnText();
     }
 
     function updateLocateBtnText() {
         const btn = document.getElementById('locate-btn');
-        btn.innerHTML = (!currentTargetCoords || isShowingUser) ? "🎯 HITTA MIG" : `🏁 ${currentTargetName.toUpperCase()}`;
+        btn.innerHTML = (isShowingUser) ? "🎯 HITTA MIG" : `🏁 ${currentTargetName.toUpperCase()}`;
+        btn.style.boxShadow = isShowingUser ? "0 0 15px rgba(0, 123, 255, 0.6)" : "0 4px 0 rgba(0,0,0,0.15)";
     }
 
-    function zoomToUser() { if (userCoords) map.flyTo(userCoords, 16); }
+    function zoomToUser() { 
+        if (userCoords) map.flyTo(userCoords, 16); 
+    }
 
     function setTarget(latlng, shouldSave = true) {
         currentTargetCoords = latlng;
@@ -395,7 +436,7 @@
 
     function saveCurrentPos(index) {
         if (!currentTargetCoords) return;
-        const label = prompt("Spara som:", "Mål " + (index+1));
+        const label = prompt("Spara som:", currentTargetName || "Mål " + (index+1));
         if (label) {
             savedLocations[index] = { coords: currentTargetCoords, name: label };
             localStorage.setItem('mouse_favs', JSON.stringify(savedLocations));
@@ -405,7 +446,12 @@
 
     function handleSlotClick(index) {
         const data = savedLocations[index];
-        if (data) { currentTargetName = data.name; setTarget(data.coords, true); map.flyTo(data.coords, 14); isShowingUser = true; }
+        if (data) { 
+            currentTargetName = data.name; 
+            setTarget(data.coords, true); 
+            map.flyTo(data.coords, 14); 
+            isShowingUser = false; 
+        }
     }
 
     function updateButtonUI() {
@@ -445,7 +491,7 @@
                 currentTargetName = data[0].display_name.split(',')[0];
                 setTarget(pos, true); map.flyTo(pos, 14);
                 document.getElementById('search-container').classList.add('hidden');
-                isShowingUser = true;
+                isShowingUser = false;
             }
         } catch (e) {}
     }
@@ -465,7 +511,8 @@
     }
 
     function startGame() {
-        isFinished = false; initAudio();
+        isFinished = true;
+        initAudio();
         const d = map.distance(userCoords, currentTargetCoords) / 1000;
         initialTotalKm = Math.ceil(d);
         document.getElementById('map-page').classList.add('hidden');
@@ -482,16 +529,15 @@
         setTimeout(() => moveMouse(0), 100);
     }
 
-    // NY FUNKTION: Stoppar spelet utan att ladda om sidan
     function stopGame() {
         playClickSound();
-        isFinished = true;
+        isFinished = false;
         document.getElementById('game-page').classList.add('hidden');
         document.getElementById('map-page').classList.remove('hidden');
     }
 
     function updateProgress(pos) {
-        if (isFinished) return;
+        if (!document.getElementById('map-page').classList.contains('hidden')) return;
         const currentDist = map.distance([pos.coords.latitude, pos.coords.longitude], currentTargetCoords) / 1000;
         const finishedKm = Math.floor(initialTotalKm - currentDist);
         const mouse = document.getElementById('the-mouse');
@@ -500,9 +546,7 @@
             if (step && i < finishedKm) step.classList.add('eat-animation');
         }
         if (currentDist < 0.05) { 
-            isFinished = true;
             mouse.innerHTML = '🐭🧀'; 
-            mouse.style.left = ''; mouse.style.top = '';
             mouse.classList.add('victory');
             playVictoryFanfare(); 
         } else { 
@@ -513,7 +557,7 @@
     function moveMouse(index) {
         const mouse = document.getElementById('the-mouse');
         const targetStep = document.getElementById(`step-${index}`);
-        if (targetStep && !isFinished) {
+        if (targetStep && !mouse.classList.contains('victory')) {
             mouse.style.left = targetStep.offsetLeft + "px";
             mouse.style.top = targetStep.offsetTop + "px";
         }
