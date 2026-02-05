@@ -8,6 +8,9 @@
     <style>
         :root {
             --app-height: 100svh;
+            --primary: #4CAF50;
+            --blue: #2196F3;
+            --orange: #FF9800;
         }
 
         body { 
@@ -20,6 +23,8 @@
             position: fixed; 
             display: flex;
             flex-direction: column;
+            user-select: none; /* Förhindrar textmarkering vid long-press */
+            -webkit-user-select: none;
         }
         
         #map-page, #game-page { 
@@ -34,6 +39,7 @@
             flex: 1; 
             width: 100%; 
             min-height: 0; 
+            z-index: 1;
         }
         
         .hidden { display: none !important; }
@@ -43,7 +49,7 @@
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.7);
-            z-index: 10000;
+            z-index: 99999;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -58,10 +64,10 @@
             text-align: center;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
-        .welcome-content h2 { margin-top: 0; color: #ff9800; }
+        .welcome-content h2 { margin-top: 0; color: var(--orange); }
         .welcome-content ul { text-align: left; margin: 20px 0; line-height: 1.6; }
         .ok-btn {
-            background: #4CAF50;
+            background: var(--primary);
             color: white;
             padding: 12px 30px;
             border-radius: 30px;
@@ -100,9 +106,9 @@
         .btn-text-container { width: 100%; overflow: hidden; white-space: nowrap; position: relative; }
         .scrolling-text { display: inline-block; font-size: 0.55rem; text-transform: uppercase; pointer-events: none; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
 
-        #btn-0 { border-radius: 50%; background: #4CAF50; } 
-        #btn-1 { border-radius: 8px; background: #2196F3; } 
-        #btn-2 { border-radius: 25px; width: 65px; height: 40px; background: #FF9800; } 
+        #btn-0 { border-radius: 50%; background: var(--primary); } 
+        #btn-1 { border-radius: 8px; background: var(--blue); } 
+        #btn-2 { border-radius: 25px; width: 65px; height: 40px; background: var(--orange); } 
         #btn-3 { width: 55px; height: 50px; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); padding-top: 10px; background: #9C27B0; } 
 
         #search-container {
@@ -145,7 +151,7 @@
         #voice-btn.listening { background: #ff4444; animation: pulse 1.5s infinite; }
         #start-btn { background: #ffcc00; color: #000; }
 
-        #dist-info { margin-bottom: 8px; font-weight: bold; font-size: 0.95rem; color: #000; }
+        #dist-info { margin-bottom: 8px; font-weight: bold; font-size: 0.95rem; color: #000; min-height: 1.2em; }
 
         #game-page { align-items: center; padding: 5px; position: relative; }
         .apple-grid { 
@@ -239,10 +245,10 @@
         <div id="dist-info">Söker din GPS... 📍</div>
         
         <div class="save-btn-container">
-            <button id="btn-0" class="slot-btn" onclick="handleSlotClick(0)" oncontextmenu="saveCurrentPos(0); return false;"><div class="btn-text-container"><span class="scrolling-text">Spara 1</span></div></button>
-            <button id="btn-1" class="slot-btn" onclick="handleSlotClick(1)" oncontextmenu="saveCurrentPos(1); return false;"><div class="btn-text-container"><span class="scrolling-text">Spara 2</span></div></button>
-            <button id="btn-2" class="slot-btn" onclick="handleSlotClick(2)" oncontextmenu="saveCurrentPos(2); return false;"><div class="btn-text-container"><span class="scrolling-text">Spara 3</span></div></button>
-            <button id="btn-3" class="slot-btn" onclick="handleSlotClick(3)" oncontextmenu="saveCurrentPos(3); return false;"><div class="btn-text-container"><span class="scrolling-text">Spara 4</span></div></button>
+            <button id="btn-0" class="slot-btn" onclick="handleSlotClick(0)" oncontextmenu="return false;"><div class="btn-text-container"><span class="scrolling-text">Spara 1</span></div></button>
+            <button id="btn-1" class="slot-btn" onclick="handleSlotClick(1)" oncontextmenu="return false;"><div class="btn-text-container"><span class="scrolling-text">Spara 2</span></div></button>
+            <button id="btn-2" class="slot-btn" onclick="handleSlotClick(2)" oncontextmenu="return false;"><div class="btn-text-container"><span class="scrolling-text">Spara 3</span></div></button>
+            <button id="btn-3" class="slot-btn" onclick="handleSlotClick(3)" oncontextmenu="return false;"><div class="btn-text-container"><span class="scrolling-text">Spara 4</span></div></button>
         </div>
 
         <div id="search-container" class="hidden">
@@ -266,32 +272,59 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    let map, targetMarker, userMarker, connectionLine, userCoords, initialTotalKm;
+    // Global State
+    let map, targetMarker, userMarker, connectionLine, userCoords;
     let currentTargetCoords = null;
     let currentTargetName = "MÅLET";
     let initialZoomPerformed = false; 
     let isShowingUser = true; 
     let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
     let lastTarget = JSON.parse(localStorage.getItem('mouse_last_target'));
-    let touchTimer, audioCtx, isFinished = false;
+    
+    // Game State
+    let touchTimer, audioCtx;
+    let gameState = 'MAP'; // 'MAP' or 'GAME' or 'FINISHED'
+    let initialTotalKm = 0;
+
+    // DOM Caching
+    const els = {
+        distInfo: document.getElementById('dist-info'),
+        startBtn: document.getElementById('start-btn'),
+        mapPage: document.getElementById('map-page'),
+        gamePage: document.getElementById('game-page'),
+        pathGrid: document.getElementById('path'),
+        locateBtn: document.getElementById('locate-btn'),
+        searchContainer: document.getElementById('search-container'),
+        searchInput: document.getElementById('text-search-input'),
+        voiceBtn: document.getElementById('voice-btn'),
+        welcomeOverlay: document.getElementById('welcome-overlay')
+    };
 
     function closeInstructions() {
         playClickSound();
-        document.getElementById('welcome-overlay').classList.add('hidden');
-        // Spara att vi har sett introt för denna session
+        els.welcomeOverlay.classList.add('hidden');
         sessionStorage.setItem('introSeen', 'true');
     }
 
     const AudioContext = window.AudioContext || window.webkitAudioContext;
+    
     function initAudio() {
-        if (!audioCtx && AudioContext) audioCtx = new AudioContext();
-        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        if (!AudioContext) return;
+        if (!audioCtx) audioCtx = new AudioContext();
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume().then(() => console.log("Audio resumed"));
+        }
     }
 
+    // Single unlock listener
+    document.body.addEventListener('touchstart', initAudio, { once: true });
+    document.body.addEventListener('click', initAudio, { once: true });
+
     function playClickSound() {
+        if (!audioCtx) initAudio();
+        if (!audioCtx) return;
+        
         try {
-            initAudio();
-            if (!audioCtx) return;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'triangle';
@@ -305,9 +338,8 @@
     }
 
     function playVictoryFanfare() {
+        if (!audioCtx) return;
         try {
-            initAudio();
-            if (!audioCtx) return;
             const now = audioCtx.currentTime;
             const notes = [523.25, 659.25, 783.99, 1046.50];
             notes.forEach((freq, index) => {
@@ -326,9 +358,8 @@
     }
 
     function initMap() {
-        // Kolla om vi redan sett introt
         if(sessionStorage.getItem('introSeen')) {
-            document.getElementById('welcome-overlay').classList.add('hidden');
+            els.welcomeOverlay.classList.add('hidden');
         }
 
         map = L.map('map', { zoomControl: false }).setView([59.3, 14.1], 5);
@@ -343,28 +374,45 @@
             updateLocateBtnText();
         }
 
+        // Single GPS Watcher for entire app
         if (navigator.geolocation) {
-            navigator.geolocation.watchPosition(pos => {
-                userCoords = [pos.coords.latitude, pos.coords.longitude];
-                if (!initialZoomPerformed) { zoomToUser(); initialZoomPerformed = true; }
-                if (!userMarker) {
-                    userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8}).addTo(map);
-                } else {
-                    userMarker.setLatLng(userCoords);
-                }
-                updateLogic();
-            }, null, {enableHighAccuracy: true});
+            navigator.geolocation.watchPosition(handlePositionUpdate, null, {
+                enableHighAccuracy: true,
+                maximumAge: 10000,
+                timeout: 5000
+            });
         }
 
         map.on('click', e => { 
+            if(gameState !== 'MAP') return;
             playClickSound(); 
             currentTargetName = "Markerad plats"; 
             setTarget(e.latlng, true); 
-            map.panTo(e.latlng); // NYTT: Centrerar kartan vid klick
+            map.panTo(e.latlng);
         });
+        
         document.querySelectorAll('button').forEach(btn => btn.addEventListener('click', playClickSound));
         setupLongPress();
-        document.body.addEventListener('touchstart', initAudio, {once:true});
+    }
+
+    // Unified GPS Handler
+    function handlePositionUpdate(pos) {
+        userCoords = [pos.coords.latitude, pos.coords.longitude];
+
+        // Always update map marker (in background or foreground)
+        if (!userMarker) {
+            userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8}).addTo(map);
+        } else {
+            userMarker.setLatLng(userCoords);
+        }
+
+        if (!initialZoomPerformed) { zoomToUser(); initialZoomPerformed = true; }
+
+        if (gameState === 'MAP') {
+            updateMapLogic();
+        } else if (gameState === 'GAME') {
+            updateGameLogic();
+        }
     }
 
     function toggleView() {
@@ -374,8 +422,7 @@
     }
 
     function updateLocateBtnText() {
-        const btn = document.getElementById('locate-btn');
-        btn.innerHTML = (!currentTargetCoords || isShowingUser) ? "🎯 HITTA MIG" : `🏁 ${currentTargetName.toUpperCase()}`;
+        els.locateBtn.innerHTML = (!currentTargetCoords || isShowingUser) ? "🎯 HITTA MIG" : `🏁 ${currentTargetName.toUpperCase()}`;
     }
 
     function zoomToUser() { if (userCoords) map.flyTo(userCoords, 16); }
@@ -384,17 +431,21 @@
         currentTargetCoords = latlng;
         if (targetMarker) targetMarker.setLatLng(latlng);
         else targetMarker = L.marker(latlng).addTo(map);
+        
         if (shouldSave) localStorage.setItem('mouse_last_target', JSON.stringify({coords: latlng, name: currentTargetName}));
-        updateLogic(); updateLocateBtnText();
+        
+        updateMapLogic(); 
+        updateLocateBtnText();
     }
 
-    function updateLogic() {
+    function updateMapLogic() {
         if (userCoords && currentTargetCoords) {
             const d = map.distance(userCoords, currentTargetCoords) / 1000;
             if (connectionLine) connectionLine.setLatLngs([userCoords, currentTargetCoords]);
             else connectionLine = L.polyline([userCoords, currentTargetCoords], {color: '#007bff', weight: 3, dashArray: '10, 10'}).addTo(map);
-            document.getElementById('dist-info').innerHTML = `<b>${d.toFixed(1)} km</b> till ${currentTargetName}`;
-            document.getElementById('start-btn').classList.remove('hidden');
+            
+            els.distInfo.innerHTML = `<b>${d.toFixed(1)} km</b> till ${currentTargetName}`;
+            els.startBtn.classList.remove('hidden');
         }
     }
 
@@ -410,17 +461,23 @@
 
     function handleSlotClick(index) {
         const data = savedLocations[index];
-        if (data) { currentTargetName = data.name; setTarget(data.coords, true); map.flyTo(data.coords, 14); isShowingUser = true; }
+        if (data) { 
+            currentTargetName = data.name; 
+            setTarget(data.coords, true); 
+            map.flyTo(data.coords, 14); 
+            isShowingUser = true; 
+        }
     }
 
     function updateButtonUI() {
         savedLocations.forEach((loc, i) => {
             const btn = document.getElementById(`btn-${i}`);
+            const textSpan = btn.querySelector('.scrolling-text');
             if (loc) { 
-                btn.querySelector('.scrolling-text').innerText = loc.name; 
+                textSpan.innerText = loc.name; 
                 btn.classList.add('filled'); 
             } else {
-                btn.querySelector('.scrolling-text').innerText = "Spara " + (i+1);
+                textSpan.innerText = "Spara " + (i+1);
                 btn.classList.remove('filled');
             }
         });
@@ -428,19 +485,23 @@
 
     function setupLongPress() {
         document.querySelectorAll('.slot-btn').forEach((btn, i) => {
-            btn.addEventListener('touchstart', () => { touchTimer = setTimeout(() => saveCurrentPos(i), 800); }, {passive: true});
+            btn.addEventListener('touchstart', (e) => { 
+                // Prevent default context menu if needed
+                touchTimer = setTimeout(() => saveCurrentPos(i), 800); 
+            }, {passive: true});
+            
             btn.addEventListener('touchend', () => clearTimeout(touchTimer));
+            btn.addEventListener('touchmove', () => clearTimeout(touchTimer)); // Cancel on scroll
         });
     }
 
     function toggleSearchUI() {
-        const container = document.getElementById('search-container');
-        container.classList.toggle('hidden');
-        if (!container.classList.contains('hidden')) document.getElementById('text-search-input').focus();
+        els.searchContainer.classList.toggle('hidden');
+        if (!els.searchContainer.classList.contains('hidden')) els.searchInput.focus();
     }
 
     async function executeTextSearch() {
-        const query = document.getElementById('text-search-input').value;
+        const query = els.searchInput.value;
         if (!query) return;
         try {
             const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
@@ -448,8 +509,9 @@
             if (data.length > 0) {
                 const pos = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
                 currentTargetName = data[0].display_name.split(',')[0];
-                setTarget(pos, true); map.flyTo(pos, 14);
-                document.getElementById('search-container').classList.add('hidden');
+                setTarget(pos, true); 
+                map.flyTo(pos, 14);
+                els.searchContainer.classList.add('hidden');
                 isShowingUser = true;
             }
         } catch (e) {}
@@ -460,64 +522,87 @@
         if (!SpeechRecognition) return;
         const rec = new SpeechRecognition();
         rec.lang = 'sv-SE';
-        document.getElementById('voice-btn').classList.add('listening');
+        els.voiceBtn.classList.add('listening');
         rec.start();
         rec.onresult = (e) => {
-            document.getElementById('text-search-input').value = e.results[0][0].transcript;
+            els.searchInput.value = e.results[0][0].transcript;
             executeTextSearch();
-            document.getElementById('voice-btn').classList.remove('listening');
+            els.voiceBtn.classList.remove('listening');
         };
+        rec.onend = () => els.voiceBtn.classList.remove('listening');
     }
 
     function startGame() {
-        isFinished = false; initAudio();
+        if (!currentTargetCoords || !userCoords) return;
+        
+        gameState = 'GAME';
+        
         const d = map.distance(userCoords, currentTargetCoords) / 1000;
-        initialTotalKm = Math.ceil(d);
-        document.getElementById('map-page').classList.add('hidden');
-        document.getElementById('game-page').classList.remove('hidden');
-        const grid = document.getElementById('path');
-        grid.innerHTML = '<div id="the-mouse">🐭</div>';
+        initialTotalKm = Math.max(1, Math.ceil(d));
+        
+        els.mapPage.classList.add('hidden');
+        els.gamePage.classList.remove('hidden');
+        
+        // Build Grid
+        els.pathGrid.innerHTML = '<div id="the-mouse">🐭</div>';
+        const frag = document.createDocumentFragment();
         for (let i = 0; i < initialTotalKm; i++) {
             const step = document.createElement('div');
-            step.className = 'step'; step.id = `step-${i}`;
+            step.className = 'step'; 
+            step.id = `step-${i}`;
             step.innerHTML = (i === initialTotalKm - 1) ? '🧀' : '🍎';
-            grid.appendChild(step);
+            frag.appendChild(step);
         }
-        navigator.geolocation.watchPosition(updateProgress, null, {enableHighAccuracy: true});
+        els.pathGrid.appendChild(frag);
+        
         setTimeout(() => moveMouse(0), 100);
     }
 
     function stopGame() {
         playClickSound();
-        isFinished = true;
-        document.getElementById('game-page').classList.add('hidden');
-        document.getElementById('map-page').classList.remove('hidden');
+        gameState = 'MAP';
+        els.gamePage.classList.add('hidden');
+        els.mapPage.classList.remove('hidden');
     }
 
-    function updateProgress(pos) {
-        if (isFinished) return;
-        const currentDist = map.distance([pos.coords.latitude, pos.coords.longitude], currentTargetCoords) / 1000;
+    function updateGameLogic() {
+        if (gameState !== 'GAME') return;
+        
+        const currentDist = map.distance(userCoords, currentTargetCoords) / 1000;
         const finishedKm = Math.floor(initialTotalKm - currentDist);
-        const mouse = document.getElementById('the-mouse');
+        
+        // Optimization: Don't loop everything, just ensure eaten items are styled
         for (let i = 0; i < initialTotalKm - 1; i++) {
-            const step = document.getElementById(`step-${i}`);
-            if (step && i < finishedKm) step.classList.add('eat-animation');
+            if (i < finishedKm) {
+                const step = document.getElementById(`step-${i}`);
+                if (step && !step.classList.contains('eat-animation')) {
+                    step.classList.add('eat-animation');
+                }
+            }
         }
+
         if (currentDist < 0.05) { 
-            isFinished = true;
-            mouse.innerHTML = '🐭🧀'; 
-            mouse.style.left = ''; mouse.style.top = '';
-            mouse.classList.add('victory');
-            playVictoryFanfare(); 
+            finishGame();
         } else { 
             moveMouse(finishedKm >= 0 ? finishedKm : 0); 
         }
     }
 
+    function finishGame() {
+        if (gameState === 'FINISHED') return;
+        gameState = 'FINISHED';
+        const mouse = document.getElementById('the-mouse');
+        mouse.innerHTML = '🐭🧀'; 
+        mouse.style.left = ''; mouse.style.top = '';
+        mouse.classList.add('victory');
+        playVictoryFanfare(); 
+    }
+
     function moveMouse(index) {
+        if (gameState !== 'GAME') return;
         const mouse = document.getElementById('the-mouse');
         const targetStep = document.getElementById(`step-${index}`);
-        if (targetStep && !isFinished) {
+        if (targetStep) {
             mouse.style.left = targetStep.offsetLeft + "px";
             mouse.style.top = targetStep.offsetTop + "px";
         }
