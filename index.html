@@ -307,6 +307,7 @@
     function closeInstructions() {
         playClickSound();
         els.welcomeOverlay.classList.add('hidden');
+        // Sparar i sessionStorage så det försvinner under denna session
         sessionStorage.setItem('introSeen', 'true');
     }
 
@@ -334,7 +335,11 @@
     }
 
     function initMap() {
-        if(sessionStorage.getItem('introSeen')) els.welcomeOverlay.classList.add('hidden');
+        // Kontrollera sessionStorage direkt vid start
+        if(sessionStorage.getItem('introSeen')) {
+            els.welcomeOverlay.classList.add('hidden');
+        }
+
         map = L.map('map', { zoomControl: false }).setView([59.3, 14.1], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         updateButtonUI();
@@ -413,7 +418,6 @@
 
     function saveCurrentPos(index) {
         if (!currentTargetCoords) return;
-        // HÄR ÄR UPPDATERINGEN: Använder det sökta namnet som förslag
         const label = prompt("Spara som:", currentTargetName);
         if (label) {
             savedLocations[index] = { coords: currentTargetCoords, name: label };
@@ -469,7 +473,6 @@
             const data = await res.json();
             if (data.length > 0) {
                 const pos = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-                // Sparar namnet från sökresultatet
                 currentTargetName = data[0].display_name.split(',')[0];
                 setTarget(pos, true); 
                 map.flyTo(pos, 14);
