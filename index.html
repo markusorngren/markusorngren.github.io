@@ -54,7 +54,7 @@
             .apple-grid { 
                 grid-template-columns: repeat(10, 1fr) !important; 
                 max-width: 80% !important; 
-                padding-top: 30px !important; /* Extra space för musen i liggande läge */
+                padding-top: 30px !important; 
             }
         }
 
@@ -188,7 +188,7 @@
             width: 95%; 
             max-width: 280px; 
             margin-top: 10px; 
-            padding: 25px 10px 10px 10px; /* Ökad padding i toppen för öronen */
+            padding: 25px 10px 10px 10px; 
             background: rgba(255,255,255,0.5); 
             border-radius: 15px; 
             position: relative; 
@@ -209,7 +209,7 @@
             font-size: 1.8rem; 
             transition: all 0.8s ease-in-out; 
             z-index: 100; 
-            margin-top: -12px; /* Justerad för att synas bättre mot kanten */
+            margin-top: -12px; 
             margin-left: -8px; 
             pointer-events: none;
             animation: mouseWobble 1s infinite ease-in-out;
@@ -413,7 +413,8 @@
 
     function saveCurrentPos(index) {
         if (!currentTargetCoords) return;
-        const label = prompt("Spara som:", "Mål " + (index+1));
+        // HÄR ÄR UPPDATERINGEN: Använder det sökta namnet som förslag
+        const label = prompt("Spara som:", currentTargetName);
         if (label) {
             savedLocations[index] = { coords: currentTargetCoords, name: label };
             localStorage.setItem('mouse_favs', JSON.stringify(savedLocations));
@@ -468,6 +469,7 @@
             const data = await res.json();
             if (data.length > 0) {
                 const pos = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+                // Sparar namnet från sökresultatet
                 currentTargetName = data[0].display_name.split(',')[0];
                 setTarget(pos, true); 
                 map.flyTo(pos, 14);
