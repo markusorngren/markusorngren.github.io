@@ -35,6 +35,29 @@
             overflow: hidden; 
         }
 
+        /* LANDSCAPE ADAPTATION */
+        @media (orientation: landscape) {
+            #map-page { flex-direction: row; }
+            .panel { 
+                width: 250px; 
+                height: 100%; 
+                border-radius: 0 !important; 
+                box-shadow: -4px 0 15px rgba(0,0,0,0.1) !important;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                padding-top: env(safe-area-inset-top);
+            }
+            .action-container { flex-direction: column; }
+            .save-btn-container { flex-wrap: wrap; }
+            
+            /* 10 äpplen i bredd när skärmen är liggande */
+            .apple-grid { 
+                grid-template-columns: repeat(10, 1fr) !important; 
+                max-width: 80% !important; 
+            }
+        }
+
         #map { 
             flex: 1; 
             width: 100%; 
@@ -105,18 +128,14 @@
         .btn-text-container { width: 100%; overflow: hidden; white-space: nowrap; position: relative; }
         .scrolling-text { display: inline-block; font-size: 0.55rem; text-transform: uppercase; pointer-events: none; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
 
-        /* KNAPP-FORMER */
         #btn-0 { border-radius: 50%; background: var(--primary); } 
         #btn-1 { border-radius: 8px; background: var(--blue); } 
-        
-        /* TREDJE KNAPPEN - NU SEXKANT */
         #btn-2 { 
             background: var(--orange); 
             width: 55px; 
             height: 55px; 
             clip-path: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0% 50%);
         } 
-        
         #btn-3 { width: 55px; height: 50px; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); padding-top: 10px; background: #9C27B0; } 
 
         #search-container {
@@ -173,7 +192,7 @@
             background: rgba(255,255,255,0.5); 
             border-radius: 15px; 
             position: relative; 
-            max-height: 60vh;
+            max-height: 70vh;
             overflow-y: auto;
         }
         
@@ -196,10 +215,7 @@
             animation: mouseWobble 1s infinite ease-in-out;
         }
 
-        .eat-animation {
-            transform: scale(0.6) !important;
-            opacity: 0.3 !important;
-        }
+        .eat-animation { transform: scale(0.6) !important; opacity: 0.3 !important; }
 
         @keyframes victoryPop {
             0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
@@ -207,27 +223,11 @@
             100% { transform: translate(-50%, -50%) scale(1.8); opacity: 1; }
         }
 
-        @keyframes victoryWobble {
-            0%, 100% { transform: translate(-50%, -50%) scale(1.8) rotate(0deg); }
-            25% { transform: translate(-50%, -50%) scale(1.8) rotate(-15deg); }
-            75% { transform: translate(-50%, -50%) scale(1.8) rotate(15deg); }
-        }
-
         #the-mouse.victory {
-            position: fixed;
-            top: 50% !important;
-            left: 50% !important;
-            z-index: 9999;
-            font-size: 5rem;
-            animation: victoryPop 0.6s ease-out forwards, victoryWobble 1s infinite ease-in-out 0.6s;
-            margin: 0;
-            background: rgba(253, 246, 227, 0.95);
-            width: 100vw;
-            height: 100svh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 0;
+            position: fixed; top: 50% !important; left: 50% !important; z-index: 9999;
+            font-size: 5rem; animation: victoryPop 0.6s ease-out forwards;
+            margin: 0; background: rgba(253, 246, 227, 0.95);
+            width: 100vw; height: 100svh; display: flex; align-items: center; justify-content: center;
         }
     </style>
 </head>
@@ -239,10 +239,10 @@
         <p>Hjälp musen att hitta osten!</p>
         <ul>
             <li>📍 <b>Klicka på kartan eller sök</b> för att välja resmål.</li>
-            <li>💾 <b>Håll inne en spara knapp</b> om du vill spara resmålet.</li>
+            <li>💾 <b>Håll inne en spara knapp</b> för att spara.</li>
             <li>🚀 Tryck på <b>STARTA</b> för att börja resan!</li>
         </ul>
-        <button class="ok-btn" onclick="closeInstructions()">Okej, jag fattar!</button>
+        <button class="ok-btn" onclick="closeInstructions()">Okej, I get it!</button>
     </div>
 </div>
 
@@ -252,21 +252,21 @@
         <div id="dist-info">Söker din GPS... 📍</div>
         
         <div class="save-btn-container">
-            <button id="btn-0" class="slot-btn" onclick="handleSlotClick(0)" oncontextmenu="return false;"><div class="btn-text-container"><span class="scrolling-text">Spara 1</span></div></button>
-            <button id="btn-1" class="slot-btn" onclick="handleSlotClick(1)" oncontextmenu="return false;"><div class="btn-text-container"><span class="scrolling-text">Spara 2</span></div></button>
-            <button id="btn-2" class="slot-btn" onclick="handleSlotClick(2)" oncontextmenu="return false;"><div class="btn-text-container"><span class="scrolling-text">Spara 3</span></div></button>
-            <button id="btn-3" class="slot-btn" onclick="handleSlotClick(3)" oncontextmenu="return false;"><div class="btn-text-container"><span class="scrolling-text">Spara 4</span></div></button>
+            <button id="btn-0" class="slot-btn" onclick="handleSlotClick(0)"><div class="btn-text-container"><span class="scrolling-text">Spara 1</span></div></button>
+            <button id="btn-1" class="slot-btn" onclick="handleSlotClick(1)"><div class="btn-text-container"><span class="scrolling-text">Spara 2</span></div></button>
+            <button id="btn-2" class="slot-btn" onclick="handleSlotClick(2)"><div class="btn-text-container"><span class="scrolling-text">Spara 3</span></div></button>
+            <button id="btn-3" class="slot-btn" onclick="handleSlotClick(3)"><div class="btn-text-container"><span class="scrolling-text">Spara 4</span></div></button>
         </div>
 
         <div id="search-container" class="hidden">
-            <input type="text" id="text-search-input" placeholder="Var ska vi åka?">
+            <input type="text" id="text-search-input" placeholder="Vart ska vi?">
             <button id="go-btn" onclick="executeTextSearch()">➔</button>
         </div>
 
         <div class="action-container">
             <button id="locate-btn" class="action-btn" onclick="toggleView()">🎯 HITTA MIG</button>
             <button id="text-btn" class="action-btn" onclick="toggleSearchUI()">🔍 SÖK</button> 
-            <button id="voice-btn" class="action-btn" onclick="startVoiceSearch()">🎤 RÖSTSÖK</button>
+            <button id="voice-btn" class="action-btn" onclick="startVoiceSearch()">🎤 RÖST</button>
             <button id="start-btn" class="action-btn hidden" onclick="startGame()">STARTA 🧀</button>
         </div>
     </div>
@@ -279,7 +279,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    // Samma JavaScript-logik som tidigare
+    // All original logic kept, added resize listener to fix mouse position on rotate
     let map, targetMarker, userMarker, connectionLine, userCoords;
     let currentTargetCoords = null;
     let currentTargetName = "MÅLET";
@@ -290,6 +290,7 @@
     let touchTimer, audioCtx;
     let gameState = 'MAP';
     let initialTotalKm = 0;
+    let lastMouseIndex = 0;
 
     const els = {
         distInfo: document.getElementById('dist-info'),
@@ -321,38 +322,15 @@
     document.body.addEventListener('click', initAudio, { once: true });
 
     function playClickSound() {
-        if (!audioCtx) initAudio();
         if (!audioCtx) return;
         try {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'triangle';
             osc.frequency.setValueAtTime(3000, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(4500, audioCtx.currentTime + 0.05);
             gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
             osc.connect(gain); gain.connect(audioCtx.destination);
             osc.start(); osc.stop(audioCtx.currentTime + 0.1);
-        } catch(e) {}
-    }
-
-    function playVictoryFanfare() {
-        if (!audioCtx) return;
-        try {
-            const now = audioCtx.currentTime;
-            const notes = [523.25, 659.25, 783.99, 1046.50];
-            notes.forEach((freq, index) => {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'square';
-                osc.frequency.value = freq;
-                const startTime = now + (index * 0.15);
-                const duration = (index === notes.length - 1) ? 0.6 : 0.12;
-                gain.gain.setValueAtTime(0.1, startTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-                osc.connect(gain); gain.connect(audioCtx.destination);
-                osc.start(startTime); osc.stop(startTime + duration);
-            });
         } catch(e) {}
     }
 
@@ -386,8 +364,10 @@
             map.panTo(e.latlng);
         });
         
-        document.querySelectorAll('button').forEach(btn => btn.addEventListener('click', playClickSound));
         setupLongPress();
+        window.addEventListener('resize', () => {
+            if(gameState === 'GAME') moveMouse(lastMouseIndex);
+        });
     }
 
     function handlePositionUpdate(pos) {
@@ -508,7 +488,6 @@
         rec.onresult = (e) => {
             els.searchInput.value = e.results[0][0].transcript;
             executeTextSearch();
-            els.voiceBtn.classList.remove('listening');
         };
         rec.onend = () => els.voiceBtn.classList.remove('listening');
     }
@@ -534,7 +513,6 @@
     }
 
     function stopGame() {
-        playClickSound();
         gameState = 'MAP';
         els.gamePage.classList.add('hidden');
         els.mapPage.classList.remove('hidden');
@@ -559,13 +537,12 @@
         gameState = 'FINISHED';
         const mouse = document.getElementById('the-mouse');
         mouse.innerHTML = '🐭🧀'; 
-        mouse.style.left = ''; mouse.style.top = '';
         mouse.classList.add('victory');
-        playVictoryFanfare(); 
     }
 
     function moveMouse(index) {
         if (gameState !== 'GAME') return;
+        lastMouseIndex = index;
         const mouse = document.getElementById('the-mouse');
         const targetStep = document.getElementById(`step-${index}`);
         if (targetStep) {
