@@ -23,7 +23,7 @@
             position: fixed; 
             display: flex;
             flex-direction: column;
-            user-select: none; /* Förhindrar textmarkering vid long-press */
+            user-select: none;
             -webkit-user-select: none;
         }
         
@@ -44,7 +44,6 @@
         
         .hidden { display: none !important; }
         
-        /* INSTRUKTIONSRUTA */
         #welcome-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -106,9 +105,18 @@
         .btn-text-container { width: 100%; overflow: hidden; white-space: nowrap; position: relative; }
         .scrolling-text { display: inline-block; font-size: 0.55rem; text-transform: uppercase; pointer-events: none; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
 
+        /* KNAPP-FORMER */
         #btn-0 { border-radius: 50%; background: var(--primary); } 
         #btn-1 { border-radius: 8px; background: var(--blue); } 
-        #btn-2 { border-radius: 25px; width: 65px; height: 40px; background: var(--orange); } 
+        
+        /* TREDJE KNAPPEN - NU SEXKANT */
+        #btn-2 { 
+            background: var(--orange); 
+            width: 55px; 
+            height: 55px; 
+            clip-path: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0% 50%);
+        } 
+        
         #btn-3 { width: 55px; height: 50px; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); padding-top: 10px; background: #9C27B0; } 
 
         #search-container {
@@ -193,7 +201,6 @@
             opacity: 0.3 !important;
         }
 
-        /* VICTORY ANIMATIONS */
         @keyframes victoryPop {
             0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
             80% { transform: translate(-50%, -50%) scale(2.0); opacity: 1; }
@@ -272,7 +279,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    // Global State
+    // Samma JavaScript-logik som tidigare
     let map, targetMarker, userMarker, connectionLine, userCoords;
     let currentTargetCoords = null;
     let currentTargetName = "MÅLET";
@@ -280,13 +287,10 @@
     let isShowingUser = true; 
     let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
     let lastTarget = JSON.parse(localStorage.getItem('mouse_last_target'));
-    
-    // Game State
     let touchTimer, audioCtx;
-    let gameState = 'MAP'; // 'MAP' or 'GAME' or 'FINISHED'
+    let gameState = 'MAP';
     let initialTotalKm = 0;
 
-    // DOM Caching
     const els = {
         distInfo: document.getElementById('dist-info'),
         startBtn: document.getElementById('start-btn'),
@@ -307,23 +311,18 @@
     }
 
     const AudioContext = window.AudioContext || window.webkitAudioContext;
-    
     function initAudio() {
         if (!AudioContext) return;
         if (!audioCtx) audioCtx = new AudioContext();
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume().then(() => console.log("Audio resumed"));
-        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
-    // Single unlock listener
     document.body.addEventListener('touchstart', initAudio, { once: true });
     document.body.addEventListener('click', initAudio, { once: true });
 
     function playClickSound() {
         if (!audioCtx) initAudio();
         if (!audioCtx) return;
-        
         try {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -358,10 +357,7 @@
     }
 
     function initMap() {
-        if(sessionStorage.getItem('introSeen')) {
-            els.welcomeOverlay.classList.add('hidden');
-        }
-
+        if(sessionStorage.getItem('introSeen')) els.welcomeOverlay.classList.add('hidden');
         map = L.map('map', { zoomControl: false }).setView([59.3, 14.1], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         updateButtonUI();
@@ -374,7 +370,6 @@
             updateLocateBtnText();
         }
 
-        // Single GPS Watcher for entire app
         if (navigator.geolocation) {
             navigator.geolocation.watchPosition(handlePositionUpdate, null, {
                 enableHighAccuracy: true,
@@ -395,24 +390,15 @@
         setupLongPress();
     }
 
-    // Unified GPS Handler
     function handlePositionUpdate(pos) {
         userCoords = [pos.coords.latitude, pos.coords.longitude];
-
-        // Always update map marker (in background or foreground)
         if (!userMarker) {
             userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8}).addTo(map);
-        } else {
-            userMarker.setLatLng(userCoords);
-        }
+        } else userMarker.setLatLng(userCoords);
 
         if (!initialZoomPerformed) { zoomToUser(); initialZoomPerformed = true; }
-
-        if (gameState === 'MAP') {
-            updateMapLogic();
-        } else if (gameState === 'GAME') {
-            updateGameLogic();
-        }
+        if (gameState === 'MAP') updateMapLogic();
+        else if (gameState === 'GAME') updateGameLogic();
     }
 
     function toggleView() {
@@ -431,9 +417,7 @@
         currentTargetCoords = latlng;
         if (targetMarker) targetMarker.setLatLng(latlng);
         else targetMarker = L.marker(latlng).addTo(map);
-        
         if (shouldSave) localStorage.setItem('mouse_last_target', JSON.stringify({coords: latlng, name: currentTargetName}));
-        
         updateMapLogic(); 
         updateLocateBtnText();
     }
@@ -443,7 +427,6 @@
             const d = map.distance(userCoords, currentTargetCoords) / 1000;
             if (connectionLine) connectionLine.setLatLngs([userCoords, currentTargetCoords]);
             else connectionLine = L.polyline([userCoords, currentTargetCoords], {color: '#007bff', weight: 3, dashArray: '10, 10'}).addTo(map);
-            
             els.distInfo.innerHTML = `<b>${d.toFixed(1)} km</b> till ${currentTargetName}`;
             els.startBtn.classList.remove('hidden');
         }
@@ -485,13 +468,11 @@
 
     function setupLongPress() {
         document.querySelectorAll('.slot-btn').forEach((btn, i) => {
-            btn.addEventListener('touchstart', (e) => { 
-                // Prevent default context menu if needed
+            btn.addEventListener('touchstart', () => { 
                 touchTimer = setTimeout(() => saveCurrentPos(i), 800); 
             }, {passive: true});
-            
             btn.addEventListener('touchend', () => clearTimeout(touchTimer));
-            btn.addEventListener('touchmove', () => clearTimeout(touchTimer)); // Cancel on scroll
+            btn.addEventListener('touchmove', () => clearTimeout(touchTimer));
         });
     }
 
@@ -534,16 +515,11 @@
 
     function startGame() {
         if (!currentTargetCoords || !userCoords) return;
-        
         gameState = 'GAME';
-        
         const d = map.distance(userCoords, currentTargetCoords) / 1000;
         initialTotalKm = Math.max(1, Math.ceil(d));
-        
         els.mapPage.classList.add('hidden');
         els.gamePage.classList.remove('hidden');
-        
-        // Build Grid
         els.pathGrid.innerHTML = '<div id="the-mouse">🐭</div>';
         const frag = document.createDocumentFragment();
         for (let i = 0; i < initialTotalKm; i++) {
@@ -554,7 +530,6 @@
             frag.appendChild(step);
         }
         els.pathGrid.appendChild(frag);
-        
         setTimeout(() => moveMouse(0), 100);
     }
 
@@ -567,25 +542,16 @@
 
     function updateGameLogic() {
         if (gameState !== 'GAME') return;
-        
         const currentDist = map.distance(userCoords, currentTargetCoords) / 1000;
         const finishedKm = Math.floor(initialTotalKm - currentDist);
-        
-        // Optimization: Don't loop everything, just ensure eaten items are styled
         for (let i = 0; i < initialTotalKm - 1; i++) {
             if (i < finishedKm) {
                 const step = document.getElementById(`step-${i}`);
-                if (step && !step.classList.contains('eat-animation')) {
-                    step.classList.add('eat-animation');
-                }
+                if (step && !step.classList.contains('eat-animation')) step.classList.add('eat-animation');
             }
         }
-
-        if (currentDist < 0.05) { 
-            finishGame();
-        } else { 
-            moveMouse(finishedKm >= 0 ? finishedKm : 0); 
-        }
+        if (currentDist < 0.05) finishGame();
+        else moveMouse(finishedKm >= 0 ? finishedKm : 0); 
     }
 
     function finishGame() {
@@ -612,4 +578,3 @@
 </script>
 </body>
 </html>
-
