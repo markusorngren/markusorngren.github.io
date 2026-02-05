@@ -434,7 +434,7 @@
 
     function saveCurrentPos(index) {
         if (!currentTargetCoords) return;
-        const label = prompt("Spara som:", "{currentTargetName.toUpperCase()}");
+        const label = prompt("Spara som:", "${currentTargetName.toUpperCase()}`");
         if (label) {
             savedLocations[index] = { coords: currentTargetCoords, name: label };
             localStorage.setItem('mouse_favs', JSON.stringify(savedLocations));
@@ -578,5 +578,6 @@
 </script>
 </body>
 </html>
+
 
 
