@@ -51,10 +51,10 @@
             .action-container { flex-direction: column; }
             .save-btn-container { flex-wrap: wrap; }
             
-            /* 10 äpplen i bredd när skärmen är liggande */
             .apple-grid { 
                 grid-template-columns: repeat(10, 1fr) !important; 
                 max-width: 80% !important; 
+                padding-top: 30px !important; /* Extra space för musen i liggande läge */
             }
         }
 
@@ -188,7 +188,7 @@
             width: 95%; 
             max-width: 280px; 
             margin-top: 10px; 
-            padding: 10px; 
+            padding: 25px 10px 10px 10px; /* Ökad padding i toppen för öronen */
             background: rgba(255,255,255,0.5); 
             border-radius: 15px; 
             position: relative; 
@@ -209,7 +209,7 @@
             font-size: 1.8rem; 
             transition: all 0.8s ease-in-out; 
             z-index: 100; 
-            margin-top: -22px; 
+            margin-top: -12px; /* Justerad för att synas bättre mot kanten */
             margin-left: -8px; 
             pointer-events: none;
             animation: mouseWobble 1s infinite ease-in-out;
@@ -279,7 +279,6 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    // All original logic kept, added resize listener to fix mouse position on rotate
     let map, targetMarker, userMarker, connectionLine, userCoords;
     let currentTargetCoords = null;
     let currentTargetName = "MÅLET";
