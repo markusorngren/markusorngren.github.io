@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Marcus Mouse & Cheese Tracker - Pro Edition</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4CAF50">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2153/2153069.png">
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
@@ -35,7 +40,6 @@
             overflow: hidden; 
         }
 
-        /* LANDSCAPE ADAPTATION */
         @media (orientation: landscape) {
             #map-page { flex-direction: row; }
             .panel { 
@@ -279,6 +283,11 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+    // Register Service Worker for PWA support
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js');
+    }
+
     let map, targetMarker, userMarker, connectionLine, userCoords;
     let currentTargetCoords = null;
     let currentTargetName = "MÅLET";
@@ -413,7 +422,6 @@
 
     function saveCurrentPos(index) {
         if (!currentTargetCoords) return;
-        // HÄR ÄR UPPDATERINGEN: Använder det sökta namnet som förslag
         const label = prompt("Spara som:", currentTargetName);
         if (label) {
             savedLocations[index] = { coords: currentTargetCoords, name: label };
@@ -469,7 +477,6 @@
             const data = await res.json();
             if (data.length > 0) {
                 const pos = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-                // Sparar namnet från sökresultatet
                 currentTargetName = data[0].display_name.split(',')[0];
                 setTarget(pos, true); 
                 map.flyTo(pos, 14);
