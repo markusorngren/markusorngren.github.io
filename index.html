@@ -7,9 +7,9 @@
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4CAF50">
-    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2153/2153069.png">
     
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="icon.png" />
     <style>
         :root {
             --app-height: 100svh;
@@ -271,6 +271,7 @@
             <button id="locate-btn" class="action-btn" onclick="toggleView()">🎯 HITTA MIG</button>
             <button id="text-btn" class="action-btn" onclick="toggleSearchUI()">🔍 SÖK</button> 
             <button id="voice-btn" class="action-btn" onclick="startVoiceSearch()">🎤 RÖST</button>
+            <button id="share-btn" class="action-btn" style="background: #607D8B; color: white;" onclick="shareApp()">🔗 DELA</button>
             <button id="start-btn" class="action-btn hidden" onclick="startGame()">STARTA 🧀</button>
         </div>
     </div>
@@ -558,9 +559,24 @@
             mouse.style.top = targetStep.offsetTop + "px";
         }
     }
-
+async function shareApp() {
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: 'Marcus Mouse & Cheese Tracker',
+                text: 'Kolla in min nya tracker-app! 🐭🧀',
+                url: window.location.href
+            });
+            console.log('App shared successfully!');
+        } catch (err) {
+            console.log('Error sharing:', err);
+        }
+    } else {
+        // Fallback om webbläsaren inte stödjer Web Share API
+        alert("Kopiera länken i adressfältet för att dela: " + window.location.href);
+    }
+}
     window.onload = initMap;
 </script>
 </body>
 </html>
-
