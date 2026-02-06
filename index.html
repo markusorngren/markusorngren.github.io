@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#4CAF50">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2153/2153069.png">
     
-    <link rel="stylesheet" href="icon.png" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
             --app-height: 100svh;
@@ -184,6 +184,19 @@
 
         #dist-info { margin-bottom: 8px; font-weight: bold; font-size: 0.95rem; color: #000; min-height: 1.2em; }
 
+        #share-btn {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 10000;
+            background: white;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            font-size: 1.2rem;
+        }
+
         #game-page { align-items: center; padding: 5px; position: relative; }
         .apple-grid { 
             display: grid; 
@@ -237,6 +250,8 @@
 </head>
 <body>
 
+<button id="share-btn" onclick="shareApp()">🔗</button>
+
 <div id="welcome-overlay">
     <div class="welcome-content">
         <h2>Hej! 🐭</h2>
@@ -271,7 +286,6 @@
             <button id="locate-btn" class="action-btn" onclick="toggleView()">🎯 HITTA MIG</button>
             <button id="text-btn" class="action-btn" onclick="toggleSearchUI()">🔍 SÖK</button> 
             <button id="voice-btn" class="action-btn" onclick="startVoiceSearch()">🎤 RÖST</button>
-            <button id="share-btn" class="action-btn" style="background: #607D8B; color: white;" onclick="shareApp()">🔗 DELA</button>
             <button id="start-btn" class="action-btn hidden" onclick="startGame()">STARTA 🧀</button>
         </div>
     </div>
@@ -311,7 +325,8 @@
         searchContainer: document.getElementById('search-container'),
         searchInput: document.getElementById('text-search-input'),
         voiceBtn: document.getElementById('voice-btn'),
-        welcomeOverlay: document.getElementById('welcome-overlay')
+        welcomeOverlay: document.getElementById('welcome-overlay'),
+        shareBtn: document.getElementById('share-btn')
     };
 
     function closeInstructions() {
@@ -504,6 +519,7 @@
     function startGame() {
         if (!currentTargetCoords || !userCoords) return;
         gameState = 'GAME';
+        els.shareBtn.classList.add('hidden'); // Göm dela-knappen under spelet
         const d = map.distance(userCoords, currentTargetCoords) / 1000;
         initialTotalKm = Math.max(1, Math.ceil(d));
         els.mapPage.classList.add('hidden');
@@ -523,6 +539,7 @@
 
     function stopGame() {
         gameState = 'MAP';
+        els.shareBtn.classList.remove('hidden');
         els.gamePage.classList.add('hidden');
         els.mapPage.classList.remove('hidden');
     }
@@ -559,23 +576,26 @@
             mouse.style.top = targetStep.offsetTop + "px";
         }
     }
-async function shareApp() {
-    if (navigator.share) {
+
+    async function shareApp() {
+        playClickSound();
+        const shareData = {
+            title: 'Marcus Mouse & Cheese Tracker',
+            text: 'Hjälp musen hitta osten! Kolla in min tracker.',
+            url: window.location.href
+        };
+
         try {
-            await navigator.share({
-                title: 'Marcus Mouse & Cheese Tracker',
-                text: 'Kolla in min nya tracker-app! 🐭🧀',
-                url: window.location.href
-            });
-            console.log('App shared successfully!');
+            if (navigator.share) {
+                await navigator.share(shareData);
+            } else {
+                alert("Kopiera länken för att dela: " + window.location.href);
+            }
         } catch (err) {
             console.log('Error sharing:', err);
         }
-    } else {
-        // Fallback om webbläsaren inte stödjer Web Share API
-        alert("Kopiera länken i adressfältet för att dela: " + window.location.href);
     }
-}
+
     window.onload = initMap;
 </script>
 </body>
