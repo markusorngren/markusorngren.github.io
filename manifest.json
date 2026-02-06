@@ -1,0 +1,18 @@
+{
+  "name": "Marcus Mouse & Cheese Tracker",
+  "short_name": "CheeseTracker",
+  "description": "Hjälp musen hitta osten i Kristinehamn och bortom!",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#fdf6e3",
+  "theme_color": "#4CAF50",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2153/2153069.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
