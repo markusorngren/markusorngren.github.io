@@ -129,34 +129,36 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
 
-        /* NY SCROLL-LOGIK */
+        /* Container för rullande text */
         .btn-text-container { 
             width: 90%; 
             overflow: hidden; 
             white-space: nowrap; 
             position: relative;
-            mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
-            -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+            /* Skapar en snygg avtoning i kanterna */
+            mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+            -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
         }
         
+        /* Den faktiska texten */
         .scrolling-text { 
-            display: inline-block; 
+            display: inline-block; /* VIKTIGT: Krävs för att mäta bredd */
             font-size: 0.55rem; 
             text-transform: uppercase; 
             pointer-events: none; 
             color: white; 
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-            padding-left: 5px;
-            padding-right: 5px;
+            padding: 0 5px;
+            white-space: nowrap;
         }
 
         .animate-scroll {
-            animation: marquee 5s linear infinite;
+            animation: marquee 6s linear infinite;
         }
 
         @keyframes marquee {
             0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); } /* Rullar hälften eftersom vi duplicerar texten */
+            100% { transform: translateX(-50.5%); }
         }
 
         #btn-0 { border-radius: 50%; background: var(--primary); } 
@@ -281,14 +283,14 @@
 
 <div id="welcome-overlay">
     <div class="welcome-content">
-        <h2>Hej! 🐭</h2>
+        <h2>Hej Marcus! 🐭</h2>
         <p>Hjälp musen att hitta osten!</p>
         <ul>
             <li>📍 <b>Klicka på kartan eller sök</b> för att välja resmål.</li>
-            <li>💾 <b>Håll inne en spara-knapp</b> för att spara.</li>
+            <li>💾 <b>Håll inne en spara-knapp</b> för att spara en favorit.</li>
             <li>🚀 Tryck på <b>STARTA</b> för att börja resan!</li>
         </ul>
-        <button class="ok-btn" onclick="closeInstructions()">Okej, I get it!</button>
+        <button class="ok-btn" onclick="closeInstructions()">Nu kör vi!</button>
     </div>
 </div>
 
@@ -388,7 +390,6 @@
         if(sessionStorage.getItem('introSeen')) els.welcomeOverlay.classList.add('hidden');
         map = L.map('map', { zoomControl: false }).setView([59.3, 14.1], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        updateButtonUI();
 
         if (lastTarget) {
             currentTargetName = lastTarget.name || "Mål";
@@ -415,6 +416,9 @@
         });
         
         setupLongPress();
+        
+        // Uppdatera knapparna sist och lyssna på fönster-ändringar
+        updateButtonUI();
         window.addEventListener('resize', updateButtonUI);
     }
 
@@ -480,7 +484,6 @@
         }
     }
 
-    // NY FUNKTION FÖR ATT HANTERA TEXTRULLNING
     function updateButtonUI() {
         savedLocations.forEach((loc, i) => {
             const btn = document.getElementById(`btn-${i}`);
@@ -488,18 +491,22 @@
             const textSpan = btn.querySelector('.scrolling-text');
             
             const displayName = loc ? loc.name : "SPARA " + (i + 1);
-            textSpan.innerText = displayName;
+            
+            // Återställ rullning och text för att kunna mäta korrekt
             textSpan.classList.remove('animate-scroll');
+            textSpan.innerText = displayName;
             
             if (loc) btn.classList.add('filled');
             else btn.classList.remove('filled');
 
-            // Kolla om texten är bredare än containern
-            if (textSpan.offsetWidth > container.offsetWidth) {
-                // Duplicera texten för sömlös rullning
-                textSpan.innerText = displayName + " • " + displayName + " • ";
-                textSpan.classList.add('animate-scroll');
-            }
+            // VIKTIGT: Vänta 100ms så webbläsaren hinner rita upp texten i rätt storlek
+            setTimeout(() => {
+                if (textSpan.offsetWidth > container.offsetWidth) {
+                    // Skapa loopbar text med punkter emellan
+                    textSpan.innerText = displayName + " \u00A0\u00A0\u00A0\u00A0 • \u00A0\u00A0\u00A0\u00A0 " + displayName + " \u00A0\u00A0\u00A0\u00A0 • ";
+                    textSpan.classList.add('animate-scroll');
+                }
+            }, 100);
         });
     }
 
@@ -633,4 +640,3 @@
 </script>
 </body>
 </html>
-
