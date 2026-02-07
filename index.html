@@ -7,7 +7,7 @@
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4CAF50">
-    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2153/2153069.png">
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -129,8 +129,34 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
 
-        .btn-text-container { width: 100%; overflow: hidden; white-space: nowrap; position: relative; }
-        .scrolling-text { display: inline-block; font-size: 0.55rem; text-transform: uppercase; pointer-events: none; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+        .btn-text-container { 
+            width: 90%; 
+            overflow: hidden; 
+            white-space: nowrap; 
+            position: relative;
+            mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+            -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+        }
+        
+        .scrolling-text { 
+            display: inline-block; 
+            font-size: 0.55rem; 
+            text-transform: uppercase; 
+            pointer-events: none; 
+            color: white; 
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            padding-left: 5px;
+            padding-right: 5px;
+        }
+
+        .animate-scroll {
+            animation: marquee 5s linear infinite;
+        }
+
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
 
         #btn-0 { border-radius: 50%; background: var(--primary); } 
         #btn-1 { border-radius: 8px; background: var(--blue); } 
@@ -257,8 +283,8 @@
         <h2>Hej! 🐭</h2>
         <p>Hjälp musen att hitta osten!</p>
         <ul>
-            <li>📍 <b>Klicka på kartan eller sök</b> för att välja resmål.</li>
-            <li>💾 <b>Håll inne en spara knapp</b> för att spara.</li>
+            <li>📍 <b>Klicka eller högerklicka</b> för att välja/spara mål.</li>
+            <li>💾 <b>Högerklicka</b> på spara-knapparna på PC för att lagra.</li>
             <li>🚀 Tryck på <b>STARTA</b> för att börja resan!</li>
         </ul>
         <button class="ok-btn" onclick="closeInstructions()">Okej, I get it!</button>
@@ -271,10 +297,10 @@
         <div id="dist-info">Söker din GPS... 📍</div>
         
         <div class="save-btn-container">
-            <button id="btn-0" class="slot-btn" onclick="handleSlotClick(0)"><div class="btn-text-container"><span class="scrolling-text">Spara 1</span></div></button>
-            <button id="btn-1" class="slot-btn" onclick="handleSlotClick(1)"><div class="btn-text-container"><span class="scrolling-text">Spara 2</span></div></button>
-            <button id="btn-2" class="slot-btn" onclick="handleSlotClick(2)"><div class="btn-text-container"><span class="scrolling-text">Spara 3</span></div></button>
-            <button id="btn-3" class="slot-btn" onclick="handleSlotClick(3)"><div class="btn-text-container"><span class="scrolling-text">Spara 4</span></div></button>
+            <button id="btn-0" class="slot-btn" onclick="handleSlotClick(0)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
+            <button id="btn-1" class="slot-btn" onclick="handleSlotClick(1)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
+            <button id="btn-2" class="slot-btn" onclick="handleSlotClick(2)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
+            <button id="btn-3" class="slot-btn" onclick="handleSlotClick(3)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
         </div>
 
         <div id="search-container" class="hidden">
@@ -298,7 +324,6 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    // Register Service Worker for PWA support
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js');
     }
@@ -387,11 +412,20 @@
             setTarget(e.latlng, true); 
             map.panTo(e.latlng);
         });
+
+        // HÖGERKLICK PÅ KARTAN FÖR ATT SPARA DIREKT
+        map.on('contextmenu', e => {
+            if(gameState !== 'MAP') return;
+            playClickSound();
+            currentTargetName = "Markerad plats";
+            setTarget(e.latlng, true);
+            const slot = prompt("Vilken plats vill du spara till? (1-4)", "1");
+            const idx = parseInt(slot) - 1;
+            if (idx >= 0 && idx <= 3) saveCurrentPos(idx);
+        });
         
         setupLongPress();
-        window.addEventListener('resize', () => {
-            if(gameState === 'GAME') moveMouse(lastMouseIndex);
-        });
+        window.addEventListener('resize', updateButtonUI);
     }
 
     function handlePositionUpdate(pos) {
@@ -459,24 +493,37 @@
     function updateButtonUI() {
         savedLocations.forEach((loc, i) => {
             const btn = document.getElementById(`btn-${i}`);
+            const container = btn.querySelector('.btn-text-container');
             const textSpan = btn.querySelector('.scrolling-text');
-            if (loc) { 
-                textSpan.innerText = loc.name; 
-                btn.classList.add('filled'); 
-            } else {
-                textSpan.innerText = "Spara " + (i+1);
-                btn.classList.remove('filled');
+            
+            const displayName = loc ? loc.name : "SPARA " + (i + 1);
+            textSpan.innerText = displayName;
+            textSpan.classList.remove('animate-scroll');
+            
+            if (loc) btn.classList.add('filled');
+            else btn.classList.remove('filled');
+
+            if (textSpan.offsetWidth > container.offsetWidth) {
+                textSpan.innerText = displayName + " • " + displayName + " • ";
+                textSpan.classList.add('animate-scroll');
             }
         });
     }
 
     function setupLongPress() {
         document.querySelectorAll('.slot-btn').forEach((btn, i) => {
+            // MOBIL: LONG PRESS
             btn.addEventListener('touchstart', () => { 
                 touchTimer = setTimeout(() => saveCurrentPos(i), 800); 
             }, {passive: true});
             btn.addEventListener('touchend', () => clearTimeout(touchTimer));
             btn.addEventListener('touchmove', () => clearTimeout(touchTimer));
+
+            // PC: HÖGERKLICK PÅ KNAPPEN
+            btn.addEventListener('contextmenu', (e) => {
+                e.preventDefault(); // Hindra webbläsarens meny
+                saveCurrentPos(i);
+            });
         });
     }
 
@@ -519,7 +566,7 @@
     function startGame() {
         if (!currentTargetCoords || !userCoords) return;
         gameState = 'GAME';
-        els.shareBtn.classList.add('hidden'); // Göm dela-knappen under spelet
+        els.shareBtn.classList.add('hidden');
         const d = map.distance(userCoords, currentTargetCoords) / 1000;
         initialTotalKm = Math.max(1, Math.ceil(d));
         els.mapPage.classList.add('hidden');
@@ -600,4 +647,3 @@
 </script>
 </body>
 </html>
-
