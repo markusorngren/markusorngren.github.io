@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mouse-tracker-v5'; // Ändra detta nummer varje gång du gör stora ändringar!
+const CACHE_NAME = 'mouse-tracker-v6'; // Ändra detta nummer varje gång du gör stora ändringar!
 const ASSETS = [
   './',
   './index.html',
