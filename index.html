@@ -116,7 +116,7 @@
         button { cursor: pointer; font-weight: bold; transition: all 0.2s; border: none; color: #000; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
         button:active { transform: scale(0.95); }
 
-        .save-btn-container { display: flex; justify-content: center; gap: 10px; margin-bottom: 8px; padding: 2px; }
+        .save-btn-container { display: flex; justify-content: center; gap: 10px; margin-bottom: 8px; padding: 2px; align-items: center; }
         .slot-btn { 
             width: 50px; height: 50px; box-shadow: 0 3px 6px rgba(0,0,0,0.2); 
             display: flex; align-items: center; justify-content: center; padding: 0 2px; flex-shrink: 0;
@@ -127,6 +127,17 @@
             opacity: 1; 
             border: 2px solid rgba(0,0,0,0.3);
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .mode-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: #f0f0f0;
+            font-size: 1.2rem;
+            border: 2px solid #ddd;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+            flex-shrink: 0;
         }
 
         .btn-text-container { 
@@ -280,11 +291,12 @@
 
 <div id="welcome-overlay">
     <div class="welcome-content">
-        <h2>Hej! 🐭</h2>
+        <h2>Hej Marcus! 🐭</h2>
         <p>Hjälp musen att hitta osten!</p>
         <ul>
             <li>📍 <b>Klicka på kartan eller sök</b> för att välja resmål.</li>
             <li>💾 <b>Håll inne en spara-knapp</b> för att spara en favorit.</li>
+            <li>🚶↔️ <b>Välj färdsätt</b> bredvid spara-knapparna.</li>
             <li>🚀 Tryck på <b>STARTA</b> för att börja resan!</li>
         </ul>
         <button class="ok-btn" onclick="closeInstructions()">Okej! Jag förstår!</button>
@@ -301,6 +313,7 @@
             <button id="btn-1" class="slot-btn" onclick="handleSlotClick(1)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
             <button id="btn-2" class="slot-btn" onclick="handleSlotClick(2)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
             <button id="btn-3" class="slot-btn" onclick="handleSlotClick(3)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
+            <button id="mode-btn" class="mode-btn" onclick="toggleTravelMode()">🚗</button>
         </div>
 
         <div id="search-container" class="hidden">
@@ -345,8 +358,17 @@
     let initialZoomPerformed = false; 
     let isShowingUser = true; 
     let isTracking = false; 
+    let hasReachedTurnaround = false; // Flagga för Tur & Retur
     let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
     
+    // Travel Mode State - Nu med 100m (0.1) factor för gå-lägen
+    let travelMode = 0; 
+    const modes = [
+        { icon: '🚗', factor: 1.0, distMult: 1 },
+        { icon: '🚶', factor: 0.1, distMult: 1 },
+        { icon: '🚶↔️', factor: 0.1, distMult: 2 } 
+    ];
+
     let lastTargetRaw = JSON.parse(localStorage.getItem('mouse_last_target'));
     let lastTarget = null;
     if (lastTargetRaw) {
@@ -374,7 +396,8 @@
         searchInput: document.getElementById('text-search-input'),
         voiceBtn: document.getElementById('voice-btn'),
         welcomeOverlay: document.getElementById('welcome-overlay'),
-        shareBtn: document.getElementById('share-btn')
+        shareBtn: document.getElementById('share-btn'),
+        modeBtn: document.getElementById('mode-btn')
     };
 
     function closeInstructions() {
@@ -446,6 +469,13 @@
         window.addEventListener('resize', updateButtonUI);
     }
 
+    function toggleTravelMode() {
+        playClickSound();
+        travelMode = (travelMode + 1) % modes.length;
+        els.modeBtn.innerText = modes[travelMode].icon;
+        updateMapLogic();
+    }
+
     function handlePositionUpdate(pos) {
         userCoords = [pos.coords.latitude, pos.coords.longitude];
         
@@ -515,9 +545,12 @@
     function updateMapLogic() {
         if (userCoords && currentTargetCoords) {
             const d = map.distance(userCoords, currentTargetCoords) / 1000;
+            const displayDist = d * modes[travelMode].distMult;
+            
             if (connectionLine) connectionLine.setLatLngs([userCoords, currentTargetCoords]);
             else connectionLine = L.polyline([userCoords, currentTargetCoords], {color: '#007bff', weight: 3, dashArray: '10, 10'}).addTo(map);
-            els.distInfo.innerHTML = `<b>${d.toFixed(1)} km</b> till ${currentTargetName}`;
+            
+            els.distInfo.innerHTML = `<b>${displayDist.toFixed(2)} km</b> till ${currentTargetName} ${travelMode === 2 ? '(T&R)' : ''}`;
             els.startBtn.classList.remove('hidden');
         }
     }
@@ -615,12 +648,18 @@
     function startGame() {
         if (!currentTargetCoords || !userCoords) return;
         gameState = 'GAME';
+        hasReachedTurnaround = false; // Reset inför varje resa
         els.shareBtn.classList.add('hidden');
+        
         const d = map.distance(userCoords, currentTargetCoords) / 1000;
-        initialTotalKm = Math.max(1, Math.ceil(d));
+        const mode = modes[travelMode];
+        
+        initialTotalKm = Math.max(1, Math.ceil((d * mode.distMult) / mode.factor));
+        
         els.mapPage.classList.add('hidden');
         els.gamePage.classList.remove('hidden');
         els.pathGrid.innerHTML = '<div id="the-mouse">🐭</div>';
+        
         const frag = document.createDocumentFragment();
         for (let i = 0; i < initialTotalKm; i++) {
             const step = document.createElement('div');
@@ -642,16 +681,45 @@
 
     function updateGameLogic() {
         if (gameState !== 'GAME') return;
+        
+        const mode = modes[travelMode];
         const currentDist = map.distance(userCoords, currentTargetCoords) / 1000;
-        const finishedKm = Math.floor(initialTotalKm - currentDist);
+        const oneWayDist = (initialTotalKm * mode.factor) / mode.distMult;
+        
+        let finishedSteps;
+
+        if (travelMode === 2) { // Om det är Tur & Retur (T&R)
+            // Om vi är nära vändpunkten (målet), markera att vi vänt
+            if (!hasReachedTurnaround && currentDist < 0.05) {
+                hasReachedTurnaround = true; 
+            }
+
+            if (!hasReachedTurnaround) {
+                // Vägen DIT: Musen äter äpplen 0 till hälften
+                finishedSteps = Math.floor((oneWayDist - currentDist) / mode.factor);
+            } else {
+                // Vägen TILLBAKA: Musen äter från hälften till slutet
+                finishedSteps = Math.floor((oneWayDist + (oneWayDist - currentDist)) / mode.factor);
+            }
+        } else {
+            // Vanlig enkelresa
+            finishedSteps = Math.floor(initialTotalKm - (currentDist / mode.factor));
+        }
+
+        // Animera ätandet
         for (let i = 0; i < initialTotalKm - 1; i++) {
-            if (i < finishedKm) {
+            if (i < finishedSteps) {
                 const step = document.getElementById(`step-${i}`);
                 if (step && !step.classList.contains('eat-animation')) step.classList.add('eat-animation');
             }
         }
-        if (currentDist < 0.05) finishGame();
-        else moveMouse(finishedKm >= 0 ? finishedKm : 0); 
+        
+        // Avsluta resan bara om vi är nära slutmålet (hemma) och har vänt om det var T&R
+        if (currentDist < 0.05 && (travelMode !== 2 || hasReachedTurnaround)) {
+            finishGame();
+        } else {
+            moveMouse(finishedSteps >= 0 ? finishedSteps : 0); 
+        }
     }
 
     function finishGame() {
