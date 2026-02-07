@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mouse-tracker-v3'; // Ändra detta nummer varje gång du gör stora ändringar!
+const CACHE_NAME = 'mouse-tracker-v2'; // Ändra detta nummer varje gång du gör stora ändringar!
 const ASSETS = [
   './',
   './index.html',
@@ -32,4 +32,5 @@ self.addEventListener('fetch', (e) => {
   e.respondWith(
     caches.match(e.request).then(res => res || fetch(e.request))
   );
+
 });
