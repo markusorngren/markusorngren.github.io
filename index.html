@@ -550,7 +550,7 @@
             if (connectionLine) connectionLine.setLatLngs([userCoords, currentTargetCoords]);
             else connectionLine = L.polyline([userCoords, currentTargetCoords], {color: '#007bff', weight: 3, dashArray: '10, 10'}).addTo(map);
             
-            els.distInfo.innerHTML = `<b>${displayDist.toFixed(2)} km</b> till ${currentTargetName} ${travelMode === 2 ? '(T&R)' : ''}`;
+            els.distInfo.innerHTML = `<b>${displayDist.toFixed(2)} km</b> till ${currentTargetName} ${travelMode === 2 ? 'och tillbaka.' : ''}`;
             els.startBtn.classList.remove('hidden');
         }
     }
