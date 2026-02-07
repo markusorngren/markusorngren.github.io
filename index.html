@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Marcus Mouse & Cheese Tracker - Pro Edition</title>
+    <title>Markus Mouse & Cheese Tracker</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4CAF50">
@@ -129,20 +129,17 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
 
-        /* Container för rullande text */
         .btn-text-container { 
             width: 90%; 
             overflow: hidden; 
             white-space: nowrap; 
             position: relative;
-            /* Skapar en snygg avtoning i kanterna */
             mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
             -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
         }
         
-        /* Den faktiska texten */
         .scrolling-text { 
-            display: inline-block; /* VIKTIGT: Krävs för att mäta bredd */
+            display: inline-block; 
             font-size: 0.55rem; 
             text-transform: uppercase; 
             pointer-events: none; 
@@ -290,7 +287,7 @@
             <li>💾 <b>Håll inne en spara-knapp</b> för att spara en favorit.</li>
             <li>🚀 Tryck på <b>STARTA</b> för att börja resan!</li>
         </ul>
-        <button class="ok-btn" onclick="closeInstructions()">Nu kör vi!</button>
+        <button class="ok-btn" onclick="closeInstructions()">Okej! Jag förstår!</button>
     </div>
 </div>
 
@@ -327,8 +324,21 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+    // FÖRBÄTTRAD SERVICE WORKER LOGIK
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js');
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js').then(reg => {
+                reg.addEventListener('updatefound', () => {
+                    const newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            // Ny version finns! Vi laddar om sidan automatiskt för användaren.
+                            window.location.reload();
+                        }
+                    });
+                });
+            });
+        });
     }
 
     let map, targetMarker, userMarker, connectionLine, userCoords;
@@ -416,8 +426,6 @@
         });
         
         setupLongPress();
-        
-        // Uppdatera knapparna sist och lyssna på fönster-ändringar
         updateButtonUI();
         window.addEventListener('resize', updateButtonUI);
     }
@@ -489,20 +497,16 @@
             const btn = document.getElementById(`btn-${i}`);
             const container = btn.querySelector('.btn-text-container');
             const textSpan = btn.querySelector('.scrolling-text');
-            
             const displayName = loc ? loc.name : "SPARA " + (i + 1);
             
-            // Återställ rullning och text för att kunna mäta korrekt
             textSpan.classList.remove('animate-scroll');
             textSpan.innerText = displayName;
             
             if (loc) btn.classList.add('filled');
             else btn.classList.remove('filled');
 
-            // VIKTIGT: Vänta 100ms så webbläsaren hinner rita upp texten i rätt storlek
             setTimeout(() => {
                 if (textSpan.offsetWidth > container.offsetWidth) {
-                    // Skapa loopbar text med punkter emellan
                     textSpan.innerText = displayName + " \u00A0\u00A0\u00A0\u00A0 • \u00A0\u00A0\u00A0\u00A0 " + displayName + " \u00A0\u00A0\u00A0\u00A0 • ";
                     textSpan.classList.add('animate-scroll');
                 }
@@ -624,16 +628,10 @@
             text: 'Hjälp musen hitta osten! Kolla in min tracker.',
             url: window.location.href
         };
-
         try {
-            if (navigator.share) {
-                await navigator.share(shareData);
-            } else {
-                alert("Kopiera länken för att dela: " + window.location.href);
-            }
-        } catch (err) {
-            console.log('Error sharing:', err);
-        }
+            if (navigator.share) await navigator.share(shareData);
+            else alert("Kopiera länken: " + window.location.href);
+        } catch (err) {}
     }
 
     window.onload = initMap;
