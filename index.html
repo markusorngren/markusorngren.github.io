@@ -324,7 +324,6 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    // FÖRBÄTTRAD SERVICE WORKER LOGIK
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('sw.js').then(reg => {
@@ -332,7 +331,6 @@
                     const newWorker = reg.installing;
                     newWorker.addEventListener('statechange', () => {
                         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            // Ny version finns! Vi laddar om sidan automatiskt för användaren.
                             window.location.reload();
                         }
                     });
@@ -347,7 +345,19 @@
     let initialZoomPerformed = false; 
     let isShowingUser = true; 
     let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
-    let lastTarget = JSON.parse(localStorage.getItem('mouse_last_target'));
+    
+    // SMART TARGET LOADING - Kontrollera 3-timmarsgränsen vid start
+    let lastTargetRaw = JSON.parse(localStorage.getItem('mouse_last_target'));
+    let lastTarget = null;
+    if (lastTargetRaw) {
+        const threeHours = 3 * 60 * 60 * 1000;
+        if (Date.now() - lastTargetRaw.timestamp < threeHours) {
+            lastTarget = lastTargetRaw;
+        } else {
+            localStorage.removeItem('mouse_last_target');
+        }
+    }
+
     let touchTimer, audioCtx;
     let gameState = 'MAP';
     let initialTotalKm = 0;
@@ -431,21 +441,26 @@
     }
 
     function handlePositionUpdate(pos) {
-    userCoords = [pos.coords.latitude, pos.coords.longitude];
-    
-    // HÄR ÄR ÄNDRINGEN:
-    if (els.distInfo.innerHTML.includes("Söker din GPS")) {
-        els.distInfo.innerHTML = "Vart ska vi åka?";
+        userCoords = [pos.coords.latitude, pos.coords.longitude];
+        
+        if (els.distInfo.innerHTML.includes("Söker din GPS")) {
+            els.distInfo.innerHTML = "Vart ska vi åka?";
+        }
+
+        if (!userMarker) {
+            userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8}).addTo(map);
+        } else userMarker.setLatLng(userCoords);
+
+        // FÖRNYA TIDSSTÄMPEL: Om vi har ett aktivt mål, förnya tiden vid rörelse
+        if (currentTargetCoords && lastTargetRaw) {
+            lastTargetRaw.timestamp = Date.now();
+            localStorage.setItem('mouse_last_target', JSON.stringify(lastTargetRaw));
+        }
+
+        if (!initialZoomPerformed) { zoomToUser(); initialZoomPerformed = true; }
+        if (gameState === 'MAP') updateMapLogic();
+        else if (gameState === 'GAME') updateGameLogic();
     }
-
-    if (!userMarker) {
-        userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8}).addTo(map);
-    } else userMarker.setLatLng(userCoords);
-
-    if (!initialZoomPerformed) { zoomToUser(); initialZoomPerformed = true; }
-    if (gameState === 'MAP') updateMapLogic();
-    else if (gameState === 'GAME') updateGameLogic();
-}
 
     function toggleView() {
         if (!currentTargetCoords || isShowingUser) { zoomToUser(); isShowingUser = false; }
@@ -463,7 +478,15 @@
         currentTargetCoords = latlng;
         if (targetMarker) targetMarker.setLatLng(latlng);
         else targetMarker = L.marker(latlng).addTo(map);
-        if (shouldSave) localStorage.setItem('mouse_last_target', JSON.stringify({coords: latlng, name: currentTargetName}));
+        
+        if (shouldSave) {
+            lastTargetRaw = {
+                coords: latlng, 
+                name: currentTargetName,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('mouse_last_target', JSON.stringify(lastTargetRaw));
+        }
         updateMapLogic(); 
         updateLocateBtnText();
     }
