@@ -40,44 +40,66 @@
             overflow: hidden; 
         }
 
+        /* --- PORTRAIT / STANDARD (Upprätt läge) --- */
+        .action-container { 
+            display: flex; 
+            justify-content: center; 
+            gap: 8px; 
+            width: 100%; 
+            max-width: 400px; 
+            margin: 0 auto; 
+        }
+
+        /* Ordning för portrait: Hitta mig (1), Sök (2), Röst (3), Starta (4) */
+        #locate-btn { order: 1; }
+        #text-btn   { order: 2; }
+        #voice-btn  { order: 3; }
+        #start-btn  { order: 4; }
+
         /* LANDSCAPE OPTIMIZATION */
         @media (orientation: landscape) {
             #map-page { flex-direction: row; }
             
             .panel { 
-                width: 280px; 
+                width: 300px; 
                 height: 100%; 
                 border-radius: 0 !important; 
                 box-shadow: -4px 0 15px rgba(0,0,0,0.1) !important;
                 display: flex;
                 flex-direction: column;
-                justify-content: flex-start; /* Starta från toppen */
+                justify-content: flex-start;
                 padding: env(safe-area-inset-top) 15px calc(20px + env(safe-area-inset-bottom)) 15px !important;
                 box-sizing: border-box;
                 gap: 10px;
             }
 
-            /* Behåll sparade platser och mode-knapp högst upp */
             .save-btn-container { 
+                display: flex;
                 flex-wrap: wrap; 
                 justify-content: center;
+                gap: 8px;
                 margin-bottom: 5px;
             }
 
-            /* Den nya vertikala ordningen för landscape */
+            /* I landscape flyttar vi in Mode i action-container igen */
+            #mode-btn { display: flex !important; }
+
             .action-container { 
-                flex-direction: column; 
-                gap: 12px; 
-                flex: 1;
-                justify-content: flex-start;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+                flex: none;
                 margin-top: 10px;
             }
 
-            /* Specifik ordning via CSS Order */
-            #start-btn { order: 1; width: 100%; min-height: 50px; font-size: 1rem; }
-            #voice-btn { order: 2; width: 100%; }
-            #text-btn  { order: 3; width: 100%; }
-            #locate-btn { order: 4; width: 100%; margin-top: auto; } /* Hitta mig längst ner */
+            /* Färdsätt till vänster, Starta till höger */
+            #mode-btn { grid-column: 1; order: 1; width: 100%; height: 50px; }
+            #start-btn { grid-column: 2; order: 2; width: 100%; height: 50px; display: flex !important; }
+
+            /* Röst, Sök och Hitta mig under där */
+            #voice-btn { grid-column: 1 / span 2; order: 3; width: 100%; }
+            #text-btn  { grid-column: 1 / span 2; order: 4; width: 100%; }
+            #locate-btn { grid-column: 1 / span 2; order: 5; width: 100%; }
 
             .apple-grid { 
                 grid-template-columns: repeat(10, 1fr) !important; 
@@ -227,14 +249,6 @@
             font-size: 1.2rem;
         }
 
-        .action-container { 
-            display: flex; 
-            justify-content: center; 
-            gap: 8px; 
-            width: 100%; 
-            max-width: 400px; 
-            margin: 0 auto; 
-        }
         .action-btn { flex: 1; padding: 8px 5px; border-radius: 40px; font-size: 0.75rem; box-shadow: 0 4px 0 rgba(0,0,0,0.15); min-height: 42px; }
         
         #locate-btn { background: #007bff; color: white; text-transform: uppercase; }
@@ -361,7 +375,6 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    // [Scriptet fortsätter oförändrat nedan...]
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('sw.js').then(reg => {
@@ -421,7 +434,8 @@
         voiceBtn: document.getElementById('voice-btn'),
         welcomeOverlay: document.getElementById('welcome-overlay'),
         shareBtn: document.getElementById('share-btn'),
-        modeBtn: document.getElementById('mode-btn')
+        modeBtn: document.getElementById('mode-btn'),
+        actionContainer: document.querySelector('.action-container')
     };
 
     function closeInstructions() {
@@ -456,13 +470,11 @@
     function initMap() {
     if(sessionStorage.getItem('introSeen')) els.welcomeOverlay.classList.add('hidden');
     
-    // Vi lägger till attributionControl: false för att ta bort länken i hörnet
     map = L.map('map', { 
         zoomControl: false,
         attributionControl: false 
     }).setView([59.3, 14.1], 5);
 
-    // Vi laddar OpenStreetMap som vanligt
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
     if (lastTarget) {
@@ -497,8 +509,25 @@
     
     setupLongPress();
     updateButtonUI();
-    window.addEventListener('resize', updateButtonUI);
+    window.addEventListener('resize', handleOrientationLayout);
+    handleOrientationLayout();
 }
+
+    // Flyttar fysiskt knappen i DOM:en baserat på orientering för att CSS Grid ska fungera optimalt
+    function handleOrientationLayout() {
+        if (window.innerHeight < window.innerWidth) {
+            // Landscape
+            if (els.modeBtn.parentElement !== els.actionContainer) {
+                els.actionContainer.prepend(els.modeBtn);
+            }
+        } else {
+            // Portrait
+            const saveContainer = document.querySelector('.save-btn-container');
+            if (els.modeBtn.parentElement !== saveContainer) {
+                saveContainer.appendChild(els.modeBtn);
+            }
+        }
+    }
 
     function toggleTravelMode() {
         playClickSound();
