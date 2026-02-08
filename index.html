@@ -250,7 +250,7 @@
             <button id="start-btn" class="action-btn hidden" onclick="startGame()">STARTA 🧀</button>
             <button id="voice-btn" class="action-btn" onclick="startVoiceSearch()">🎤 RÖST</button>
             <button id="text-btn" class="action-btn" onclick="toggleSearchUI()">🔍 SÖK</button> 
-            <button id="locate-btn" class="action-btn" onclick="toggleView()">🎯 HITTA MIG</button>
+            <button id="locate-btn" class="action-btn" onclick="toggleView()">🎯 HITTA ME</button>
         </div>
     </div>
 </div>
@@ -276,10 +276,8 @@
                     worker.postMessage({ type: 'GET_VERSION' }, [msgChan.port2]);
                 };
 
-                // Kör direkt om en worker redan är aktiv
                 if (reg.active) askVersion(reg.active);
 
-                // Lyssna på tillståndsförändringar (viktigt för iOS)
                 reg.addEventListener('updatefound', () => {
                     const newWorker = reg.installing;
                     newWorker.addEventListener('statechange', () => {
@@ -308,9 +306,9 @@
     
     let travelMode = 0; 
     const modes = [
-        { icon: '🚗', factor: 1.0, distMult: 1 },
-        { icon: '🚶', factor: 0.1, distMult: 1 },
-        { icon: '🚶↔️', factor: 0.1, distMult: 2 } 
+        { icon: '🚗', factor: 1.0, distMult: 1, osrm: 'car' },
+        { icon: '🚶', factor: 0.1, distMult: 1, osrm: 'foot' },
+        { icon: '🚶↔️', factor: 0.1, distMult: 2, osrm: 'foot' } 
     ];
 
     let lastTargetRaw = JSON.parse(localStorage.getItem('mouse_last_target'));
@@ -401,7 +399,7 @@
     function playVictorySound() {
         if (!audioCtx) return;
         const now = audioCtx.currentTime;
-        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        const notes = [523.25, 659.25, 783.99, 1046.50]; 
         notes.forEach((freq, i) => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -495,7 +493,7 @@
         updateLocateBtnText();
     }
 
-    function updateLocateBtnText() { els.locateBtn.innerHTML = (!currentTargetCoords || isShowingUser) ? "🎯 HITTA MIG" : `🏁 ${currentTargetName.toUpperCase()}`; }
+    function updateLocateBtnText() { els.locateBtn.innerHTML = (!currentTargetCoords || isShowingUser) ? "🎯 HITTA ME" : `🏁 ${currentTargetName.toUpperCase()}`; }
     function zoomToUser() { if (userCoords) map.flyTo(userCoords, 16); }
 
     function setTarget(latlng, shouldSave = true) {
@@ -510,15 +508,46 @@
         updateLocateBtnText();
     }
 
-    function updateMapLogic() {
+    async function updateMapLogic() {
         if (userCoords && currentTargetCoords) {
-            const d = map.distance(userCoords, currentTargetCoords) / 1000;
-            const displayDist = d * modes[travelMode].distMult;
-            if (connectionLine) connectionLine.setLatLngs([userCoords, currentTargetCoords]);
-            else connectionLine = L.polyline([userCoords, currentTargetCoords], {color: '#007bff', weight: 3, dashArray: '10, 10'}).addTo(map);
-            els.distInfo.innerHTML = `<b>${displayDist.toFixed(2)} km</b> till ${currentTargetName} ${travelMode === 2 ? 'och tillbaka.' : ''}`;
-            els.startBtn.classList.remove('hidden');
+            const mode = modes[travelMode];
+            const url = `https://router.project-osrm.org/route/v1/${mode.osrm}/${userCoords[1]},${userCoords[0]};${currentTargetCoords.lng},${currentTargetCoords.lat}?overview=full&geometries=geojson`;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.code === 'Ok') {
+                    const route = data.routes[0];
+                    const actualDistKm = route.distance / 1000;
+                    const displayDist = actualDistKm * mode.distMult;
+                    
+                    const latlngs = route.geometry.coordinates.map(c => [c[1], c[0]]);
+                    if (connectionLine) {
+                        connectionLine.setLatLngs(latlngs);
+                        connectionLine.setStyle({ dashArray: null, opacity: 0.6 });
+                    } else {
+                        connectionLine = L.polyline(latlngs, {color: '#007bff', weight: 4, opacity: 0.6}).addTo(map);
+                    }
+                    
+                    els.distInfo.innerHTML = `<b>${displayDist.toFixed(2)} km</b> till ${currentTargetName} ${travelMode === 2 ? 'och tillbaka.' : ''}`;
+                    els.startBtn.classList.remove('hidden');
+                } else {
+                    fallbackDist();
+                }
+            } catch (e) {
+                fallbackDist();
+            }
         }
+    }
+
+    function fallbackDist() {
+        const d = map.distance(userCoords, currentTargetCoords) / 1000;
+        const displayDist = d * modes[travelMode].distMult;
+        if (connectionLine) connectionLine.setLatLngs([userCoords, currentTargetCoords]);
+        else connectionLine = L.polyline([userCoords, currentTargetCoords], {color: '#007bff', weight: 3, dashArray: '10, 10'}).addTo(map);
+        els.distInfo.innerHTML = `<b>${displayDist.toFixed(2)} km</b> till ${currentTargetName} (fågelvägen)`;
+        els.startBtn.classList.remove('hidden');
     }
 
     function saveCurrentPos(index) {
@@ -595,9 +624,13 @@
         startCoords = [...userCoords];
         hasReachedTurnaround = false; 
         els.shareBtn.classList.add('hidden');
-        const d = map.distance(userCoords, currentTargetCoords) / 1000;
+        
+        // Vi använder det avstånd som visas i texten (från OSRM om möjligt)
+        const distStr = els.distInfo.innerText.split(' ')[0];
+        const distKm = parseFloat(distStr);
         const mode = modes[travelMode];
-        initialTotalKm = Math.max(1, Math.ceil((d * mode.distMult) / mode.factor));
+        initialTotalKm = Math.max(1, Math.ceil(distKm / mode.factor));
+        
         els.mapPage.classList.add('hidden');
         els.gamePage.classList.remove('hidden');
         els.pathGrid.innerHTML = '<div id="the-mouse">🐭</div>';
