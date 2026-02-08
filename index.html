@@ -179,7 +179,6 @@
         #the-mouse { position: absolute; font-size: 1.8rem; transition: all 0.8s ease-in-out; z-index: 100; margin-top: -12px; margin-left: -8px; pointer-events: none; animation: mouseWobble 1s infinite ease-in-out; }
         .eat-animation { transform: scale(0.6) !important; opacity: 0.3 !important; }
 
-        /* NY SEGERDANSA ANIMATION */
         @keyframes victoryWiggle {
             0% { transform: translate(-50%, -50%) scale(1.8) rotate(0deg); }
             25% { transform: translate(-50%, -50%) scale(2.2) rotate(-20deg); }
@@ -195,7 +194,6 @@
             display: flex; align-items: center; justify-content: center; 
         }
 
-        /* KONFETTI SYSTEM */
         .confetti {
             position: fixed; width: 10px; height: 10px; background-color: #f00;
             z-index: 10000; top: -20px; animation: fall 3s linear forwards;
@@ -625,7 +623,6 @@
         hasReachedTurnaround = false; 
         els.shareBtn.classList.add('hidden');
         
-        // Vi använder det avstånd som visas i texten (från OSRM om möjligt)
         const distStr = els.distInfo.innerText.split(' ')[0];
         const distKm = parseFloat(distStr);
         const mode = modes[travelMode];
@@ -656,36 +653,54 @@
 
     function updateGameLogic() {
         if (gameState !== 'GAME') return;
+        
+        const currentDistToTarget = map.distance(userCoords, currentTargetCoords) / 1000;
+        const currentDistToStart = map.distance(userCoords, startCoords) / 1000;
+        
         const mode = modes[travelMode];
-        const distToTarget = map.distance(userCoords, currentTargetCoords) / 1000;
-        const distToStart = map.distance(userCoords, startCoords) / 1000;
-        const oneWayDist = (initialTotalKm * mode.factor) / (travelMode === 2 ? 2 : 1);
-        const winDistance = (travelMode === 0) ? 0.05 : 0.015;
+        const totalPathKm = initialTotalKm * mode.factor;
+        const oneWayDist = (travelMode === 2) ? totalPathKm / 2 : totalPathKm;
+        
         let finishedSteps;
 
         if (travelMode === 2) { 
-            if (!hasReachedTurnaround && distToTarget < 0.05) hasReachedTurnaround = true; 
-            if (!hasReachedTurnaround) finishedSteps = Math.floor((oneWayDist - distToTarget) / mode.factor);
-            else finishedSteps = Math.floor((oneWayDist + (oneWayDist - distToStart)) / mode.factor);
+            if (!hasReachedTurnaround && currentDistToTarget < 0.04) {
+                hasReachedTurnaround = true;
+                playClickSound(); 
+            } 
+            
+            if (!hasReachedTurnaround) {
+                finishedSteps = Math.floor(((oneWayDist - currentDistToTarget) / oneWayDist) * (initialTotalKm / 2));
+            } else {
+                const returnProgress = (oneWayDist - currentDistToStart) / oneWayDist;
+                finishedSteps = Math.floor((initialTotalKm / 2) + (returnProgress * (initialTotalKm / 2)));
+            }
         } else {
-            finishedSteps = Math.floor(initialTotalKm - (distToTarget / mode.factor));
+            const progress = Math.max(0, 1 - (currentDistToTarget / oneWayDist));
+            finishedSteps = Math.floor(progress * initialTotalKm);
         }
 
         for (let i = 0; i < initialTotalKm - 1; i++) {
-            if (i < finishedSteps) {
-                const step = document.getElementById(`step-${i}`);
-                if (step && !step.classList.contains('eat-animation')) step.classList.add('eat-animation');
+            const step = document.getElementById(`step-${i}`);
+            if (step) {
+                if (i < finishedSteps) {
+                    if (!step.classList.contains('eat-animation')) step.classList.add('eat-animation');
+                } else {
+                    step.classList.remove('eat-animation');
+                }
             }
         }
         
-        const isHomeAgain = travelMode === 2 && hasReachedTurnaround && distToStart < winDistance;
-        const isAtOneWayTarget = travelMode !== 2 && distToTarget < winDistance;
+        const winDistance = (travelMode === 0) ? 0.07 : 0.02; 
+        const isHomeAgain = travelMode === 2 && hasReachedTurnaround && currentDistToStart < winDistance;
+        const isAtOneWayTarget = travelMode !== 2 && currentDistToTarget < winDistance;
 
         if (isHomeAgain || isAtOneWayTarget) {
             moveMouse(initialTotalKm - 1);
             setTimeout(finishGame, 500);
         } else {
-            moveMouse(finishedSteps >= 0 ? finishedSteps : 0); 
+            const safeIndex = Math.max(0, Math.min(finishedSteps, initialTotalKm - 2));
+            moveMouse(safeIndex); 
         }
     }
 
