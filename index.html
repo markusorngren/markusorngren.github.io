@@ -32,7 +32,6 @@
             -webkit-user-select: none;
         }
 
-        /* Version-tag styling */
         #version-tag {
             position: fixed;
             top: 10px;
@@ -48,7 +47,6 @@
             font-weight: bold;
         }
 
-        /* iOS Install Banner Styling */
         #ios-install-prompt {
             position: fixed;
             bottom: calc(20px + env(safe-area-inset-bottom));
@@ -72,59 +70,14 @@
             to { transform: translateY(0); opacity: 1; }
         }
 
-        .ios-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: bold;
-            color: var(--primary);
-            font-size: 1.1rem;
-        }
-
-        .ios-instructions {
-            font-size: 0.95rem;
-            text-align: center;
-            color: #444;
-            line-height: 1.4;
-        }
-
-        .ios-footer {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            background: #f9f9f9;
-            padding: 8px 15px;
-            border-radius: 12px;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .close-ios-btn {
-            background: none;
-            border: none;
-            color: #999;
-            text-decoration: underline;
-            font-size: 0.8rem;
-            margin-top: 5px;
-        }
+        .ios-header { display: flex; align-items: center; gap: 10px; font-weight: bold; color: var(--primary); font-size: 1.1rem; }
+        .ios-instructions { font-size: 0.95rem; text-align: center; color: #444; line-height: 1.4; }
+        .ios-footer { display: flex; align-items: center; justify-content: center; gap: 8px; background: #f9f9f9; padding: 8px 15px; border-radius: 12px; width: 100%; box-sizing: border-box; }
+        .close-ios-btn { background: none; border: none; color: #999; text-decoration: underline; font-size: 0.8rem; margin-top: 5px; }
         
-        #map-page, #game-page { 
-            height: var(--app-height); 
-            width: 100vw; 
-            display: flex; 
-            flex-direction: column; 
-            overflow: hidden; 
-        }
+        #map-page, #game-page { height: var(--app-height); width: 100vw; display: flex; flex-direction: column; overflow: hidden; }
 
-        .action-container { 
-            display: flex; 
-            justify-content: center; 
-            gap: 8px; 
-            width: 100%; 
-            max-width: 400px; 
-            margin: 0 auto; 
-        }
+        .action-container { display: flex; justify-content: center; gap: 8px; width: 100%; max-width: 400px; margin: 0 auto; }
 
         #locate-btn { order: 1; }
         #text-btn   { order: 2; }
@@ -188,23 +141,9 @@
         }
         .slot-btn.filled { opacity: 1; border: 2px solid rgba(0,0,0,0.3); box-shadow: 0 0 10px rgba(0,0,0,0.1); }
 
-        .mode-btn {
-            width: 50px; height: 50px; border-radius: 12px; background: #f0f0f0;
-            font-size: 1.2rem; border: 2px solid #ddd; box-shadow: 0 3px 6px rgba(0,0,0,0.1); flex-shrink: 0;
-        }
-
-        .btn-text-container { 
-            width: 90%; overflow: hidden; white-space: nowrap; position: relative;
-            mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
-            -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
-        }
-        
-        .scrolling-text { 
-            display: inline-block; font-size: 0.55rem; text-transform: uppercase; 
-            pointer-events: none; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-            padding: 0 5px; white-space: nowrap;
-        }
-
+        .mode-btn { width: 50px; height: 50px; border-radius: 12px; background: #f0f0f0; font-size: 1.2rem; border: 2px solid #ddd; box-shadow: 0 3px 6px rgba(0,0,0,0.1); flex-shrink: 0; }
+        .btn-text-container { width: 90%; overflow: hidden; white-space: nowrap; position: relative; mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent); }
+        .scrolling-text { display: inline-block; font-size: 0.55rem; text-transform: uppercase; pointer-events: none; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); padding: 0 5px; white-space: nowrap; }
         .animate-scroll { animation: marquee 6s linear infinite; }
         @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50.5%); } }
 
@@ -218,7 +157,6 @@
         #go-btn { background: #17a2b8; color: white; border-radius: 50%; width: 40px; height: 40px; font-size: 1.2rem; }
 
         .action-btn { flex: 1; padding: 8px 5px; border-radius: 40px; font-size: 0.75rem; box-shadow: 0 4px 0 rgba(0,0,0,0.15); min-height: 42px; }
-        
         #locate-btn { background: #007bff; color: white; text-transform: uppercase; }
         #text-btn { background: #17a2b8; color: white; } 
         #voice-btn { background: #444; color: white; }
@@ -227,6 +165,7 @@
 
         #dist-info { margin-bottom: 8px; font-weight: bold; font-size: 0.95rem; color: #000; min-height: 1.2em; }
         #share-btn { position: fixed; top: 15px; left: 15px; z-index: 10000; background: white; border-radius: 50%; width: 45px; height: 45px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-size: 1.2rem; }
+        
         #game-page { align-items: center; padding: 5px; position: relative; }
         .apple-grid { 
             display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; width: 95%; 
@@ -235,11 +174,35 @@
             max-height: 70vh; overflow-y: auto;
         }
         .step { font-size: 1.4rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; transition: all 0.5s ease; }
+        
         @keyframes mouseWobble { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } }
         #the-mouse { position: absolute; font-size: 1.8rem; transition: all 0.8s ease-in-out; z-index: 100; margin-top: -12px; margin-left: -8px; pointer-events: none; animation: mouseWobble 1s infinite ease-in-out; }
         .eat-animation { transform: scale(0.6) !important; opacity: 0.3 !important; }
-        @keyframes victoryPop { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; } 80% { transform: translate(-50%, -50%) scale(2.0); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.8); opacity: 1; } }
-        #the-mouse.victory { position: fixed; top: 50% !important; left: 50% !important; z-index: 9999; font-size: 5rem; animation: victoryPop 0.6s ease-out forwards; margin: 0; background: rgba(253, 246, 227, 0.95); width: 100vw; height: 100svh; display: flex; align-items: center; justify-content: center; }
+
+        /* NY SEGERDANSA ANIMATION */
+        @keyframes victoryWiggle {
+            0% { transform: translate(-50%, -50%) scale(1.8) rotate(0deg); }
+            25% { transform: translate(-50%, -50%) scale(2.2) rotate(-20deg); }
+            50% { transform: translate(-50%, -50%) scale(1.8) rotate(0deg); }
+            75% { transform: translate(-50%, -50%) scale(2.2) rotate(20deg); }
+            100% { transform: translate(-50%, -50%) scale(1.8) rotate(0deg); }
+        }
+        
+        #the-mouse.victory { 
+            position: fixed; top: 50% !important; left: 50% !important; z-index: 9999; 
+            font-size: 6rem; animation: victoryWiggle 0.8s infinite ease-in-out; 
+            margin: 0; background: rgba(253, 246, 227, 0.95); width: 100vw; height: 100svh; 
+            display: flex; align-items: center; justify-content: center; 
+        }
+
+        /* KONFETTI SYSTEM */
+        .confetti {
+            position: fixed; width: 10px; height: 10px; background-color: #f00;
+            z-index: 10000; top: -20px; animation: fall 3s linear forwards;
+        }
+        @keyframes fall {
+            to { transform: translateY(105vh) rotate(720deg); }
+        }
     </style>
 </head>
 <body>
@@ -262,15 +225,9 @@
 </div>
 
 <div id="ios-install-prompt" class="hidden">
-    <div class="ios-header">
-        <span>🐭 Cheese Tracker</span>
-    </div>
-    <div class="ios-instructions">
-        Installera appen för att få fullskärm och snabb åtkomst!
-    </div>
-    <div class="ios-footer">
-        Tryck på <img src="https://developer.apple.com/library/archive/documentation/NetworkingInternet/Conceptual/SafariVisualGuide/Art/Action_2x.png" width="20" style="margin: 0 3px;"> och välj <b>"Lägg till på hemskärmen"</b>.
-    </div>
+    <div class="ios-header"><span>🐭 Cheese Tracker</span></div>
+    <div class="ios-instructions">Installera appen för att få fullskärm och snabb åtkomst!</div>
+    <div class="ios-footer">Tryck på <img src="https://developer.apple.com/library/archive/documentation/NetworkingInternet/Conceptual/SafariVisualGuide/Art/Action_2x.png" width="20" style="margin: 0 3px;"> och välj <b>"Lägg till på hemskärmen"</b>.</div>
     <button class="close-ios-btn" onclick="this.parentElement.classList.add('hidden')">Kanske senare</button>
 </div>
 
@@ -278,7 +235,6 @@
     <div id="map"></div>
     <div class="panel">
         <div id="dist-info">Söker din GPS... 📍</div>
-        
         <div class="save-btn-container">
             <button id="btn-0" class="slot-btn" onclick="handleSlotClick(0)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
             <button id="btn-1" class="slot-btn" onclick="handleSlotClick(1)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
@@ -286,12 +242,10 @@
             <button id="btn-3" class="slot-btn" onclick="handleSlotClick(3)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
             <button id="mode-btn" class="mode-btn" onclick="toggleTravelMode()">🚗</button>
         </div>
-
         <div id="search-container" class="hidden">
             <input type="text" id="text-search-input" placeholder="Vart ska vi?">
             <button id="go-btn" onclick="executeTextSearch()">➔</button>
         </div>
-
         <div class="action-container">
             <button id="start-btn" class="action-btn hidden" onclick="startGame()">STARTA 🧀</button>
             <button id="voice-btn" class="action-btn" onclick="startVoiceSearch()">🎤 RÖST</button>
@@ -308,27 +262,19 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    // Service Worker registrering med versionshämtning
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('sw.js').then(reg => {
-                
-                // Funktion för att be om versionen
                 const askVersion = (worker) => {
                     const msgChan = new MessageChannel();
                     msgChan.port1.onmessage = (event) => {
                         if (event.data && event.data.version) {
-                            // Uppdaterar texten i hörnet
                             document.getElementById('version-tag').innerText = event.data.version.toUpperCase();
                         }
                     };
                     worker.postMessage({ type: 'GET_VERSION' }, [msgChan.port2]);
                 };
-
-                // Om en worker redan körs, fråga direkt
                 if (reg.active) askVersion(reg.active);
-
-                // Ladda om vid uppdatering för att direkt se nya versionen
                 reg.addEventListener('updatefound', () => {
                     const newWorker = reg.installing;
                     newWorker.addEventListener('statechange', () => {
@@ -391,13 +337,10 @@
         actionContainer: document.querySelector('.action-container')
     };
 
-    // Funktion för att kolla om iOS-enhet och visa install-banner
     function checkIosInstall() {
         const isIphone = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
         const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
-
         if (isIphone && !isStandalone) {
-            // Visa efter en kort fördröjning så det inte krockar med välkomst-skärmen
             setTimeout(() => {
                 document.getElementById('ios-install-prompt').classList.remove('hidden');
             }, 2000);
@@ -408,9 +351,6 @@
         try {
             if ('wakeLock' in navigator) {
                 wakeLock = await navigator.wakeLock.request('screen');
-                wakeLock.addEventListener('release', () => {
-                    wakeLock = null;
-                });
             }
         } catch (err) {}
     }
@@ -450,14 +390,39 @@
         } catch(e) {}
     }
 
+    // NY LJUDEFFEKT FÖR VINST
+    function playVictorySound() {
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach((freq, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + i * 0.1);
+            gain.gain.setValueAtTime(0.1, now + i * 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.5);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(now + i * 0.1); osc.stop(now + i * 0.1 + 0.6);
+        });
+    }
+
+    function createConfetti() {
+        for(let i=0; i<50; i++) {
+            const c = document.createElement('div');
+            c.className = 'confetti';
+            c.style.left = Math.random() * 100 + 'vw';
+            c.style.backgroundColor = `hsl(${Math.random() * 360}, 70%, 50%)`;
+            c.style.animationDuration = (Math.random() * 2 + 1) + 's';
+            c.style.opacity = Math.random();
+            document.body.appendChild(c);
+            setTimeout(() => c.remove(), 3000);
+        }
+    }
+
     function initMap() {
         if(sessionStorage.getItem('introSeen')) els.welcomeOverlay.classList.add('hidden');
-        
-        map = L.map('map', { 
-            zoomControl: false,
-            attributionControl: false 
-        }).setView([59.3, 14.1], 5);
-
+        map = L.map('map', { zoomControl: false, attributionControl: false }).setView([59.3, 14.1], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
         if (lastTarget) {
@@ -469,11 +434,7 @@
         }
 
         if (navigator.geolocation) {
-            navigator.geolocation.watchPosition(handlePositionUpdate, null, {
-                enableHighAccuracy: true,
-                maximumAge: 10000,
-                timeout: 5000
-            });
+            navigator.geolocation.watchPosition(handlePositionUpdate, null, { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 });
         }
 
         map.on('click', e => { 
@@ -485,28 +446,20 @@
             map.panTo(e.latlng);
         });
 
-        map.on('movestart', (e) => {
-            if (e.hard) return; 
-            isTracking = false; 
-        });
-        
+        map.on('movestart', (e) => { if (!e.hard) isTracking = false; });
         setupLongPress();
         updateButtonUI();
         window.addEventListener('resize', handleOrientationLayout);
         handleOrientationLayout();
-        checkIosInstall(); // Kör iOS-kollen vid start
+        checkIosInstall();
     }
 
     function handleOrientationLayout() {
         if (window.innerHeight < window.innerWidth) {
-            if (els.modeBtn.parentElement !== els.actionContainer) {
-                els.actionContainer.prepend(els.modeBtn);
-            }
+            if (els.modeBtn.parentElement !== els.actionContainer) els.actionContainer.prepend(els.modeBtn);
         } else {
             const saveContainer = document.querySelector('.save-btn-container');
-            if (els.modeBtn.parentElement !== saveContainer) {
-                saveContainer.appendChild(els.modeBtn);
-            }
+            if (els.modeBtn.parentElement !== saveContainer) saveContainer.appendChild(els.modeBtn);
         }
     }
 
@@ -519,64 +472,31 @@
 
     function handlePositionUpdate(pos) {
         userCoords = [pos.coords.latitude, pos.coords.longitude];
-        
-        if (els.distInfo.innerHTML.includes("Söker din GPS")) {
-            els.distInfo.innerHTML = "Vart ska vi?";
-        }
-
+        if (els.distInfo.innerHTML.includes("Söker din GPS")) els.distInfo.innerHTML = "Vart ska vi?";
         if (!userMarker) {
             userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8}).addTo(map);
         } else userMarker.setLatLng(userCoords);
-
-        if (isTracking && gameState === 'MAP') {
-            map.setView(userCoords, map.getZoom());
-        }
-
-        if (currentTargetCoords && lastTargetRaw) {
-            lastTargetRaw.timestamp = Date.now();
-            localStorage.setItem('mouse_last_target', JSON.stringify(lastTargetRaw));
-        }
-
-        if (!initialZoomPerformed) { 
-            zoomToUser(); 
-            initialZoomPerformed = true; 
-            isTracking = true;
-        }
+        if (isTracking && gameState === 'MAP') map.setView(userCoords, map.getZoom());
+        if (!initialZoomPerformed) { zoomToUser(); initialZoomPerformed = true; isTracking = true; }
         if (gameState === 'MAP') updateMapLogic();
         else if (gameState === 'GAME') updateGameLogic();
     }
 
     function toggleView() {
-        if (!currentTargetCoords || isShowingUser) { 
-            zoomToUser(); 
-            isShowingUser = false; 
-            isTracking = true;
-        }
-        else { 
-            map.flyTo(currentTargetCoords, 14); 
-            isShowingUser = true; 
-            isTracking = false;
-        }
+        if (!currentTargetCoords || isShowingUser) { zoomToUser(); isShowingUser = false; isTracking = true; }
+        else { map.flyTo(currentTargetCoords, 14); isShowingUser = true; isTracking = false; }
         updateLocateBtnText();
     }
 
-    function updateLocateBtnText() {
-        els.locateBtn.innerHTML = (!currentTargetCoords || isShowingUser) ? "🎯 HITTA MIG" : `🏁 ${currentTargetName.toUpperCase()}`;
-    }
-
+    function updateLocateBtnText() { els.locateBtn.innerHTML = (!currentTargetCoords || isShowingUser) ? "🎯 HITTA MIG" : `🏁 ${currentTargetName.toUpperCase()}`; }
     function zoomToUser() { if (userCoords) map.flyTo(userCoords, 16); }
 
     function setTarget(latlng, shouldSave = true) {
         currentTargetCoords = latlng;
         if (targetMarker) targetMarker.setLatLng(latlng);
         else targetMarker = L.marker(latlng).addTo(map);
-        
         if (shouldSave) {
-            lastTargetRaw = {
-                coords: latlng, 
-                name: currentTargetName,
-                timestamp: Date.now()
-            };
+            lastTargetRaw = { coords: latlng, name: currentTargetName, timestamp: Date.now() };
             localStorage.setItem('mouse_last_target', JSON.stringify(lastTargetRaw));
         }
         updateMapLogic(); 
@@ -587,10 +507,8 @@
         if (userCoords && currentTargetCoords) {
             const d = map.distance(userCoords, currentTargetCoords) / 1000;
             const displayDist = d * modes[travelMode].distMult;
-            
             if (connectionLine) connectionLine.setLatLngs([userCoords, currentTargetCoords]);
             else connectionLine = L.polyline([userCoords, currentTargetCoords], {color: '#007bff', weight: 3, dashArray: '10, 10'}).addTo(map);
-            
             els.distInfo.innerHTML = `<b>${displayDist.toFixed(2)} km</b> till ${currentTargetName} ${travelMode === 2 ? 'och tillbaka.' : ''}`;
             els.startBtn.classList.remove('hidden');
         }
@@ -608,13 +526,7 @@
 
     function handleSlotClick(index) {
         const data = savedLocations[index];
-        if (data) { 
-            currentTargetName = data.name; 
-            isTracking = false;
-            setTarget(data.coords, true); 
-            map.flyTo(data.coords, 14); 
-            isShowingUser = true; 
-        }
+        if (data) { currentTargetName = data.name; isTracking = false; setTarget(data.coords, true); map.flyTo(data.coords, 14); isShowingUser = true; }
     }
 
     function updateButtonUI() {
@@ -623,27 +535,16 @@
             const container = btn.querySelector('.btn-text-container');
             const textSpan = btn.querySelector('.scrolling-text');
             const displayName = loc ? loc.name : "SPARA " + (i + 1);
-            
             textSpan.classList.remove('animate-scroll');
             textSpan.innerText = displayName;
-            
-            if (loc) btn.classList.add('filled');
-            else btn.classList.remove('filled');
-
-            setTimeout(() => {
-                if (textSpan.offsetWidth > container.offsetWidth) {
-                    textSpan.innerText = displayName + " \u00A0\u00A0\u00A0\u00A0 • \u00A0\u00A0\u00A0\u00A0 " + displayName + " \u00A0\u00A0\u00A0\u00A0 • ";
-                    textSpan.classList.add('animate-scroll');
-                }
-            }, 100);
+            if (loc) btn.classList.add('filled'); else btn.classList.remove('filled');
+            setTimeout(() => { if (textSpan.offsetWidth > container.offsetWidth) { textSpan.innerText = displayName + " \u00A0\u00A0\u00A0\u00A0 • \u00A0\u00A0\u00A0\u00A0 " + displayName + " \u00A0\u00A0\u00A0\u00A0 • "; textSpan.classList.add('animate-scroll'); } }, 100);
         });
     }
 
     function setupLongPress() {
         document.querySelectorAll('.slot-btn').forEach((btn, i) => {
-            btn.addEventListener('touchstart', () => { 
-                touchTimer = setTimeout(() => saveCurrentPos(i), 800); 
-            }, {passive: true});
+            btn.addEventListener('touchstart', () => { touchTimer = setTimeout(() => saveCurrentPos(i), 800); }, {passive: true});
             btn.addEventListener('touchend', () => clearTimeout(touchTimer));
             btn.addEventListener('touchmove', () => clearTimeout(touchTimer));
         });
@@ -663,11 +564,8 @@
             if (data.length > 0) {
                 const pos = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
                 currentTargetName = data[0].display_name.split(',')[0];
-                isTracking = false;
-                setTarget(pos, true); 
-                map.flyTo(pos, 14);
-                els.searchContainer.classList.add('hidden');
-                isShowingUser = true;
+                isTracking = false; setTarget(pos, true); map.flyTo(pos, 14);
+                els.searchContainer.classList.add('hidden'); isShowingUser = true;
             }
         } catch (e) {}
     }
@@ -679,10 +577,7 @@
         rec.lang = 'sv-SE';
         els.voiceBtn.classList.add('listening');
         rec.start();
-        rec.onresult = (e) => {
-            els.searchInput.value = e.results[0][0].transcript;
-            executeTextSearch();
-        };
+        rec.onresult = (e) => { els.searchInput.value = e.results[0][0].transcript; executeTextSearch(); };
         rec.onend = () => els.voiceBtn.classList.remove('listening');
     }
 
@@ -693,16 +588,12 @@
         startCoords = [...userCoords];
         hasReachedTurnaround = false; 
         els.shareBtn.classList.add('hidden');
-        
         const d = map.distance(userCoords, currentTargetCoords) / 1000;
         const mode = modes[travelMode];
-        
         initialTotalKm = Math.max(1, Math.ceil((d * mode.distMult) / mode.factor));
-        
         els.mapPage.classList.add('hidden');
         els.gamePage.classList.remove('hidden');
         els.pathGrid.innerHTML = '<div id="the-mouse">🐭</div>';
-        
         const frag = document.createDocumentFragment();
         for (let i = 0; i < initialTotalKm; i++) {
             const step = document.createElement('div');
@@ -716,10 +607,7 @@
     }
 
     function stopGame() {
-        if (wakeLock !== null) {
-            wakeLock.release();
-            wakeLock = null;
-        }
+        if (wakeLock !== null) { wakeLock.release(); wakeLock = null; }
         gameState = 'MAP';
         els.shareBtn.classList.remove('hidden');
         els.gamePage.classList.add('hidden');
@@ -728,26 +616,17 @@
 
     function updateGameLogic() {
         if (gameState !== 'GAME') return;
-        
         const mode = modes[travelMode];
         const distToTarget = map.distance(userCoords, currentTargetCoords) / 1000;
         const distToStart = map.distance(userCoords, startCoords) / 1000;
         const oneWayDist = (initialTotalKm * mode.factor) / (travelMode === 2 ? 2 : 1);
-        
-        // Definiera vinstavstånd: 50m (0.05km) för bil (läge 0), annars 15m (0.015km)
         const winDistance = (travelMode === 0) ? 0.05 : 0.015;
-        
         let finishedSteps;
 
         if (travelMode === 2) { 
-            if (!hasReachedTurnaround && distToTarget < 0.05) {
-                hasReachedTurnaround = true; 
-            }
-            if (!hasReachedTurnaround) {
-                finishedSteps = Math.floor((oneWayDist - distToTarget) / mode.factor);
-            } else {
-                finishedSteps = Math.floor((oneWayDist + (oneWayDist - distToStart)) / mode.factor);
-            }
+            if (!hasReachedTurnaround && distToTarget < 0.05) hasReachedTurnaround = true; 
+            if (!hasReachedTurnaround) finishedSteps = Math.floor((oneWayDist - distToTarget) / mode.factor);
+            else finishedSteps = Math.floor((oneWayDist + (oneWayDist - distToStart)) / mode.factor);
         } else {
             finishedSteps = Math.floor(initialTotalKm - (distToTarget / mode.factor));
         }
@@ -772,14 +651,18 @@
 
     function finishGame() {
         if (gameState === 'FINISHED') return;
-        if (wakeLock !== null) {
-            wakeLock.release();
-            wakeLock = null;
-        }
         gameState = 'FINISHED';
         const mouse = document.getElementById('the-mouse');
         mouse.innerHTML = '🐭🧀'; 
         mouse.classList.add('victory');
+        
+        playVictorySound();
+        createConfetti();
+        // Fortsätt spruta konfetti en stund
+        const interval = setInterval(() => {
+            if(gameState !== 'FINISHED') clearInterval(interval);
+            else createConfetti();
+        }, 1000);
     }
 
     function moveMouse(index) {
@@ -795,15 +678,8 @@
 
     async function shareApp() {
         playClickSound();
-        const shareData = {
-            title: 'Marcus Mouse & Cheese Tracker',
-            text: 'Hjälp musen hitta osten! Kolla in min tracker.',
-            url: window.location.href
-        };
-        try {
-            if (navigator.share) await navigator.share(shareData);
-            else alert("Kopiera länken: " + window.location.href);
-        } catch (err) {}
+        const shareData = { title: 'Marcus Mouse & Cheese Tracker', text: 'Hjälp musen hitta osten!', url: window.location.href };
+        try { if (navigator.share) await navigator.share(shareData); else alert("Länk: " + window.location.href); } catch (err) {}
     }
 
     window.onload = initMap;
