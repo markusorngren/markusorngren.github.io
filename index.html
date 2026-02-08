@@ -646,6 +646,9 @@
         const distToStart = map.distance(userCoords, startCoords) / 1000;
         const oneWayDist = (initialTotalKm * mode.factor) / (travelMode === 2 ? 2 : 1);
         
+        // Definiera vinstavstånd: 50m (0.05km) för bil (läge 0), annars 15m (0.015km)
+        const winDistance = (travelMode === 0) ? 0.05 : 0.015;
+        
         let finishedSteps;
 
         if (travelMode === 2) { 
@@ -668,8 +671,8 @@
             }
         }
         
-        const isHomeAgain = travelMode === 2 && hasReachedTurnaround && distToStart < 0.05;
-        const isAtOneWayTarget = travelMode !== 2 && distToTarget < 0.05;
+        const isHomeAgain = travelMode === 2 && hasReachedTurnaround && distToStart < winDistance;
+        const isAtOneWayTarget = travelMode !== 2 && distToTarget < winDistance;
 
         if (isHomeAgain || isAtOneWayTarget) {
             moveMouse(initialTotalKm - 1);
