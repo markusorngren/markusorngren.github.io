@@ -47,67 +47,6 @@
             color: rgba(0, 0, 0, 0.5);
             font-weight: bold;
         }
-
-        /* iOS Install Banner Styling */
-        #ios-install-prompt {
-            position: fixed;
-            bottom: calc(20px + env(safe-area-inset-bottom));
-            left: 15px;
-            right: 15px;
-            background: white;
-            padding: 18px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-            z-index: 100000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-            border: 3px solid var(--primary);
-            animation: slideUp 0.5s ease-out;
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        .ios-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: bold;
-            color: var(--primary);
-            font-size: 1.1rem;
-        }
-
-        .ios-instructions {
-            font-size: 0.95rem;
-            text-align: center;
-            color: #444;
-            line-height: 1.4;
-        }
-
-        .ios-footer {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            background: #f9f9f9;
-            padding: 8px 15px;
-            border-radius: 12px;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .close-ios-btn {
-            background: none;
-            border: none;
-            color: #999;
-            text-decoration: underline;
-            font-size: 0.8rem;
-            margin-top: 5px;
-        }
         
         #map-page, #game-page { 
             height: var(--app-height); 
@@ -261,19 +200,6 @@
     </div>
 </div>
 
-<div id="ios-install-prompt" class="hidden">
-    <div class="ios-header">
-        <span>🐭 Cheese Tracker</span>
-    </div>
-    <div class="ios-instructions">
-        Installera appen för att få fullskärm och snabb åtkomst!
-    </div>
-    <div class="ios-footer">
-        Tryck på <img src="https://developer.apple.com/library/archive/documentation/NetworkingInternet/Conceptual/SafariVisualGuide/Art/Action_2x.png" width="20" style="margin: 0 3px;"> och välj <b>"Lägg till på hemskärmen"</b>.
-    </div>
-    <button class="close-ios-btn" onclick="this.parentElement.classList.add('hidden')">Kanske senare</button>
-</div>
-
 <div id="map-page">
     <div id="map"></div>
     <div class="panel">
@@ -391,19 +317,6 @@
         actionContainer: document.querySelector('.action-container')
     };
 
-    // Funktion för att kolla om iOS-enhet och visa install-banner
-    function checkIosInstall() {
-        const isIphone = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
-        const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
-
-        if (isIphone && !isStandalone) {
-            // Visa efter en kort fördröjning så det inte krockar med välkomst-skärmen
-            setTimeout(() => {
-                document.getElementById('ios-install-prompt').classList.remove('hidden');
-            }, 2000);
-        }
-    }
-
     async function requestWakeLock() {
         try {
             if ('wakeLock' in navigator) {
@@ -494,7 +407,6 @@
         updateButtonUI();
         window.addEventListener('resize', handleOrientationLayout);
         handleOrientationLayout();
-        checkIosInstall(); // Kör iOS-kollen vid start
     }
 
     function handleOrientationLayout() {
