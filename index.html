@@ -31,6 +31,22 @@
             user-select: none;
             -webkit-user-select: none;
         }
+
+        /* Ny version-tag styling */
+        #version-tag {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 10000;
+            background: rgba(255, 255, 255, 0.4);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.65rem;
+            font-family: monospace;
+            pointer-events: none;
+            color: rgba(0, 0, 0, 0.5);
+            font-weight: bold;
+        }
         
         #map-page, #game-page { 
             height: var(--app-height); 
@@ -40,7 +56,6 @@
             overflow: hidden; 
         }
 
-        /* --- PORTRAIT / STANDARD (Upprätt läge) --- */
         .action-container { 
             display: flex; 
             justify-content: center; 
@@ -50,113 +65,55 @@
             margin: 0 auto; 
         }
 
-        /* Ordning för portrait: Hitta mig (1), Sök (2), Röst (3), Starta (4) */
         #locate-btn { order: 1; }
         #text-btn   { order: 2; }
         #voice-btn  { order: 3; }
         #start-btn  { order: 4; }
 
-        /* LANDSCAPE OPTIMIZATION */
         @media (orientation: landscape) {
             #map-page { flex-direction: row; }
-            
             .panel { 
-                width: 300px; 
-                height: 100%; 
-                border-radius: 0 !important; 
+                width: 300px; height: 100%; border-radius: 0 !important; 
                 box-shadow: -4px 0 15px rgba(0,0,0,0.1) !important;
-                display: flex;
-                flex-direction: column;
-                justify-content: flex-start;
+                display: flex; flex-direction: column; justify-content: flex-start;
                 padding: env(safe-area-inset-top) 15px calc(20px + env(safe-area-inset-bottom)) 15px !important;
-                box-sizing: border-box;
-                gap: 10px;
+                box-sizing: border-box; gap: 10px;
             }
-
-            .save-btn-container { 
-                display: flex;
-                flex-wrap: wrap; 
-                justify-content: center;
-                gap: 8px;
-                margin-bottom: 5px;
-            }
-
-            /* I landscape flyttar vi in Mode i action-container igen */
+            .save-btn-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 5px; }
             #mode-btn { display: flex !important; }
-
-            .action-container { 
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 10px;
-                flex: none;
-                margin-top: 10px;
-            }
-
-            /* Färdsätt till vänster, Starta till höger */
+            .action-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; flex: none; margin-top: 10px; }
             #mode-btn { grid-column: 1; order: 1; width: 100%; height: 50px; }
             #start-btn { grid-column: 2; order: 2; width: 100%; height: 50px; display: flex !important; }
-
-            /* Röst, Sök och Hitta mig under där */
             #voice-btn { grid-column: 1 / span 2; order: 3; width: 100%; }
             #text-btn  { grid-column: 1 / span 2; order: 4; width: 100%; }
             #locate-btn { grid-column: 1 / span 2; order: 5; width: 100%; }
-
-            .apple-grid { 
-                grid-template-columns: repeat(10, 1fr) !important; 
-                max-width: 80% !important; 
-                padding-top: 30px !important; 
-            }
+            .apple-grid { grid-template-columns: repeat(10, 1fr) !important; max-width: 80% !important; padding-top: 30px !important; }
         }
 
-        #map { 
-            flex: 1; 
-            width: 100%; 
-            min-height: 0; 
-            z-index: 1;
-        }
-        
+        #map { flex: 1; width: 100%; min-height: 0; z-index: 1; }
         .hidden { display: none !important; }
         
         #welcome-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7);
-            z-index: 99999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            box-sizing: border-box;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 99999; display: flex;
+            align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;
         }
         .welcome-content {
-            background: white;
-            padding: 25px;
-            border-radius: 25px;
-            max-width: 400px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            background: white; padding: 25px; border-radius: 25px;
+            max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
         .welcome-content h2 { margin-top: 0; color: var(--orange); }
         .welcome-content ul { text-align: left; margin: 20px 0; line-height: 1.6; }
         .ok-btn {
-            background: var(--primary);
-            color: white;
-            padding: 12px 30px;
-            border-radius: 30px;
-            font-size: 1.1rem;
-            width: 100%;
-            border: none;
+            background: var(--primary); color: white; padding: 12px 30px;
+            border-radius: 30px; font-size: 1.1rem; width: 100%; border: none;
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
 
         .panel { 
             padding: 10px 10px calc(15px + env(safe-area-inset-bottom)); 
-            background: white; 
-            text-align: center; 
-            box-shadow: 0 -4px 15px rgba(0,0,0,0.1); 
-            z-index: 1000; 
-            border-radius: 20px 20px 0 0;
-            flex-shrink: 0; 
+            background: white; text-align: center; box-shadow: 0 -4px 15px rgba(0,0,0,0.1); 
+            z-index: 1000; border-radius: 20px 20px 0 0; flex-shrink: 0; 
         }
         
         button { cursor: pointer; font-weight: bold; transition: all 0.2s; border: none; color: #000; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
@@ -166,88 +123,38 @@
         .slot-btn { 
             width: 50px; height: 50px; box-shadow: 0 3px 6px rgba(0,0,0,0.2); 
             display: flex; align-items: center; justify-content: center; padding: 0 2px; flex-shrink: 0;
-            opacity: 0.8; 
-            border: 2px solid transparent;
+            opacity: 0.8; border: 2px solid transparent;
         }
-        .slot-btn.filled { 
-            opacity: 1; 
-            border: 2px solid rgba(0,0,0,0.3);
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
+        .slot-btn.filled { opacity: 1; border: 2px solid rgba(0,0,0,0.3); box-shadow: 0 0 10px rgba(0,0,0,0.1); }
 
         .mode-btn {
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
-            background: #f0f0f0;
-            font-size: 1.2rem;
-            border: 2px solid #ddd;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
-            flex-shrink: 0;
+            width: 50px; height: 50px; border-radius: 12px; background: #f0f0f0;
+            font-size: 1.2rem; border: 2px solid #ddd; box-shadow: 0 3px 6px rgba(0,0,0,0.1); flex-shrink: 0;
         }
 
         .btn-text-container { 
-            width: 90%; 
-            overflow: hidden; 
-            white-space: nowrap; 
-            position: relative;
+            width: 90%; overflow: hidden; white-space: nowrap; position: relative;
             mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
             -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
         }
         
         .scrolling-text { 
-            display: inline-block; 
-            font-size: 0.55rem; 
-            text-transform: uppercase; 
-            pointer-events: none; 
-            color: white; 
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-            padding: 0 5px;
-            white-space: nowrap;
+            display: inline-block; font-size: 0.55rem; text-transform: uppercase; 
+            pointer-events: none; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            padding: 0 5px; white-space: nowrap;
         }
 
-        .animate-scroll {
-            animation: marquee 6s linear infinite;
-        }
-
-        @keyframes marquee {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50.5%); }
-        }
+        .animate-scroll { animation: marquee 6s linear infinite; }
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50.5%); } }
 
         #btn-0 { border-radius: 50%; background: var(--primary); } 
         #btn-1 { border-radius: 8px; background: var(--blue); } 
-        #btn-2 { 
-            background: var(--orange); 
-            width: 55px; 
-            height: 55px; 
-            clip-path: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0% 50%);
-        } 
+        #btn-2 { background: var(--orange); width: 55px; height: 55px; clip-path: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0% 50%); } 
         #btn-3 { width: 55px; height: 50px; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); padding-top: 10px; background: #9C27B0; } 
 
-        #search-container {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 10px;
-            transition: all 0.3s ease;
-        }
-        #text-search-input {
-            flex: 1;
-            padding: 8px 15px;
-            border-radius: 20px;
-            border: 2px solid #ddd;
-            font-size: 16px; 
-            outline: none;
-        }
-        #text-search-input:focus { border-color: #17a2b8; }
-        #go-btn {
-            background: #17a2b8;
-            color: white;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            font-size: 1.2rem;
-        }
+        #search-container { display: flex; gap: 5px; margin-bottom: 10px; transition: all 0.3s ease; }
+        #text-search-input { flex: 1; padding: 8px 15px; border-radius: 20px; border: 2px solid #ddd; font-size: 16px; outline: none; }
+        #go-btn { background: #17a2b8; color: white; border-radius: 50%; width: 40px; height: 40px; font-size: 1.2rem; }
 
         .action-btn { flex: 1; padding: 8px 5px; border-radius: 40px; font-size: 0.75rem; box-shadow: 0 4px 0 rgba(0,0,0,0.15); min-height: 42px; }
         
@@ -258,73 +165,25 @@
         #start-btn { background: #ffcc00; color: #000; }
 
         #dist-info { margin-bottom: 8px; font-weight: bold; font-size: 0.95rem; color: #000; min-height: 1.2em; }
-
-        #share-btn {
-            position: fixed;
-            top: 15px;
-            left: 15px;
-            z-index: 10000;
-            background: white;
-            border-radius: 50%;
-            width: 45px;
-            height: 45px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            font-size: 1.2rem;
-        }
-
+        #share-btn { position: fixed; top: 15px; left: 15px; z-index: 10000; background: white; border-radius: 50%; width: 45px; height: 45px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-size: 1.2rem; }
         #game-page { align-items: center; padding: 5px; position: relative; }
         .apple-grid { 
-            display: grid; 
-            grid-template-columns: repeat(5, 1fr); 
-            gap: 5px; 
-            width: 95%; 
-            max-width: 280px; 
-            margin-top: 10px; 
-            padding: 25px 10px 10px 10px; 
-            background: rgba(255,255,255,0.5); 
-            border-radius: 15px; 
-            position: relative; 
-            max-height: 70vh;
-            overflow-y: auto;
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; width: 95%; 
+            max-width: 280px; margin-top: 10px; padding: 25px 10px 10px 10px; 
+            background: rgba(255,255,255,0.5); border-radius: 15px; position: relative; 
+            max-height: 70vh; overflow-y: auto;
         }
-        
         .step { font-size: 1.4rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; transition: all 0.5s ease; }
-        
-        @keyframes mouseWobble {
-            0%, 100% { transform: rotate(0deg); }
-            25% { transform: rotate(-10deg); }
-            75% { transform: rotate(10deg); }
-        }
-
-        #the-mouse { 
-            position: absolute; 
-            font-size: 1.8rem; 
-            transition: all 0.8s ease-in-out; 
-            z-index: 100; 
-            margin-top: -12px; 
-            margin-left: -8px; 
-            pointer-events: none;
-            animation: mouseWobble 1s infinite ease-in-out;
-        }
-
+        @keyframes mouseWobble { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } }
+        #the-mouse { position: absolute; font-size: 1.8rem; transition: all 0.8s ease-in-out; z-index: 100; margin-top: -12px; margin-left: -8px; pointer-events: none; animation: mouseWobble 1s infinite ease-in-out; }
         .eat-animation { transform: scale(0.6) !important; opacity: 0.3 !important; }
-
-        @keyframes victoryPop {
-            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-            80% { transform: translate(-50%, -50%) scale(2.0); opacity: 1; }
-            100% { transform: translate(-50%, -50%) scale(1.8); opacity: 1; }
-        }
-
-        #the-mouse.victory {
-            position: fixed; top: 50% !important; left: 50% !important; z-index: 9999;
-            font-size: 5rem; animation: victoryPop 0.6s ease-out forwards;
-            margin: 0; background: rgba(253, 246, 227, 0.95);
-            width: 100vw; height: 100svh; display: flex; align-items: center; justify-content: center;
-        }
+        @keyframes victoryPop { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; } 80% { transform: translate(-50%, -50%) scale(2.0); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.8); opacity: 1; } }
+        #the-mouse.victory { position: fixed; top: 50% !important; left: 50% !important; z-index: 9999; font-size: 5rem; animation: victoryPop 0.6s ease-out forwards; margin: 0; background: rgba(253, 246, 227, 0.95); width: 100vw; height: 100svh; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
 
+<div id="version-tag">V...</div>
 <button id="share-btn" onclick="shareApp()">🔗</button>
 
 <div id="welcome-overlay">
@@ -375,9 +234,22 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+    // Service Worker registrering med versionshämtning
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('sw.js').then(reg => {
+                const askVersion = (worker) => {
+                    const msgChan = new MessageChannel();
+                    msgChan.port1.onmessage = (event) => {
+                        if (event.data && event.data.version) {
+                            document.getElementById('version-tag').innerText = event.data.version.toUpperCase();
+                        }
+                    };
+                    worker.postMessage({ type: 'GET_VERSION' }, [msgChan.port2]);
+                };
+
+                if (reg.active) askVersion(reg.active);
+
                 reg.addEventListener('updatefound', () => {
                     const newWorker = reg.installing;
                     newWorker.addEventListener('statechange', () => {
@@ -468,60 +340,57 @@
     }
 
     function initMap() {
-    if(sessionStorage.getItem('introSeen')) els.welcomeOverlay.classList.add('hidden');
-    
-    map = L.map('map', { 
-        zoomControl: false,
-        attributionControl: false 
-    }).setView([59.3, 14.1], 5);
+        if(sessionStorage.getItem('introSeen')) els.welcomeOverlay.classList.add('hidden');
+        
+        map = L.map('map', { 
+            zoomControl: false,
+            attributionControl: false 
+        }).setView([59.3, 14.1], 5);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-    if (lastTarget) {
-        currentTargetName = lastTarget.name || "Mål";
-        setTarget(lastTarget.coords, false);
-        map.setView(lastTarget.coords, 14); 
-        initialZoomPerformed = true;
-        updateLocateBtnText();
-    }
+        if (lastTarget) {
+            currentTargetName = lastTarget.name || "Mål";
+            setTarget(lastTarget.coords, false);
+            map.setView(lastTarget.coords, 14); 
+            initialZoomPerformed = true;
+            updateLocateBtnText();
+        }
 
-    if (navigator.geolocation) {
-        navigator.geolocation.watchPosition(handlePositionUpdate, null, {
-            enableHighAccuracy: true,
-            maximumAge: 10000,
-            timeout: 5000
+        if (navigator.geolocation) {
+            navigator.geolocation.watchPosition(handlePositionUpdate, null, {
+                enableHighAccuracy: true,
+                maximumAge: 10000,
+                timeout: 5000
+            });
+        }
+
+        map.on('click', e => { 
+            if(gameState !== 'MAP') return;
+            playClickSound(); 
+            currentTargetName = "Markerad plats"; 
+            isTracking = false; 
+            setTarget(e.latlng, true); 
+            map.panTo(e.latlng);
         });
+
+        map.on('movestart', (e) => {
+            if (e.hard) return; 
+            isTracking = false; 
+        });
+        
+        setupLongPress();
+        updateButtonUI();
+        window.addEventListener('resize', handleOrientationLayout);
+        handleOrientationLayout();
     }
 
-    map.on('click', e => { 
-        if(gameState !== 'MAP') return;
-        playClickSound(); 
-        currentTargetName = "Markerad plats"; 
-        isTracking = false; 
-        setTarget(e.latlng, true); 
-        map.panTo(e.latlng);
-    });
-
-    map.on('movestart', (e) => {
-        if (e.hard) return; 
-        isTracking = false; 
-    });
-    
-    setupLongPress();
-    updateButtonUI();
-    window.addEventListener('resize', handleOrientationLayout);
-    handleOrientationLayout();
-}
-
-    // Flyttar fysiskt knappen i DOM:en baserat på orientering för att CSS Grid ska fungera optimalt
     function handleOrientationLayout() {
         if (window.innerHeight < window.innerWidth) {
-            // Landscape
             if (els.modeBtn.parentElement !== els.actionContainer) {
                 els.actionContainer.prepend(els.modeBtn);
             }
         } else {
-            // Portrait
             const saveContainer = document.querySelector('.save-btn-container');
             if (els.modeBtn.parentElement !== saveContainer) {
                 saveContainer.appendChild(els.modeBtn);
