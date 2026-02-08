@@ -45,47 +45,39 @@
             #map-page { flex-direction: row; }
             
             .panel { 
-                width: 320px; 
+                width: 280px; 
                 height: 100%; 
                 border-radius: 0 !important; 
                 box-shadow: -4px 0 15px rgba(0,0,0,0.1) !important;
                 display: flex;
                 flex-direction: column;
-                justify-content: flex-start;
-                padding: env(safe-area-inset-top) 15px calc(15px + env(safe-area-inset-bottom)) 15px !important;
+                justify-content: flex-start; /* Starta från toppen */
+                padding: env(safe-area-inset-top) 15px calc(20px + env(safe-area-inset-bottom)) 15px !important;
                 box-sizing: border-box;
-                gap: 8px;
+                gap: 10px;
             }
 
+            /* Behåll sparade platser och mode-knapp högst upp */
             .save-btn-container { 
-                display: flex;
                 flex-wrap: wrap; 
                 justify-content: center;
-                gap: 6px;
                 margin-bottom: 5px;
             }
 
-            /* STARTA-knappen hamnar bredvid mode-väljaren */
-            #start-btn { 
-                order: 6; 
-                flex: 1; 
-                min-height: 50px; 
-                margin: 0 !important;
-                border-radius: 12px;
-                font-size: 0.9rem;
-            }
-            
-            #mode-btn { order: 5; }
-
+            /* Den nya vertikala ordningen för landscape */
             .action-container { 
-                flex-direction: row; 
-                flex-wrap: wrap;
-                gap: 8px; 
-                margin-top: 5px;
+                flex-direction: column; 
+                gap: 12px; 
+                flex: 1;
+                justify-content: flex-start;
+                margin-top: 10px;
             }
 
-            #voice-btn, #text-btn { flex: 1; min-width: 80px; }
-            #locate-btn { width: 100%; order: 10; margin-top: auto; }
+            /* Specifik ordning via CSS Order */
+            #start-btn { order: 1; width: 100%; min-height: 50px; font-size: 1rem; }
+            #voice-btn { order: 2; width: 100%; }
+            #text-btn  { order: 3; width: 100%; }
+            #locate-btn { order: 4; width: 100%; margin-top: auto; } /* Hitta mig längst ner */
 
             .apple-grid { 
                 grid-template-columns: repeat(10, 1fr) !important; 
@@ -94,69 +86,155 @@
             }
         }
 
-        #map { flex: 1; width: 100%; min-height: 0; z-index: 1; }
+        #map { 
+            flex: 1; 
+            width: 100%; 
+            min-height: 0; 
+            z-index: 1;
+        }
+        
         .hidden { display: none !important; }
         
         #welcome-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); z-index: 99999;
-            display: flex; align-items: center; justify-content: center; padding: 20px;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
         }
         .welcome-content {
-            background: white; padding: 25px; border-radius: 25px;
-            max-width: 400px; text-align: center;
+            background: white;
+            padding: 25px;
+            border-radius: 25px;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
+        .welcome-content h2 { margin-top: 0; color: var(--orange); }
+        .welcome-content ul { text-align: left; margin: 20px 0; line-height: 1.6; }
         .ok-btn {
-            background: var(--primary); color: white; padding: 12px 30px;
-            border-radius: 30px; font-size: 1.1rem; width: 100%; border: none;
+            background: var(--primary);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            width: 100%;
+            border: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
 
         .panel { 
             padding: 10px 10px calc(15px + env(safe-area-inset-bottom)); 
-            background: white; text-align: center; z-index: 1000; 
-            border-radius: 20px 20px 0 0; flex-shrink: 0; 
+            background: white; 
+            text-align: center; 
+            box-shadow: 0 -4px 15px rgba(0,0,0,0.1); 
+            z-index: 1000; 
+            border-radius: 20px 20px 0 0;
+            flex-shrink: 0; 
         }
         
-        button { cursor: pointer; font-weight: bold; transition: all 0.2s; border: none; color: #000; display: flex; align-items: center; justify-content: center; position: relative; }
+        button { cursor: pointer; font-weight: bold; transition: all 0.2s; border: none; color: #000; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
         button:active { transform: scale(0.95); }
 
-        .save-btn-container { display: flex; justify-content: center; gap: 10px; margin-bottom: 8px; align-items: center; }
+        .save-btn-container { display: flex; justify-content: center; gap: 10px; margin-bottom: 8px; padding: 2px; align-items: center; }
         .slot-btn { 
             width: 50px; height: 50px; box-shadow: 0 3px 6px rgba(0,0,0,0.2); 
-            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-            opacity: 0.8; border: 2px solid transparent;
+            display: flex; align-items: center; justify-content: center; padding: 0 2px; flex-shrink: 0;
+            opacity: 0.8; 
+            border: 2px solid transparent;
         }
-        .slot-btn.filled { opacity: 1; border: 2px solid rgba(0,0,0,0.3); }
+        .slot-btn.filled { 
+            opacity: 1; 
+            border: 2px solid rgba(0,0,0,0.3);
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
 
         .mode-btn {
-            width: 50px; height: 50px; border-radius: 12px;
-            background: #f0f0f0; font-size: 1.2rem; border: 2px solid #ddd;
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: #f0f0f0;
+            font-size: 1.2rem;
+            border: 2px solid #ddd;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+            flex-shrink: 0;
         }
 
         .btn-text-container { 
-            width: 90%; overflow: hidden; white-space: nowrap; position: relative;
+            width: 90%; 
+            overflow: hidden; 
+            white-space: nowrap; 
+            position: relative;
             mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
             -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
         }
         
         .scrolling-text { 
-            display: inline-block; font-size: 0.55rem; text-transform: uppercase; 
-            color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); padding: 0 5px;
+            display: inline-block; 
+            font-size: 0.55rem; 
+            text-transform: uppercase; 
+            pointer-events: none; 
+            color: white; 
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            padding: 0 5px;
+            white-space: nowrap;
         }
 
-        .animate-scroll { animation: marquee 6s linear infinite; }
-        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50.5%); } }
+        .animate-scroll {
+            animation: marquee 6s linear infinite;
+        }
+
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50.5%); }
+        }
 
         #btn-0 { border-radius: 50%; background: var(--primary); } 
         #btn-1 { border-radius: 8px; background: var(--blue); } 
-        #btn-2 { background: var(--orange); width: 55px; height: 55px; clip-path: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0% 50%); } 
+        #btn-2 { 
+            background: var(--orange); 
+            width: 55px; 
+            height: 55px; 
+            clip-path: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0% 50%);
+        } 
         #btn-3 { width: 55px; height: 50px; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); padding-top: 10px; background: #9C27B0; } 
 
-        #search-container { display: flex; gap: 5px; margin-bottom: 10px; }
-        #text-search-input { flex: 1; padding: 8px 15px; border-radius: 20px; border: 2px solid #ddd; font-size: 16px; outline: none; }
-        #go-btn { background: #17a2b8; color: white; border-radius: 50%; width: 40px; height: 40px; }
+        #search-container {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+        #text-search-input {
+            flex: 1;
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: 2px solid #ddd;
+            font-size: 16px; 
+            outline: none;
+        }
+        #text-search-input:focus { border-color: #17a2b8; }
+        #go-btn {
+            background: #17a2b8;
+            color: white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+        }
 
-        .action-container { display: flex; justify-content: center; gap: 8px; width: 100%; max-width: 400px; margin: 0 auto; }
+        .action-container { 
+            display: flex; 
+            justify-content: center; 
+            gap: 8px; 
+            width: 100%; 
+            max-width: 400px; 
+            margin: 0 auto; 
+        }
         .action-btn { flex: 1; padding: 8px 5px; border-radius: 40px; font-size: 0.75rem; box-shadow: 0 4px 0 rgba(0,0,0,0.15); min-height: 42px; }
         
         #locate-btn { background: #007bff; color: white; text-transform: uppercase; }
@@ -167,17 +245,68 @@
 
         #dist-info { margin-bottom: 8px; font-weight: bold; font-size: 0.95rem; color: #000; min-height: 1.2em; }
 
-        #share-btn { position: fixed; top: 15px; left: 15px; z-index: 10000; background: white; border-radius: 50%; width: 45px; height: 45px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-size: 1.2rem; }
+        #share-btn {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 10000;
+            background: white;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            font-size: 1.2rem;
+        }
 
         #game-page { align-items: center; padding: 5px; position: relative; }
-        .apple-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; width: 95%; max-width: 280px; margin-top: 10px; padding: 25px 10px 10px 10px; background: rgba(255,255,255,0.5); border-radius: 15px; position: relative; max-height: 70vh; overflow-y: auto; }
-        .step { font-size: 1.4rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+        .apple-grid { 
+            display: grid; 
+            grid-template-columns: repeat(5, 1fr); 
+            gap: 5px; 
+            width: 95%; 
+            max-width: 280px; 
+            margin-top: 10px; 
+            padding: 25px 10px 10px 10px; 
+            background: rgba(255,255,255,0.5); 
+            border-radius: 15px; 
+            position: relative; 
+            max-height: 70vh;
+            overflow-y: auto;
+        }
         
-        @keyframes mouseWobble { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } }
-        #the-mouse { position: absolute; font-size: 1.8rem; transition: all 0.8s ease-in-out; z-index: 100; margin-top: -12px; margin-left: -8px; animation: mouseWobble 1s infinite ease-in-out; }
+        .step { font-size: 1.4rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; transition: all 0.5s ease; }
+        
+        @keyframes mouseWobble {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-10deg); }
+            75% { transform: rotate(10deg); }
+        }
+
+        #the-mouse { 
+            position: absolute; 
+            font-size: 1.8rem; 
+            transition: all 0.8s ease-in-out; 
+            z-index: 100; 
+            margin-top: -12px; 
+            margin-left: -8px; 
+            pointer-events: none;
+            animation: mouseWobble 1s infinite ease-in-out;
+        }
+
         .eat-animation { transform: scale(0.6) !important; opacity: 0.3 !important; }
-        #the-mouse.victory { position: fixed; top: 50% !important; left: 50% !important; z-index: 9999; font-size: 5rem; animation: victoryPop 0.6s ease-out forwards; width: 100vw; height: 100svh; display: flex; align-items: center; justify-content: center; background: rgba(253, 246, 227, 0.95); transform: translate(-50%, -50%); }
-        @keyframes victoryPop { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; } 100% { transform: translate(-50%, -50%) scale(1.8); opacity: 1; } }
+
+        @keyframes victoryPop {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            80% { transform: translate(-50%, -50%) scale(2.0); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.8); opacity: 1; }
+        }
+
+        #the-mouse.victory {
+            position: fixed; top: 50% !important; left: 50% !important; z-index: 9999;
+            font-size: 5rem; animation: victoryPop 0.6s ease-out forwards;
+            margin: 0; background: rgba(253, 246, 227, 0.95);
+            width: 100vw; height: 100svh; display: flex; align-items: center; justify-content: center;
+        }
     </style>
 </head>
 <body>
@@ -189,11 +318,12 @@
         <h2>Hej! 🐭</h2>
         <p>Hjälp musen att hitta osten!</p>
         <ul>
-            <li>📍 <b>Klicka på kartan</b> för att välja mål.</li>
-            <li>💾 <b>Håll inne knappen</b> för att spara.</li>
-            <li>🚀 Tryck på <b>STARTA</b> för att börja!</li>
+            <li>📍 <b>Klicka på kartan eller sök</b> för att välja resmål.</li>
+            <li>💾 <b>Håll inne en spara-knapp</b> för att spara en favorit.</li>
+            <li>🚶↔️ <b>Välj färdsätt</b> bil eller promenad.</li>
+            <li>🚀 Tryck på <b>STARTA</b> för att börja resan!</li>
         </ul>
-        <button class="ok-btn" onclick="closeInstructions()">Okej!</button>
+        <button class="ok-btn" onclick="closeInstructions()">Okej! Jag förstår!</button>
     </div>
 </div>
 
@@ -208,7 +338,6 @@
             <button id="btn-2" class="slot-btn" onclick="handleSlotClick(2)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
             <button id="btn-3" class="slot-btn" onclick="handleSlotClick(3)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
             <button id="mode-btn" class="mode-btn" onclick="toggleTravelMode()">🚗</button>
-            <button id="start-btn" class="action-btn hidden" onclick="startGame()">STARTA 🧀</button>
         </div>
 
         <div id="search-container" class="hidden">
@@ -217,6 +346,7 @@
         </div>
 
         <div class="action-container">
+            <button id="start-btn" class="action-btn hidden" onclick="startGame()">STARTA 🧀</button>
             <button id="voice-btn" class="action-btn" onclick="startVoiceSearch()">🎤 RÖST</button>
             <button id="text-btn" class="action-btn" onclick="toggleSearchUI()">🔍 SÖK</button> 
             <button id="locate-btn" class="action-btn" onclick="toggleView()">🎯 HITTA MIG</button>
@@ -231,10 +361,19 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    // Service Worker för PWA
+    // [Scriptet fortsätter oförändrat nedan...]
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('sw.js').catch(() => {});
+            navigator.serviceWorker.register('sw.js').then(reg => {
+                reg.addEventListener('updatefound', () => {
+                    const newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            window.location.reload();
+                        }
+                    });
+                });
+            });
         });
     }
 
@@ -255,9 +394,20 @@
     ];
 
     let lastTargetRaw = JSON.parse(localStorage.getItem('mouse_last_target'));
-    let audioCtx;
+    let lastTarget = null;
+    if (lastTargetRaw) {
+        const threeHours = 3 * 60 * 60 * 1000;
+        if (Date.now() - lastTargetRaw.timestamp < threeHours) {
+            lastTarget = lastTargetRaw;
+        } else {
+            localStorage.removeItem('mouse_last_target');
+        }
+    }
+
+    let touchTimer, audioCtx;
     let gameState = 'MAP';
     let initialTotalKm = 0;
+    let lastMouseIndex = 0;
 
     const els = {
         distInfo: document.getElementById('dist-info'),
@@ -270,6 +420,7 @@
         searchInput: document.getElementById('text-search-input'),
         voiceBtn: document.getElementById('voice-btn'),
         welcomeOverlay: document.getElementById('welcome-overlay'),
+        shareBtn: document.getElementById('share-btn'),
         modeBtn: document.getElementById('mode-btn')
     };
 
@@ -279,51 +430,75 @@
         sessionStorage.setItem('introSeen', 'true');
     }
 
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
     function initAudio() {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (!AudioContext) return;
+        if (!audioCtx) audioCtx = new AudioContext();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
     }
+
     document.body.addEventListener('touchstart', initAudio, { once: true });
+    document.body.addEventListener('click', initAudio, { once: true });
 
     function playClickSound() {
         if (!audioCtx) return;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(3000, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+        try {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(3000, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+        } catch(e) {}
     }
 
     function initMap() {
-        if(sessionStorage.getItem('introSeen')) els.welcomeOverlay.classList.add('hidden');
-        
-        map = L.map('map', { zoomControl: false, attributionControl: false }).setView([59.3, 14.1], 5);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    if(sessionStorage.getItem('introSeen')) els.welcomeOverlay.classList.add('hidden');
+    
+    // Vi lägger till attributionControl: false för att ta bort länken i hörnet
+    map = L.map('map', { 
+        zoomControl: false,
+        attributionControl: false 
+    }).setView([59.3, 14.1], 5);
 
-        if (lastTargetRaw && (Date.now() - lastTargetRaw.timestamp < 10800000)) {
-            currentTargetName = lastTargetRaw.name;
-            setTarget(lastTargetRaw.coords, false);
-            map.setView(lastTargetRaw.coords, 14);
-            initialZoomPerformed = true;
-        }
+    // Vi laddar OpenStreetMap som vanligt
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        if (navigator.geolocation) {
-            navigator.geolocation.watchPosition(handlePositionUpdate, null, { enableHighAccuracy: true });
-        }
-
-        map.on('click', e => { 
-            if(gameState !== 'MAP') return;
-            playClickSound(); 
-            currentTargetName = "Markerad plats"; 
-            isTracking = false; 
-            setTarget(e.latlng, true); 
-        });
-
-        map.on('movestart', (e) => { if (!e.hard) isTracking = false; });
-        setupLongPress();
-        updateButtonUI();
+    if (lastTarget) {
+        currentTargetName = lastTarget.name || "Mål";
+        setTarget(lastTarget.coords, false);
+        map.setView(lastTarget.coords, 14); 
+        initialZoomPerformed = true;
+        updateLocateBtnText();
     }
+
+    if (navigator.geolocation) {
+        navigator.geolocation.watchPosition(handlePositionUpdate, null, {
+            enableHighAccuracy: true,
+            maximumAge: 10000,
+            timeout: 5000
+        });
+    }
+
+    map.on('click', e => { 
+        if(gameState !== 'MAP') return;
+        playClickSound(); 
+        currentTargetName = "Markerad plats"; 
+        isTracking = false; 
+        setTarget(e.latlng, true); 
+        map.panTo(e.latlng);
+    });
+
+    map.on('movestart', (e) => {
+        if (e.hard) return; 
+        isTracking = false; 
+    });
+    
+    setupLongPress();
+    updateButtonUI();
+    window.addEventListener('resize', updateButtonUI);
+}
 
     function toggleTravelMode() {
         playClickSound();
@@ -334,31 +509,65 @@
 
     function handlePositionUpdate(pos) {
         userCoords = [pos.coords.latitude, pos.coords.longitude];
-        if (!userMarker) userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, fillOpacity: 0.8}).addTo(map);
-        else userMarker.setLatLng(userCoords);
-
-        if (isTracking && gameState === 'MAP') map.setView(userCoords, map.getZoom());
-        if (!initialZoomPerformed) { zoomToUser(); initialZoomPerformed = true; isTracking = true; }
         
+        if (els.distInfo.innerHTML.includes("Söker din GPS")) {
+            els.distInfo.innerHTML = "Vart ska vi?";
+        }
+
+        if (!userMarker) {
+            userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8}).addTo(map);
+        } else userMarker.setLatLng(userCoords);
+
+        if (isTracking && gameState === 'MAP') {
+            map.setView(userCoords, map.getZoom());
+        }
+
+        if (currentTargetCoords && lastTargetRaw) {
+            lastTargetRaw.timestamp = Date.now();
+            localStorage.setItem('mouse_last_target', JSON.stringify(lastTargetRaw));
+        }
+
+        if (!initialZoomPerformed) { 
+            zoomToUser(); 
+            initialZoomPerformed = true; 
+            isTracking = true;
+        }
         if (gameState === 'MAP') updateMapLogic();
         else if (gameState === 'GAME') updateGameLogic();
     }
 
     function toggleView() {
-        if (!currentTargetCoords || isShowingUser) { zoomToUser(); isShowingUser = false; isTracking = true; }
-        else { map.flyTo(currentTargetCoords, 14); isShowingUser = true; isTracking = false; }
+        if (!currentTargetCoords || isShowingUser) { 
+            zoomToUser(); 
+            isShowingUser = false; 
+            isTracking = true;
+        }
+        else { 
+            map.flyTo(currentTargetCoords, 14); 
+            isShowingUser = true; 
+            isTracking = false;
+        }
         updateLocateBtnText();
     }
 
+    function updateLocateBtnText() {
+        els.locateBtn.innerHTML = (!currentTargetCoords || isShowingUser) ? "🎯 HITTA MIG" : `🏁 ${currentTargetName.toUpperCase()}`;
+    }
+
     function zoomToUser() { if (userCoords) map.flyTo(userCoords, 16); }
-    function updateLocateBtnText() { els.locateBtn.innerHTML = (!currentTargetCoords || isShowingUser) ? "🎯 HITTA MIG" : `🏁 ${currentTargetName.toUpperCase()}`; }
 
     function setTarget(latlng, shouldSave = true) {
         currentTargetCoords = latlng;
         if (targetMarker) targetMarker.setLatLng(latlng);
         else targetMarker = L.marker(latlng).addTo(map);
+        
         if (shouldSave) {
-            localStorage.setItem('mouse_last_target', JSON.stringify({coords: latlng, name: currentTargetName, timestamp: Date.now()}));
+            lastTargetRaw = {
+                coords: latlng, 
+                name: currentTargetName,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('mouse_last_target', JSON.stringify(lastTargetRaw));
         }
         updateMapLogic(); 
         updateLocateBtnText();
@@ -368,16 +577,13 @@
         if (userCoords && currentTargetCoords) {
             const d = map.distance(userCoords, currentTargetCoords) / 1000;
             const displayDist = d * modes[travelMode].distMult;
+            
             if (connectionLine) connectionLine.setLatLngs([userCoords, currentTargetCoords]);
             else connectionLine = L.polyline([userCoords, currentTargetCoords], {color: '#007bff', weight: 3, dashArray: '10, 10'}).addTo(map);
-            els.distInfo.innerHTML = `<b>${displayDist.toFixed(2)} km</b> till ${currentTargetName}`;
+            
+            els.distInfo.innerHTML = `<b>${displayDist.toFixed(2)} km</b> till ${currentTargetName} ${travelMode === 2 ? 'och tillbaka.' : ''}`;
             els.startBtn.classList.remove('hidden');
         }
-    }
-
-    function handleSlotClick(index) {
-        const data = savedLocations[index];
-        if (data) { currentTargetName = data.name; setTarget(data.coords, true); map.flyTo(data.coords, 14); }
     }
 
     function saveCurrentPos(index) {
@@ -390,20 +596,46 @@
         }
     }
 
+    function handleSlotClick(index) {
+        const data = savedLocations[index];
+        if (data) { 
+            currentTargetName = data.name; 
+            isTracking = false;
+            setTarget(data.coords, true); 
+            map.flyTo(data.coords, 14); 
+            isShowingUser = true; 
+        }
+    }
+
     function updateButtonUI() {
         savedLocations.forEach((loc, i) => {
             const btn = document.getElementById(`btn-${i}`);
+            const container = btn.querySelector('.btn-text-container');
             const textSpan = btn.querySelector('.scrolling-text');
             const displayName = loc ? loc.name : "SPARA " + (i + 1);
+            
+            textSpan.classList.remove('animate-scroll');
             textSpan.innerText = displayName;
-            loc ? btn.classList.add('filled') : btn.classList.remove('filled');
+            
+            if (loc) btn.classList.add('filled');
+            else btn.classList.remove('filled');
+
+            setTimeout(() => {
+                if (textSpan.offsetWidth > container.offsetWidth) {
+                    textSpan.innerText = displayName + " \u00A0\u00A0\u00A0\u00A0 • \u00A0\u00A0\u00A0\u00A0 " + displayName + " \u00A0\u00A0\u00A0\u00A0 • ";
+                    textSpan.classList.add('animate-scroll');
+                }
+            }, 100);
         });
     }
 
     function setupLongPress() {
         document.querySelectorAll('.slot-btn').forEach((btn, i) => {
-            btn.addEventListener('touchstart', () => { touchTimer = setTimeout(() => saveCurrentPos(i), 800); }, {passive: true});
+            btn.addEventListener('touchstart', () => { 
+                touchTimer = setTimeout(() => saveCurrentPos(i), 800); 
+            }, {passive: true});
             btn.addEventListener('touchend', () => clearTimeout(touchTimer));
+            btn.addEventListener('touchmove', () => clearTimeout(touchTimer));
         });
     }
 
@@ -421,8 +653,11 @@
             if (data.length > 0) {
                 const pos = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
                 currentTargetName = data[0].display_name.split(',')[0];
-                setTarget(pos, true); map.flyTo(pos, 14);
+                isTracking = false;
+                setTarget(pos, true); 
+                map.flyTo(pos, 14);
                 els.searchContainer.classList.add('hidden');
+                isShowingUser = true;
             }
         } catch (e) {}
     }
@@ -434,47 +669,94 @@
         rec.lang = 'sv-SE';
         els.voiceBtn.classList.add('listening');
         rec.start();
-        rec.onresult = (e) => { els.searchInput.value = e.results[0][0].transcript; executeTextSearch(); };
+        rec.onresult = (e) => {
+            els.searchInput.value = e.results[0][0].transcript;
+            executeTextSearch();
+        };
         rec.onend = () => els.voiceBtn.classList.remove('listening');
     }
 
     function startGame() {
         if (!currentTargetCoords || !userCoords) return;
         gameState = 'GAME';
-        hasReachedTurnaround = false;
+        hasReachedTurnaround = false; 
+        els.shareBtn.classList.add('hidden');
+        
         const d = map.distance(userCoords, currentTargetCoords) / 1000;
         const mode = modes[travelMode];
+        
         initialTotalKm = Math.max(1, Math.ceil((d * mode.distMult) / mode.factor));
         
         els.mapPage.classList.add('hidden');
         els.gamePage.classList.remove('hidden');
         els.pathGrid.innerHTML = '<div id="the-mouse">🐭</div>';
         
+        const frag = document.createDocumentFragment();
         for (let i = 0; i < initialTotalKm; i++) {
             const step = document.createElement('div');
             step.className = 'step'; 
             step.id = `step-${i}`;
             step.innerHTML = (i === initialTotalKm - 1) ? '🧀' : '🍎';
-            els.pathGrid.appendChild(step);
+            frag.appendChild(step);
         }
+        els.pathGrid.appendChild(frag);
         setTimeout(() => moveMouse(0), 100);
     }
 
+    function stopGame() {
+        gameState = 'MAP';
+        els.shareBtn.classList.remove('hidden');
+        els.gamePage.classList.add('hidden');
+        els.mapPage.classList.remove('hidden');
+    }
+
     function updateGameLogic() {
+        if (gameState !== 'GAME') return;
+        
         const mode = modes[travelMode];
         const currentDist = map.distance(userCoords, currentTargetCoords) / 1000;
-        let finishedSteps = Math.floor(initialTotalKm - (currentDist / mode.factor));
+        const oneWayDist = (initialTotalKm * mode.factor) / mode.distMult;
+        
+        let finishedSteps;
 
-        for (let i = 0; i < finishedSteps; i++) {
-            const step = document.getElementById(`step-${i}`);
-            if (step) step.classList.add('eat-animation');
+        if (travelMode === 2) { 
+            if (!hasReachedTurnaround && currentDist < 0.05) {
+                hasReachedTurnaround = true; 
+            }
+            if (!hasReachedTurnaround) {
+                finishedSteps = Math.floor((oneWayDist - currentDist) / mode.factor);
+            } else {
+                finishedSteps = Math.floor((oneWayDist + (oneWayDist - currentDist)) / mode.factor);
+            }
+        } else {
+            finishedSteps = Math.floor(initialTotalKm - (currentDist / mode.factor));
+        }
+
+        for (let i = 0; i < initialTotalKm - 1; i++) {
+            if (i < finishedSteps) {
+                const step = document.getElementById(`step-${i}`);
+                if (step && !step.classList.contains('eat-animation')) step.classList.add('eat-animation');
+            }
         }
         
-        if (currentDist < 0.05) finishGame();
-        else moveMouse(finishedSteps > 0 ? finishedSteps : 0);
+        if (currentDist < 0.05 && (travelMode !== 2 || hasReachedTurnaround)) {
+            finishGame();
+        } else {
+            moveMouse(finishedSteps >= 0 ? finishedSteps : 0); 
+        }
+    }
+
+    function finishGame() {
+        if (gameState === 'FINISHED') return;
+        gameState = 'FINISHED';
+        const mouse = document.getElementById('the-mouse');
+        mouse.innerHTML = '🐭🧀'; 
+        mouse.classList.add('victory');
     }
 
     function moveMouse(index) {
+        if (gameState !== 'GAME') return;
+        lastMouseIndex = index;
         const mouse = document.getElementById('the-mouse');
         const targetStep = document.getElementById(`step-${index}`);
         if (targetStep) {
@@ -483,14 +765,18 @@
         }
     }
 
-    function finishGame() {
-        gameState = 'FINISHED';
-        const mouse = document.getElementById('the-mouse');
-        mouse.innerHTML = '🐭🧀'; mouse.classList.add('victory');
+    async function shareApp() {
+        playClickSound();
+        const shareData = {
+            title: 'Marcus Mouse & Cheese Tracker',
+            text: 'Hjälp musen hitta osten! Kolla in min tracker.',
+            url: window.location.href
+        };
+        try {
+            if (navigator.share) await navigator.share(shareData);
+            else alert("Kopiera länken: " + window.location.href);
+        } catch (err) {}
     }
-
-    function stopGame() { gameState = 'MAP'; els.gamePage.classList.add('hidden'); els.mapPage.classList.remove('hidden'); }
-    function shareApp() { if (navigator.share) navigator.share({ title: 'Mouse Tracker', url: window.location.href }); }
 
     window.onload = initMap;
 </script>
