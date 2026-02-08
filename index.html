@@ -269,6 +269,7 @@
 
     let map, targetMarker, userMarker, connectionLine, userCoords;
     let currentTargetCoords = null;
+    let startCoords = null;
     let currentTargetName = "MÅLET";
     let initialZoomPerformed = false; 
     let isShowingUser = true; 
@@ -582,6 +583,7 @@
     function startGame() {
         if (!currentTargetCoords || !userCoords) return;
         gameState = 'GAME';
+        startCoords = [...userCoords];
         hasReachedTurnaround = false; 
         els.shareBtn.classList.add('hidden');
         
@@ -617,22 +619,23 @@
         if (gameState !== 'GAME') return;
         
         const mode = modes[travelMode];
-        const currentDist = map.distance(userCoords, currentTargetCoords) / 1000;
-        const oneWayDist = (initialTotalKm * mode.factor) / mode.distMult;
+        const distToTarget = map.distance(userCoords, currentTargetCoords) / 1000;
+        const oneWayDist = (initialTotalKm * mode.factor) / (travelMode === 2 ? 2 : 1);
         
         let finishedSteps;
 
         if (travelMode === 2) { 
-            if (!hasReachedTurnaround && currentDist < 0.05) {
+            if (!hasReachedTurnaround && distToTarget < 0.05) {
                 hasReachedTurnaround = true; 
             }
             if (!hasReachedTurnaround) {
-                finishedSteps = Math.floor((oneWayDist - currentDist) / mode.factor);
+                finishedSteps = Math.floor((oneWayDist - distToTarget) / mode.factor);
             } else {
-                finishedSteps = Math.floor((oneWayDist + (oneWayDist - currentDist)) / mode.factor);
+                const distToStart = map.distance(userCoords, startCoords) / 1000;
+                finishedSteps = Math.floor((oneWayDist + (oneWayDist - distToStart)) / mode.factor);
             }
         } else {
-            finishedSteps = Math.floor(initialTotalKm - (currentDist / mode.factor));
+            finishedSteps = Math.floor(initialTotalKm - (distToTarget / mode.factor));
         }
 
         for (let i = 0; i < initialTotalKm - 1; i++) {
@@ -642,7 +645,10 @@
             }
         }
         
-        if (currentDist < 0.05 && (travelMode !== 2 || hasReachedTurnaround)) {
+        const isHomeAgain = travelMode === 2 && hasReachedTurnaround && map.distance(userCoords, startCoords) < 0.05;
+        const isAtOneWayTarget = travelMode !== 2 && distToTarget < 0.05;
+
+        if (isHomeAgain || isAtOneWayTarget) {
             finishGame();
         } else {
             moveMouse(finishedSteps >= 0 ? finishedSteps : 0); 
