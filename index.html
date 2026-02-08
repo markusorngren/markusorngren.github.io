@@ -643,6 +643,7 @@
         
         const mode = modes[travelMode];
         const distToTarget = map.distance(userCoords, currentTargetCoords) / 1000;
+        const distToStart = map.distance(userCoords, startCoords) / 1000;
         const oneWayDist = (initialTotalKm * mode.factor) / (travelMode === 2 ? 2 : 1);
         
         let finishedSteps;
@@ -654,7 +655,6 @@
             if (!hasReachedTurnaround) {
                 finishedSteps = Math.floor((oneWayDist - distToTarget) / mode.factor);
             } else {
-                const distToStart = map.distance(userCoords, startCoords) / 1000;
                 finishedSteps = Math.floor((oneWayDist + (oneWayDist - distToStart)) / mode.factor);
             }
         } else {
@@ -668,11 +668,12 @@
             }
         }
         
-        const isHomeAgain = travelMode === 2 && hasReachedTurnaround && map.distance(userCoords, startCoords) < 0.05;
+        const isHomeAgain = travelMode === 2 && hasReachedTurnaround && distToStart < 0.05;
         const isAtOneWayTarget = travelMode !== 2 && distToTarget < 0.05;
 
         if (isHomeAgain || isAtOneWayTarget) {
-            finishGame();
+            moveMouse(initialTotalKm - 1);
+            setTimeout(finishGame, 500);
         } else {
             moveMouse(finishedSteps >= 0 ? finishedSteps : 0); 
         }
