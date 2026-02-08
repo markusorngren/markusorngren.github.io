@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mouse-tracker-v18'; // Ändra detta nummer varje gång du gör stora ändringar!
+const CACHE_NAME = 'mouse-tracker-v22'; // Uppdaterat nummer för att tvinga fram refresh på iPhone
 const ASSETS = [
   './',
   './index.html',
@@ -37,8 +37,8 @@ self.addEventListener('fetch', (e) => {
 // Lyssnar efter meddelanden från appen för att skicka versionsnummer
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'GET_VERSION') {
-    // Tar bort prefixet så bara "v14" (eller vad man skrivit) skickas
-    const versionNumber = CACHE_NAME.replace('mouse-tracker-', '');
+    // Rensar namnet så att bara versionsnumret skickas tillbaka
+    const versionNumber = CACHE_NAME.split('-').pop(); 
     event.ports[0].postMessage({
       version: versionNumber
     });
