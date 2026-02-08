@@ -266,7 +266,6 @@
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('sw.js').then(reg => {
                 const askVersion = (worker) => {
-                    if (!worker) return;
                     const msgChan = new MessageChannel();
                     msgChan.port1.onmessage = (event) => {
                         if (event.data && event.data.version) {
@@ -275,17 +274,10 @@
                     };
                     worker.postMessage({ type: 'GET_VERSION' }, [msgChan.port2]);
                 };
-
-                // Kör direkt om en worker redan är aktiv
                 if (reg.active) askVersion(reg.active);
-
-                // Lyssna på tillståndsförändringar (viktigt för iOS)
                 reg.addEventListener('updatefound', () => {
                     const newWorker = reg.installing;
                     newWorker.addEventListener('statechange', () => {
-                        if (newWorker.state === 'activated') {
-                            askVersion(newWorker);
-                        }
                         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                             window.location.reload();
                         }
@@ -398,6 +390,7 @@
         } catch(e) {}
     }
 
+    // NY LJUDEFFEKT FÖR VINST
     function playVictorySound() {
         if (!audioCtx) return;
         const now = audioCtx.currentTime;
@@ -665,6 +658,7 @@
         
         playVictorySound();
         createConfetti();
+        // Fortsätt spruta konfetti en stund
         const interval = setInterval(() => {
             if(gameState !== 'FINISHED') clearInterval(interval);
             else createConfetti();
