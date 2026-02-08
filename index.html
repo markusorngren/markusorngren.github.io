@@ -40,21 +40,45 @@
             overflow: hidden; 
         }
 
+        /* LANDSCAPE OPTIMIZATION */
         @media (orientation: landscape) {
             #map-page { flex-direction: row; }
+            
             .panel { 
-                width: 250px; 
+                width: 280px; 
                 height: 100%; 
                 border-radius: 0 !important; 
                 box-shadow: -4px 0 15px rgba(0,0,0,0.1) !important;
                 display: flex;
                 flex-direction: column;
-                justify-content: center;
-                padding-top: env(safe-area-inset-top);
+                justify-content: flex-start; /* Starta från toppen */
+                padding: env(safe-area-inset-top) 15px calc(20px + env(safe-area-inset-bottom)) 15px !important;
+                box-sizing: border-box;
+                gap: 10px;
             }
-            .action-container { flex-direction: column; }
-            .save-btn-container { flex-wrap: wrap; }
-            
+
+            /* Behåll sparade platser och mode-knapp högst upp */
+            .save-btn-container { 
+                flex-wrap: wrap; 
+                justify-content: center;
+                margin-bottom: 5px;
+            }
+
+            /* Den nya vertikala ordningen för landscape */
+            .action-container { 
+                flex-direction: column; 
+                gap: 12px; 
+                flex: 1;
+                justify-content: flex-start;
+                margin-top: 10px;
+            }
+
+            /* Specifik ordning via CSS Order */
+            #start-btn { order: 1; width: 100%; min-height: 50px; font-size: 1rem; }
+            #voice-btn { order: 2; width: 100%; }
+            #text-btn  { order: 3; width: 100%; }
+            #locate-btn { order: 4; width: 100%; margin-top: auto; } /* Hitta mig längst ner */
+
             .apple-grid { 
                 grid-template-columns: repeat(10, 1fr) !important; 
                 max-width: 80% !important; 
@@ -296,7 +320,7 @@
         <ul>
             <li>📍 <b>Klicka på kartan eller sök</b> för att välja resmål.</li>
             <li>💾 <b>Håll inne en spara-knapp</b> för att spara en favorit.</li>
-            <li>🚶↔️ <b>Välj färdsätt</b> bredvid spara-knapparna.</li>
+            <li>🚶↔️ <b>Välj färdsätt</b> bil eller promenad.</li>
             <li>🚀 Tryck på <b>STARTA</b> för att börja resan!</li>
         </ul>
         <button class="ok-btn" onclick="closeInstructions()">Okej! Jag förstår!</button>
@@ -322,10 +346,10 @@
         </div>
 
         <div class="action-container">
-            <button id="locate-btn" class="action-btn" onclick="toggleView()">🎯 HITTA MIG</button>
-            <button id="text-btn" class="action-btn" onclick="toggleSearchUI()">🔍 SÖK</button> 
-            <button id="voice-btn" class="action-btn" onclick="startVoiceSearch()">🎤 RÖST</button>
             <button id="start-btn" class="action-btn hidden" onclick="startGame()">STARTA 🧀</button>
+            <button id="voice-btn" class="action-btn" onclick="startVoiceSearch()">🎤 RÖST</button>
+            <button id="text-btn" class="action-btn" onclick="toggleSearchUI()">🔍 SÖK</button> 
+            <button id="locate-btn" class="action-btn" onclick="toggleView()">🎯 HITTA MIG</button>
         </div>
     </div>
 </div>
@@ -337,6 +361,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+    // [Scriptet fortsätter oförändrat nedan...]
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('sw.js').then(reg => {
@@ -358,10 +383,9 @@
     let initialZoomPerformed = false; 
     let isShowingUser = true; 
     let isTracking = false; 
-    let hasReachedTurnaround = false; // Flagga för Tur & Retur
+    let hasReachedTurnaround = false;
     let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
     
-    // Travel Mode State - Nu med 100m (0.1) factor för gå-lägen
     let travelMode = 0; 
     const modes = [
         { icon: '🚗', factor: 1.0, distMult: 1 },
@@ -430,44 +454,51 @@
     }
 
     function initMap() {
-        if(sessionStorage.getItem('introSeen')) els.welcomeOverlay.classList.add('hidden');
-        map = L.map('map', { zoomControl: false }).setView([59.3, 14.1], 5);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    if(sessionStorage.getItem('introSeen')) els.welcomeOverlay.classList.add('hidden');
+    
+    // Vi lägger till attributionControl: false för att ta bort länken i hörnet
+    map = L.map('map', { 
+        zoomControl: false,
+        attributionControl: false 
+    }).setView([59.3, 14.1], 5);
 
-        if (lastTarget) {
-            currentTargetName = lastTarget.name || "Mål";
-            setTarget(lastTarget.coords, false);
-            map.setView(lastTarget.coords, 14); 
-            initialZoomPerformed = true;
-            updateLocateBtnText();
-        }
+    // Vi laddar OpenStreetMap som vanligt
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        if (navigator.geolocation) {
-            navigator.geolocation.watchPosition(handlePositionUpdate, null, {
-                enableHighAccuracy: true,
-                maximumAge: 10000,
-                timeout: 5000
-            });
-        }
-
-        map.on('click', e => { 
-            if(gameState !== 'MAP') return;
-            playClickSound(); 
-            currentTargetName = "Markerad plats"; 
-            isTracking = false; 
-            setTarget(e.latlng, true); 
-            map.panTo(e.latlng);
-        });
-
-        map.on('movestart', (e) => {
-            if (e.hard) return; 
-            isTracking = false; 
-        });
-        
-        setupLongPress();
-        updateButtonUI();
-        window.addEventListener('resize', updateButtonUI);
+    if (lastTarget) {
+        currentTargetName = lastTarget.name || "Mål";
+        setTarget(lastTarget.coords, false);
+        map.setView(lastTarget.coords, 14); 
+        initialZoomPerformed = true;
+        updateLocateBtnText();
     }
+
+    if (navigator.geolocation) {
+        navigator.geolocation.watchPosition(handlePositionUpdate, null, {
+            enableHighAccuracy: true,
+            maximumAge: 10000,
+            timeout: 5000
+        });
+    }
+
+    map.on('click', e => { 
+        if(gameState !== 'MAP') return;
+        playClickSound(); 
+        currentTargetName = "Markerad plats"; 
+        isTracking = false; 
+        setTarget(e.latlng, true); 
+        map.panTo(e.latlng);
+    });
+
+    map.on('movestart', (e) => {
+        if (e.hard) return; 
+        isTracking = false; 
+    });
+    
+    setupLongPress();
+    updateButtonUI();
+    window.addEventListener('resize', updateButtonUI);
+}
 
     function toggleTravelMode() {
         playClickSound();
@@ -648,7 +679,7 @@
     function startGame() {
         if (!currentTargetCoords || !userCoords) return;
         gameState = 'GAME';
-        hasReachedTurnaround = false; // Reset inför varje resa
+        hasReachedTurnaround = false; 
         els.shareBtn.classList.add('hidden');
         
         const d = map.distance(userCoords, currentTargetCoords) / 1000;
@@ -688,25 +719,19 @@
         
         let finishedSteps;
 
-        if (travelMode === 2) { // Om det är Tur & Retur (T&R)
-            // Om vi är nära vändpunkten (målet), markera att vi vänt
+        if (travelMode === 2) { 
             if (!hasReachedTurnaround && currentDist < 0.05) {
                 hasReachedTurnaround = true; 
             }
-
             if (!hasReachedTurnaround) {
-                // Vägen DIT: Musen äter äpplen 0 till hälften
                 finishedSteps = Math.floor((oneWayDist - currentDist) / mode.factor);
             } else {
-                // Vägen TILLBAKA: Musen äter från hälften till slutet
                 finishedSteps = Math.floor((oneWayDist + (oneWayDist - currentDist)) / mode.factor);
             }
         } else {
-            // Vanlig enkelresa
             finishedSteps = Math.floor(initialTotalKm - (currentDist / mode.factor));
         }
 
-        // Animera ätandet
         for (let i = 0; i < initialTotalKm - 1; i++) {
             if (i < finishedSteps) {
                 const step = document.getElementById(`step-${i}`);
@@ -714,7 +739,6 @@
             }
         }
         
-        // Avsluta resan bara om vi är nära slutmålet (hemma) och har vänt om det var T&R
         if (currentDist < 0.05 && (travelMode !== 2 || hasReachedTurnaround)) {
             finishGame();
         } else {
