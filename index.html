@@ -276,6 +276,7 @@
     let isTracking = false; 
     let hasReachedTurnaround = false;
     let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
+    let wakeLock = null;
     
     let travelMode = 0; 
     const modes = [
@@ -580,13 +581,22 @@
         rec.onend = () => els.voiceBtn.classList.remove('listening');
     }
 
-    function startGame() {
+    async function startGame() {
         if (!currentTargetCoords || !userCoords) return;
         gameState = 'GAME';
         startCoords = [...userCoords];
         hasReachedTurnaround = false; 
         els.shareBtn.classList.add('hidden');
         
+        // Aktivera Wake Lock så skärmen inte slocknar
+        try {
+            if ('wakeLock' in navigator) {
+                wakeLock = await navigator.wakeLock.request('screen');
+            }
+        } catch (err) {
+            console.log("Wake Lock error:", err);
+        }
+
         const d = map.distance(userCoords, currentTargetCoords) / 1000;
         const mode = modes[travelMode];
         
@@ -605,6 +615,14 @@
             frag.appendChild(step);
         }
         els.pathGrid.appendChild(frag);
+
+        // Starta tyst ljud för att aktivera låsskärmskontroller
+        if ('mediaSession' in navigator) {
+            const silentAudio = new Audio('https://github.com/anars/blank-audio/raw/master/10-seconds-of-silence.mp3');
+            silentAudio.loop = true;
+            silentAudio.play().catch(() => {});
+        }
+
         setTimeout(() => moveMouse(0), 100);
     }
 
@@ -613,6 +631,13 @@
         els.shareBtn.classList.remove('hidden');
         els.gamePage.classList.add('hidden');
         els.mapPage.classList.remove('hidden');
+
+        // Släpp skärmlåset
+        if (wakeLock !== null) {
+            wakeLock.release().then(() => {
+                wakeLock = null;
+            });
+        }
     }
 
     function updateGameLogic() {
@@ -638,6 +663,19 @@
             finishedSteps = Math.floor(initialTotalKm - (distToTarget / mode.factor));
         }
 
+        // Beräkna hur många äpplen som är kvar
+        const applesLeft = initialTotalKm - finishedSteps - 1;
+
+        // Uppdatera låsskärmen
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: applesLeft > 0 ? `${applesLeft} äpplen kvar till osten 🍎` : "Osten är nära! 🧀",
+                artist: 'Marcus Mouse Tracker',
+                album: `Resa till: ${currentTargetName}`,
+                artwork: [{ src: 'icon.png', sizes: '512x512', type: 'image/png' }]
+            });
+        }
+
         for (let i = 0; i < initialTotalKm - 1; i++) {
             if (i < finishedSteps) {
                 const step = document.getElementById(`step-${i}`);
@@ -661,6 +699,10 @@
         const mouse = document.getElementById('the-mouse');
         mouse.innerHTML = '🐭🧀'; 
         mouse.classList.add('victory');
+        
+        if (wakeLock !== null) {
+            wakeLock.release().then(() => wakeLock = null);
+        }
     }
 
     function moveMouse(index) {
