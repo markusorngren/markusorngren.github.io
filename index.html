@@ -276,6 +276,7 @@
     let isTracking = false; 
     let hasReachedTurnaround = false;
     let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
+    let wakeLock = null;
     
     let travelMode = 0; 
     const modes = [
@@ -315,6 +316,23 @@
         modeBtn: document.getElementById('mode-btn'),
         actionContainer: document.querySelector('.action-container')
     };
+
+    async function requestWakeLock() {
+        try {
+            if ('wakeLock' in navigator) {
+                wakeLock = await navigator.wakeLock.request('screen');
+                wakeLock.addEventListener('release', () => {
+                    wakeLock = null;
+                });
+            }
+        } catch (err) {}
+    }
+
+    document.addEventListener('visibilitychange', async () => {
+        if (wakeLock !== null && document.visibilityState === 'visible') {
+            await requestWakeLock();
+        }
+    });
 
     function closeInstructions() {
         playClickSound();
@@ -582,6 +600,7 @@
 
     function startGame() {
         if (!currentTargetCoords || !userCoords) return;
+        requestWakeLock();
         gameState = 'GAME';
         startCoords = [...userCoords];
         hasReachedTurnaround = false; 
@@ -609,6 +628,10 @@
     }
 
     function stopGame() {
+        if (wakeLock !== null) {
+            wakeLock.release();
+            wakeLock = null;
+        }
         gameState = 'MAP';
         els.shareBtn.classList.remove('hidden');
         els.gamePage.classList.add('hidden');
@@ -657,6 +680,10 @@
 
     function finishGame() {
         if (gameState === 'FINISHED') return;
+        if (wakeLock !== null) {
+            wakeLock.release();
+            wakeLock = null;
+        }
         gameState = 'FINISHED';
         const mouse = document.getElementById('the-mouse');
         mouse.innerHTML = '🐭🧀'; 
