@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mouse-tracker-v22'; // Ändra detta nummer för att trigga instruktionsrutan!
+const CACHE_NAME = 'mouse-tracker-v21'; // Ändra detta nummer varje gång du gör stora ändringar!
 const ASSETS = [
   './',
   './index.html',
@@ -10,13 +10,13 @@ const ASSETS = [
 
 // Installerar och sparar filer i cachen
 self.addEventListener('install', (e) => {
-  self.skipWaiting();
+  self.skipWaiting(); // Tvingar den nya versionen att ta över direkt
   e.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
   );
 });
 
-// Rensar gamla cachar
+// Rensar gamla cachar när en ny version aktiveras
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) => {
@@ -34,11 +34,13 @@ self.addEventListener('fetch', (e) => {
   );
 });
 
-// VIKTIGT: Svarar index.html med den aktuella versionen
+// Lyssnar efter meddelanden från appen för att skicka versionsnummer
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'GET_VERSION') {
+    // Tar bort prefixet så bara "v14" (eller vad man skrivit) skickas
+    const versionNumber = CACHE_NAME.replace('mouse-tracker-', '');
     event.ports[0].postMessage({
-      version: CACHE_NAME
+      version: versionNumber
     });
   }
 });

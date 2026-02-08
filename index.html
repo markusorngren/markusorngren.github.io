@@ -47,33 +47,121 @@
             font-weight: bold;
         }
 
-        #share-btn { 
-            position: fixed; 
-            top: 15px; 
-            left: 15px; 
-            z-index: 10000; 
-            background: white; 
-            border-radius: 50%; 
-            width: 45px; 
-            height: 45px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2); 
-            font-size: 1.2rem;
+        /* Styling för In-App Browser varning */
+        #in-app-warning {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            z-index: 200000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .browser-icon-hint {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* iOS Install Banner Styling */
+        #ios-install-prompt {
+            position: fixed;
+            bottom: calc(20px + env(safe-area-inset-bottom));
+            left: 15px;
+            right: 15px;
+            background: white;
+            padding: 18px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            z-index: 100000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            border: 3px solid var(--primary);
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .ios-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        .ios-instructions {
+            font-size: 1rem;
+            text-align: center;
+            color: #444;
+            line-height: 1.4;
+        }
+
+        .ios-footer {
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-wrap: wrap;
+            gap: 5px;
+            background: #f9f9f9;
+            padding: 12px;
+            border-radius: 12px;
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 0.95rem;
+        }
+
+        .highlight-text {
+            color: var(--blue);
+            font-weight: 800;
+            text-decoration: underline;
+        }
+
+        .close-ios-btn {
+            background: none;
             border: none;
-            cursor: pointer;
+            color: #999;
+            text-decoration: underline;
+            font-size: 0.8rem;
+            margin-top: 5px;
+        }
+        
+        #map-page, #game-page { 
+            height: var(--app-height); 
+            width: 100vw; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
         }
 
-        /* In-App Browser warning */
-        #in-app-warning {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #fff; z-index: 200000; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; padding: 30px; box-sizing: border-box; text-align: center;
+        .action-container { 
+            display: flex; 
+            justify-content: center; 
+            gap: 8px; 
+            width: 100%; 
+            max-width: 400px; 
+            margin: 0 auto; 
         }
 
-        #map-page, #game-page { height: var(--app-height); width: 100vw; display: flex; flex-direction: column; overflow: hidden; }
-        .action-container { display: flex; justify-content: center; gap: 8px; width: 100%; max-width: 400px; margin: 0 auto; }
         #map { flex: 1; width: 100%; min-height: 0; z-index: 1; }
         .hidden { display: none !important; }
         
@@ -86,9 +174,12 @@
             background: white; padding: 25px; border-radius: 25px;
             max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
+        .welcome-content h2 { margin-top: 0; color: var(--orange); }
+        .welcome-content ul { text-align: left; margin: 20px 0; line-height: 1.6; }
         .ok-btn {
             background: var(--primary); color: white; padding: 12px 30px;
             border-radius: 30px; font-size: 1.1rem; width: 100%; border: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
 
         .panel { 
@@ -101,64 +192,115 @@
         button:active { transform: scale(0.95); }
 
         .save-btn-container { display: flex; justify-content: center; gap: 10px; margin-bottom: 8px; padding: 2px; align-items: center; }
-        .slot-btn { width: 50px; height: 50px; box-shadow: 0 3px 6px rgba(0,0,0,0.2); opacity: 0.8; border: 2px solid transparent; }
-        .slot-btn.filled { opacity: 1; border: 2px solid rgba(0,0,0,0.3); }
+        .slot-btn { 
+            width: 50px; height: 50px; box-shadow: 0 3px 6px rgba(0,0,0,0.2); 
+            display: flex; align-items: center; justify-content: center; padding: 0 2px; flex-shrink: 0;
+            opacity: 0.8; border: 2px solid transparent;
+        }
+        .slot-btn.filled { opacity: 1; border: 2px solid rgba(0,0,0,0.3); box-shadow: 0 0 10px rgba(0,0,0,0.1); }
 
-        .mode-btn { width: 50px; height: 50px; border-radius: 12px; background: #f0f0f0; border: 2px solid #ddd; }
-        .btn-text-container { width: 90%; overflow: hidden; white-space: nowrap; }
-        .scrolling-text { font-size: 0.55rem; text-transform: uppercase; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+        .mode-btn {
+            width: 50px; height: 50px; border-radius: 12px; background: #f0f0f0;
+            font-size: 1.2rem; border: 2px solid #ddd; box-shadow: 0 3px 6px rgba(0,0,0,0.1); flex-shrink: 0;
+        }
+
+        .btn-text-container { 
+            width: 90%; overflow: hidden; white-space: nowrap; position: relative;
+            mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+            -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+        }
+        
+        .scrolling-text { 
+            display: inline-block; font-size: 0.55rem; text-transform: uppercase; 
+            pointer-events: none; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            padding: 0 5px; white-space: nowrap;
+        }
+
+        .animate-scroll { animation: marquee 6s linear infinite; }
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50.5%); } }
 
         #btn-0 { border-radius: 50%; background: var(--primary); } 
         #btn-1 { border-radius: 8px; background: var(--blue); } 
         #btn-2 { background: var(--orange); width: 55px; height: 55px; clip-path: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0% 50%); } 
-        #btn-3 { width: 55px; height: 50px; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); background: #9C27B0; padding-top: 10px;} 
+        #btn-3 { width: 55px; height: 50px; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); padding-top: 10px; background: #9C27B0; } 
 
-        #search-container { display: flex; gap: 5px; margin-bottom: 10px; }
+        #search-container { display: flex; gap: 5px; margin-bottom: 10px; transition: all 0.3s ease; }
         #text-search-input { flex: 1; padding: 8px 15px; border-radius: 20px; border: 2px solid #ddd; font-size: 16px; outline: none; }
-        #go-btn { background: #17a2b8; color: white; border-radius: 50%; width: 40px; height: 40px; }
+        #go-btn { background: #17a2b8; color: white; border-radius: 50%; width: 40px; height: 40px; font-size: 1.2rem; }
 
         .action-btn { flex: 1; padding: 8px 5px; border-radius: 40px; font-size: 0.75rem; box-shadow: 0 4px 0 rgba(0,0,0,0.15); min-height: 42px; }
-        #locate-btn { background: #007bff; color: white; }
+        
+        #locate-btn { background: #007bff; color: white; text-transform: uppercase; }
+        #text-btn { background: #17a2b8; color: white; } 
         #voice-btn { background: #444; color: white; }
         #voice-btn.listening { background: #ff4444; animation: pulse 1.5s infinite; }
         #start-btn { background: #ffcc00; color: #000; }
 
-        #dist-info { margin-bottom: 8px; font-weight: bold; font-size: 0.95rem; min-height: 1.2em; }
-        
-        .apple-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; width: 95%; max-width: 280px; margin-top: 10px; padding: 25px 10px; background: rgba(255,255,255,0.5); border-radius: 15px; position: relative; }
-        .step { font-size: 1.4rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
-        #the-mouse { position: absolute; font-size: 1.8rem; transition: all 0.8s ease-in-out; z-index: 100; margin-top: -12px; margin-left: -8px; }
-        .eat-animation { transform: scale(0.6); opacity: 0.3; }
-        .victory { position: fixed; top: 50% !important; left: 50% !important; font-size: 5rem; background: rgba(253, 246, 227, 0.95); width: 100vw; height: 100svh; display: flex; align-items: center; justify-content: center; z-index: 99999; transform: translate(-50%, -50%); }
+        #dist-info { margin-bottom: 8px; font-weight: bold; font-size: 0.95rem; color: #000; min-height: 1.2em; }
+        #share-btn { position: fixed; top: 15px; left: 15px; z-index: 10000; background: white; border-radius: 50%; width: 45px; height: 45px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-size: 1.2rem; }
+        #game-page { align-items: center; padding: 5px; position: relative; }
+        .apple-grid { 
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; width: 95%; 
+            max-width: 280px; margin-top: 10px; padding: 25px 10px 10px 10px; 
+            background: rgba(255,255,255,0.5); border-radius: 15px; position: relative; 
+            max-height: 70vh; overflow-y: auto;
+        }
+        .step { font-size: 1.4rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; transition: all 0.5s ease; }
+        #the-mouse { position: absolute; font-size: 1.8rem; transition: all 0.8s ease-in-out; z-index: 100; margin-top: -12px; margin-left: -8px; pointer-events: none; animation: mouseWobble 1s infinite ease-in-out; }
+        .eat-animation { transform: scale(0.6) !important; opacity: 0.3 !important; }
+        @keyframes mouseWobble { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } }
+        @keyframes victoryPop { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; } 80% { transform: translate(-50%, -50%) scale(2.0); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.8); opacity: 1; } }
+        #the-mouse.victory { position: fixed; top: 50% !important; left: 50% !important; z-index: 9999; font-size: 5rem; animation: victoryPop 0.6s ease-out forwards; margin: 0; background: rgba(253, 246, 227, 0.95); width: 100vw; height: 100svh; display: flex; align-items: center; justify-content: center; }
 
         @media (orientation: landscape) {
             #map-page { flex-direction: row; }
-            .panel { width: 300px; height: 100%; border-radius: 0; }
+            .panel { width: 300px; height: 100%; border-radius: 0 !important; padding: env(safe-area-inset-top) 15px calc(20px + env(safe-area-inset-bottom)) 15px !important; box-sizing: border-box; }
+            .action-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+            .apple-grid { grid-template-columns: repeat(10, 1fr) !important; max-width: 80% !important; }
         }
     </style>
 </head>
 <body>
 
 <div id="version-tag">V...</div>
+
+<div id="in-app-warning" class="hidden">
+    <div class="browser-icon-hint">🚀</div>
+    <h2 style="color: var(--orange);">Check this out!</h2>
+    <p>Du kör appen inuti Messenger eller Instagram just nu. För en bättre <b>experience</b> och för att kunna installera appen:</p>
+    <div style="background: #f0f0f0; padding: 20px; border-radius: 15px; margin: 20px 0; font-size: 1.1rem;">
+        Tryck på de tre prickarna <b>(⋮)</b> eller kompassen och välj <b>"Öppna i webbläsare"</b>.
+    </div>
+    <button class="ok-btn" onclick="document.getElementById('in-app-warning').classList.add('hidden')">I got it!</button>
+</div>
+
 <button id="share-btn" onclick="shareApp()">🔗</button>
 
-<div id="welcome-overlay" class="hidden">
+<div id="welcome-overlay">
     <div class="welcome-content">
         <h2>Hej Marcus! 🐭</h2>
         <p>Hjälp musen att hitta osten!</p>
-        <ul style="text-align: left; line-height: 1.6;">
-            <li>📍 <b>Klicka på kartan eller sök</b> för att välja mål.</li>
-            <li>💾 <b>Håll inne knappar</b> för att spara favoriter.</li>
+        <ul>
+            <li>📍 <b>Klicka på kartan eller sök</b> för att välja resmål.</li>
+            <li>💾 <b>Håll inne en spara-knapp</b> för att spara en favorit.</li>
             <li>🚶↔️ <b>Välj färdsätt</b> bil eller promenad.</li>
+            <li>🚀 Tryck på <b>STARTA</b> för att börja resan!</li>
         </ul>
         <button class="ok-btn" onclick="closeInstructions()">Okej! Let's go!</button>
     </div>
 </div>
 
+<div id="ios-install-prompt" class="hidden">
+    <div class="ios-header"><span>🐭 Cheese Tracker</span></div>
+    <div class="ios-instructions">Installera appen för att få fullskärm och snabb åtkomst!</div>
+    <div class="ios-footer">Tryck på <span class="highlight-text">DELA-ikonen</span> (rutan med pilen) och välj sedan <b>"Lägg till på hemskärmen"</b>.</div>
+    <button class="close-ios-btn" onclick="this.parentElement.classList.add('hidden')">Kanske senare</button>
+</div>
+
 <div id="map-page">
     <div id="map"></div>
     <div class="panel">
-        <div id="dist-info">Söker GPS... 📍</div>
+        <div id="dist-info">Söker din GPS... 📍</div>
         <div class="save-btn-container">
             <button id="btn-0" class="slot-btn" onclick="handleSlotClick(0)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
             <button id="btn-1" class="slot-btn" onclick="handleSlotClick(1)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
@@ -180,52 +322,56 @@
 </div>
 
 <div id="game-page" class="hidden">
-    <button style="background:#ff4444; color:white; margin: 10px; border-radius: 20px; padding: 6px 15px;" onclick="stopGame()">AVBRYT</button>
+    <button style="background:#ff4444; color:white; margin-top: 10px; border-radius: 20px; padding: 6px 15px; font-size: 0.75rem; z-index: 10000; position: relative;" onclick="stopGame()">AVBRYT</button>
     <div class="apple-grid" id="path"><div id="the-mouse">🐭</div></div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    let swVersion = null;
-
-    // Registrera Service Worker och lyssna efter versionen
+    // Service Worker registrering
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('sw.js').then(reg => {
                 const askVersion = (worker) => {
                     const msgChan = new MessageChannel();
                     msgChan.port1.onmessage = (event) => {
-                        if (event.data && event.data.version) {
-                            swVersion = event.data.version;
-                            document.getElementById('version-tag').innerText = swVersion.toUpperCase();
-                            if (localStorage.getItem('mouse_last_seen_v') !== swVersion) {
-                                document.getElementById('welcome-overlay').classList.remove('hidden');
-                            }
-                        }
+                        if (event.data && event.data.version) document.getElementById('version-tag').innerText = event.data.version.toUpperCase();
                     };
                     worker.postMessage({ type: 'GET_VERSION' }, [msgChan.port2]);
                 };
-
                 if (reg.active) askVersion(reg.active);
-                reg.addEventListener('updatefound', () => {
-                    const newWorker = reg.installing;
-                    newWorker.addEventListener('statechange', () => {
-                        if (newWorker.state === 'activated') askVersion(newWorker);
-                    });
-                });
             });
         });
     }
 
-    let map, targetMarker, userMarker, connectionLine, userCoords, currentTargetCoords = null, currentTargetName = "MÅLET", initialZoomPerformed = false, isShowingUser = true, isTracking = false, savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null], travelMode = 0;
+    let map, targetMarker, userMarker, connectionLine, userCoords, currentTargetCoords = null, startCoords = null, currentTargetName = "MÅLET", initialZoomPerformed = false, isShowingUser = true, isTracking = false, hasReachedTurnaround = false, savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null], wakeLock = null, travelMode = 0;
     const modes = [{ icon: '🚗', factor: 1.0, distMult: 1 }, { icon: '🚶', factor: 0.1, distMult: 1 }, { icon: '🚶↔️', factor: 0.1, distMult: 2 }];
-    let lastTargetRaw = JSON.parse(localStorage.getItem('mouse_last_target')), audioCtx, gameState = 'MAP', initialTotalKm = 0;
+    let lastTargetRaw = JSON.parse(localStorage.getItem('mouse_last_target')), lastTarget = null, touchTimer, audioCtx, gameState = 'MAP', initialTotalKm = 0, lastMouseIndex = 0;
 
     const els = {
-        distInfo: document.getElementById('dist-info'), startBtn: document.getElementById('start-btn'), mapPage: document.getElementById('map-page'), gamePage: document.getElementById('game-page'), pathGrid: document.getElementById('path'), locateBtn: document.getElementById('locate-btn'), searchContainer: document.getElementById('search-container'), searchInput: document.getElementById('text-search-input'), voiceBtn: document.getElementById('voice-btn'), welcomeOverlay: document.getElementById('welcome-overlay'), modeBtn: document.getElementById('mode-btn')
+        distInfo: document.getElementById('dist-info'), startBtn: document.getElementById('start-btn'), mapPage: document.getElementById('map-page'), gamePage: document.getElementById('game-page'), pathGrid: document.getElementById('path'), locateBtn: document.getElementById('locate-btn'), searchContainer: document.getElementById('search-container'), searchInput: document.getElementById('text-search-input'), voiceBtn: document.getElementById('voice-btn'), welcomeOverlay: document.getElementById('welcome-overlay'), shareBtn: document.getElementById('share-btn'), modeBtn: document.getElementById('mode-btn'), actionContainer: document.querySelector('.action-container')
     };
 
+    function checkBrowsers() {
+        const ua = navigator.userAgent || navigator.vendor || window.opera;
+        const isInApp = (ua.indexOf("FBAN") > -1) || (ua.indexOf("FBAV") > -1) || (ua.indexOf("Instagram") > -1) || (ua.indexOf("Messenger") > -1);
+        
+        if (isInApp) {
+            document.getElementById('in-app-warning').classList.remove('hidden');
+        }
+
+        const isIphone = /iPhone|iPad|iPod/.test(ua) && !window.MSStream;
+        const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+
+        if (isIphone && !isStandalone && !isInApp) {
+            setTimeout(() => {
+                document.getElementById('ios-install-prompt').classList.remove('hidden');
+            }, 3000);
+        }
+    }
+
     function initMap() {
+        if(sessionStorage.getItem('introSeen')) els.welcomeOverlay.classList.add('hidden');
         map = L.map('map', { zoomControl: false, attributionControl: false }).setView([59.3, 14.1], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
@@ -242,31 +388,15 @@
 
         map.on('click', e => { 
             if(gameState !== 'MAP') return;
-            playClickSound(); currentTargetName = "Markerad plats"; isTracking = false; setTarget(e.latlng, true);
+            playClickSound(); currentTargetName = "Markerad plats"; isTracking = false; setTarget(e.latlng, true); map.panTo(e.latlng);
         });
 
         setupLongPress();
         updateButtonUI();
+        checkBrowsers();
     }
 
-    function closeInstructions() { 
-        playClickSound(); 
-        els.welcomeOverlay.classList.add('hidden'); 
-        if (swVersion) localStorage.setItem('mouse_last_seen_v', swVersion); 
-    }
-
-    async function shareApp() { 
-        try { 
-            await navigator.share({
-                title: 'Markus Mouse & Cheese Tracker', 
-                text: 'Hjälp musen hitta osten!',
-                url: window.location.href
-            }); 
-        } catch(e) {
-            alert("Kopiera länken för att dela: " + window.location.href);
-        } 
-    }
-
+    function closeInstructions() { playClickSound(); els.welcomeOverlay.classList.add('hidden'); sessionStorage.setItem('introSeen', 'true'); }
     function playClickSound() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); try { const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.type = 'triangle'; osc.frequency.setValueAtTime(3000, audioCtx.currentTime); gain.gain.setValueAtTime(0.05, audioCtx.currentTime); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.1); } catch(e) {} }
     
     function handlePositionUpdate(pos) { 
@@ -274,25 +404,42 @@
         if (!userMarker) userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, fillOpacity: 0.8}).addTo(map); 
         else userMarker.setLatLng(userCoords); 
         if (isTracking && gameState === 'MAP') map.setView(userCoords, map.getZoom()); 
-        if (!initialZoomPerformed) { map.flyTo(userCoords, 16); initialZoomPerformed = true; isTracking = true; } 
+        if (!initialZoomPerformed) { zoomToUser(); initialZoomPerformed = true; isTracking = true; } 
         updateMapLogic(); 
         if (gameState === 'GAME') updateGameLogic(); 
     }
 
-    function setTarget(latlng, s) { currentTargetCoords = latlng; if (targetMarker) targetMarker.setLatLng(latlng); else targetMarker = L.marker(latlng).addTo(map); if (s) localStorage.setItem('mouse_last_target', JSON.stringify({coords: latlng, name: currentTargetName, timestamp: Date.now()})); updateMapLogic(); }
+    function zoomToUser() { if (userCoords) map.flyTo(userCoords, 16); }
+    function setTarget(latlng, s) { currentTargetCoords = latlng; if (targetMarker) targetMarker.setLatLng(latlng); else targetMarker = L.marker(latlng).addTo(map); if (s) localStorage.setItem('mouse_last_target', JSON.stringify({coords: latlng, name: currentTargetName, timestamp: Date.now()})); updateMapLogic(); updateLocateBtnText(); }
     function updateMapLogic() { if (userCoords && currentTargetCoords) { const d = map.distance(userCoords, currentTargetCoords) / 1000; els.distInfo.innerHTML = `<b>${(d * modes[travelMode].distMult).toFixed(2)} km</b> till ${currentTargetName}`; els.startBtn.classList.remove('hidden'); if (connectionLine) connectionLine.setLatLngs([userCoords, currentTargetCoords]); else connectionLine = L.polyline([userCoords, currentTargetCoords], {color: '#007bff', weight: 3, dashArray: '10, 10'}).addTo(map); } }
-    function toggleView() { if (!currentTargetCoords || isShowingUser) { map.flyTo(userCoords, 16); isShowingUser = false; isTracking = true; } else { map.flyTo(currentTargetCoords, 14); isShowingUser = true; isTracking = false; } }
+    function toggleView() { if (!currentTargetCoords || isShowingUser) { zoomToUser(); isShowingUser = false; isTracking = true; } else { map.flyTo(currentTargetCoords, 14); isShowingUser = true; isTracking = false; } updateLocateBtnText(); }
+    function updateLocateBtnText() { els.locateBtn.innerHTML = (!currentTargetCoords || isShowingUser) ? "🎯 HITTA MIG" : `🏁 ${currentTargetName.toUpperCase()}`; }
     function toggleTravelMode() { travelMode = (travelMode + 1) % modes.length; els.modeBtn.innerText = modes[travelMode].icon; updateMapLogic(); }
-    function handleSlotClick(i) { const d = savedLocations[i]; if (d) { currentTargetName = d.name; setTarget(d.coords, true); map.flyTo(d.coords, 14); } }
-    function updateButtonUI() { savedLocations.forEach((loc, i) => { const btn = document.getElementById(`btn-${i}`); const txt = btn.querySelector('.scrolling-text'); if(txt) txt.innerText = loc ? loc.name : "SPARA " + (i+1); if (loc) btn.classList.add('filled'); }); }
-    function setupLongPress() { document.querySelectorAll('.slot-btn').forEach((btn, i) => { btn.addEventListener('touchstart', () => { let touchTimer = setTimeout(() => { const l = prompt("Spara som:", currentTargetName); if(l){savedLocations[i]={coords:currentTargetCoords,name:l}; localStorage.setItem('mouse_favs', JSON.stringify(savedLocations)); updateButtonUI();} }, 800); btn.addEventListener('touchend', () => clearTimeout(touchTimer)); }); }); }
-    function toggleSearchUI() { els.searchContainer.classList.toggle('hidden'); }
-    async function executeTextSearch() { const q = els.searchInput.value; if(!q) return; const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`); const d = await res.json(); if(d.length>0){ const p = {lat:parseFloat(d[0].lat), lng:parseFloat(d[0].lon)}; currentTargetName = d[0].display_name.split(',')[0]; setTarget(p, true); map.flyTo(p, 14); els.searchContainer.classList.add('hidden'); } }
+    function handleSlotClick(i) { const d = savedLocations[i]; if (d) { currentTargetName = d.name; setTarget(d.coords, true); map.flyTo(d.coords, 14); isShowingUser = true; } }
+    function updateButtonUI() { savedLocations.forEach((loc, i) => { const btn = document.getElementById(`btn-${i}`); const txt = btn.querySelector('.scrolling-text'); txt.innerText = loc ? loc.name : "SPARA " + (i+1); if (loc) btn.classList.add('filled'); }); }
+    function setupLongPress() { document.querySelectorAll('.slot-btn').forEach((btn, i) => { btn.addEventListener('touchstart', () => { touchTimer = setTimeout(() => { const l = prompt("Spara som:", currentTargetName); if(l){savedLocations[i]={coords:currentTargetCoords,name:l}; localStorage.setItem('mouse_favs', JSON.stringify(savedLocations)); updateButtonUI();} }, 800); }); btn.addEventListener('touchend', () => clearTimeout(touchTimer)); }); }
+    function toggleSearchUI() { els.searchContainer.classList.toggle('hidden'); if(!els.searchContainer.classList.contains('hidden')) els.searchInput.focus(); }
+    async function executeTextSearch() { const q = els.searchInput.value; if(!q) return; const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`); const d = await res.json(); if(d.length>0){ const p = {lat:parseFloat(d[0].lat), lng:parseFloat(d[0].lon)}; currentTargetName = d[0].display_name.split(',')[0]; setTarget(p, true); map.flyTo(p, 14); els.searchContainer.classList.add('hidden'); isShowingUser = true; } }
     function startVoiceSearch() { const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if(!SR) return; const r = new SR(); r.lang = 'sv-SE'; els.voiceBtn.classList.add('listening'); r.start(); r.onresult = (e) => { els.searchInput.value = e.results[0][0].transcript; executeTextSearch(); }; r.onend = () => els.voiceBtn.classList.remove('listening'); }
-    function startGame() { if(!currentTargetCoords || !userCoords) return; gameState = 'GAME'; initialTotalKm = Math.max(1, Math.ceil((map.distance(userCoords, currentTargetCoords)/1000 * modes[travelMode].distMult) / modes[travelMode].factor)); els.mapPage.classList.add('hidden'); els.gamePage.classList.remove('hidden'); els.pathGrid.innerHTML = '<div id="the-mouse">🐭</div>'; for(let i=0; i<initialTotalKm; i++){ const s = document.createElement('div'); s.className = 'step'; s.id = `step-${i}`; s.innerHTML = (i === initialTotalKm-1) ? '🧀' : '🍎'; els.pathGrid.appendChild(s); } moveMouse(0); }
+    
+    function startGame() { 
+        if(!currentTargetCoords || !userCoords) return; 
+        gameState = 'GAME'; 
+        startCoords = [...userCoords]; 
+        initialTotalKm = Math.max(1, Math.ceil((map.distance(userCoords, currentTargetCoords)/1000 * modes[travelMode].distMult) / modes[travelMode].factor)); 
+        els.mapPage.classList.add('hidden'); 
+        els.gamePage.classList.remove('hidden'); 
+        els.pathGrid.innerHTML = '<div id="the-mouse">🐭</div>'; 
+        for(let i=0; i<initialTotalKm; i++){ 
+            const s = document.createElement('div'); s.className = 'step'; s.id = `step-${i}`; s.innerHTML = (i === initialTotalKm-1) ? '🧀' : '🍎'; els.pathGrid.appendChild(s); 
+        } 
+        moveMouse(0); 
+    }
+
     function stopGame() { gameState = 'MAP'; els.gamePage.classList.add('hidden'); els.mapPage.classList.remove('hidden'); }
-    function updateGameLogic() { if(gameState !== 'GAME') return; const dist = map.distance(userCoords, currentTargetCoords)/1000; const steps = Math.floor(initialTotalKm - (dist / modes[travelMode].factor)); for(let i=0; i<initialTotalKm-1; i++) if(i<steps) document.getElementById(`step-${i}`).classList.add('eat-animation'); if(dist < 0.02) { moveMouse(initialTotalKm-1); setTimeout(() => { document.getElementById('the-mouse').innerHTML='🐭🧀'; document.getElementById('the-mouse').classList.add('victory'); }, 500); } else moveMouse(steps > 0 ? steps : 0); }
+    function updateGameLogic() { if(gameState !== 'GAME') return; const dist = map.distance(userCoords, currentTargetCoords)/1000; const steps = Math.floor(initialTotalKm - (dist / modes[travelMode].factor)); for(let i=0; i<initialTotalKm-1; i++){ if(i<steps) document.getElementById(`step-${i}`).classList.add('eat-animation'); } if(dist < 0.02) { moveMouse(initialTotalKm-1); setTimeout(() => { gameState='FINISH'; document.getElementById('the-mouse').innerHTML='🐭🧀'; document.getElementById('the-mouse').classList.add('victory'); }, 500); } else moveMouse(steps > 0 ? steps : 0); }
     function moveMouse(i) { const m = document.getElementById('the-mouse'); const s = document.getElementById(`step-${i}`); if(s){ m.style.left = s.offsetLeft + "px"; m.style.top = s.offsetTop + "px"; } }
+    async function shareApp() { try { await navigator.share({title:'Mouse Tracker', url:window.location.href}); } catch(e) {} }
 
     window.onload = initMap;
 </script>
