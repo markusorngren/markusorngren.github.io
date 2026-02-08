@@ -323,6 +323,7 @@
     let touchTimer, audioCtx;
     let gameState = 'MAP';
     let initialTotalKm = 0;
+    let gameStartBirdDist = 0; // Referensavstånd fågelvägen vid start
     let lastMouseIndex = 0;
 
     const els = {
@@ -620,9 +621,12 @@
         requestWakeLock();
         gameState = 'GAME';
         startCoords = [...userCoords];
+        gameStartBirdDist = map.distance(userCoords, currentTargetCoords) / 1000;
         hasReachedTurnaround = false; 
         els.shareBtn.classList.add('hidden');
         
+        // Här fixar vi buggen: Vi använder textens avstånd (vägen) för antalet äpplen, 
+        // men vi sparar det för att kunna jämföra progress linjärt sen.
         const distStr = els.distInfo.innerText.split(' ')[0];
         const distKm = parseFloat(distStr);
         const mode = modes[travelMode];
@@ -654,29 +658,31 @@
     function updateGameLogic() {
         if (gameState !== 'GAME') return;
         
+        // Nuvarande avstånd fågelvägen
         const currentDistToTarget = map.distance(userCoords, currentTargetCoords) / 1000;
         const currentDistToStart = map.distance(userCoords, startCoords) / 1000;
-        
-        const mode = modes[travelMode];
-        const totalPathKm = initialTotalKm * mode.factor;
-        const oneWayDist = (travelMode === 2) ? totalPathKm / 2 : totalPathKm;
         
         let finishedSteps;
 
         if (travelMode === 2) { 
-            if (!hasReachedTurnaround && currentDistToTarget < 0.04) {
+            // Fram och tillbaka
+            if (!hasReachedTurnaround && currentDistToTarget < 0.05) {
                 hasReachedTurnaround = true;
                 playClickSound(); 
             } 
             
             if (!hasReachedTurnaround) {
-                finishedSteps = Math.floor(((oneWayDist - currentDistToTarget) / oneWayDist) * (initialTotalKm / 2));
+                // Progress baseras på hur mycket av den ursprungliga fågelvägen vi "ätit upp"
+                const progress = Math.max(0, 1 - (currentDistToTarget / gameStartBirdDist));
+                finishedSteps = Math.floor(progress * (initialTotalKm / 2));
             } else {
-                const returnProgress = (oneWayDist - currentDistToStart) / oneWayDist;
+                // Hemvägen: Progress baseras på hur nära start vi är igen
+                const returnProgress = Math.max(0, 1 - (currentDistToStart / gameStartBirdBirdDist || gameStartBirdDist));
                 finishedSteps = Math.floor((initialTotalKm / 2) + (returnProgress * (initialTotalKm / 2)));
             }
         } else {
-            const progress = Math.max(0, 1 - (currentDistToTarget / oneWayDist));
+            // Enkel resa: Vi mäter procentuellt mot startavståndet (fågelvägen)
+            const progress = Math.max(0, 1 - (currentDistToTarget / gameStartBirdDist));
             finishedSteps = Math.floor(progress * initialTotalKm);
         }
 
@@ -691,7 +697,7 @@
             }
         }
         
-        const winDistance = (travelMode === 0) ? 0.07 : 0.02; 
+        const winDistance = (travelMode === 0) ? 0.08 : 0.025; 
         const isHomeAgain = travelMode === 2 && hasReachedTurnaround && currentDistToStart < winDistance;
         const isAtOneWayTarget = travelMode !== 2 && currentDistToTarget < winDistance;
 
