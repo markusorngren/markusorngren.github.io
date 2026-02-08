@@ -32,7 +32,7 @@
             -webkit-user-select: none;
         }
 
-        /* Ny version-tag styling */
+        /* Version-tag styling */
         #version-tag {
             position: fixed;
             top: 10px;
@@ -238,18 +238,23 @@
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('sw.js').then(reg => {
+                
+                // Funktion för att be om versionen
                 const askVersion = (worker) => {
                     const msgChan = new MessageChannel();
                     msgChan.port1.onmessage = (event) => {
                         if (event.data && event.data.version) {
+                            // Uppdaterar texten i hörnet
                             document.getElementById('version-tag').innerText = event.data.version.toUpperCase();
                         }
                     };
                     worker.postMessage({ type: 'GET_VERSION' }, [msgChan.port2]);
                 };
 
+                // Om en worker redan körs, fråga direkt
                 if (reg.active) askVersion(reg.active);
 
+                // Ladda om vid uppdatering för att direkt se nya versionen
                 reg.addEventListener('updatefound', () => {
                     const newWorker = reg.installing;
                     newWorker.addEventListener('statechange', () => {
