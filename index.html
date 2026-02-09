@@ -215,7 +215,7 @@
         <ul>
             <li>📍 <b>Klicka på kartan eller sök</b> för att välja resmål.</li>
             <li>💡 <b>Högerklicka/Långtryck</b> för att lägga till via-punkter!</li>
-            <li>💾 <b>Håll inne en spara-knapp</b> för att spara en favorit.</li>
+            <li>💾 <b>Högerklicka/Långtryck</b> på en spara-knapp för att spara en favorit.</li>
             <li>🚶↔️ <b>Välj färdsätt</b> bil eller promenad.</li>
             <li>🚀 Tryck på <b>STARTA</b> för att börja resan!</li>
         </ul>
@@ -465,7 +465,7 @@
         });
 
         map.on('movestart', (e) => { if (!e.hard) isTracking = false; });
-        setupLongPress();
+        setupInteractions();
         updateButtonUI();
         window.addEventListener('resize', handleOrientationLayout);
         handleOrientationLayout();
@@ -510,7 +510,6 @@
     function zoomToUser() { if (userCoords) map.flyTo(userCoords, 16); }
 
     function setTarget(latlng, shouldSave = true) {
-        // RADERA ALLA WAYPOINTS VID NYTT SLUTMÅL
         waypoints = [];
         waypointMarkers.forEach(m => map.removeLayer(m));
         waypointMarkers = [];
@@ -587,7 +586,6 @@
 
     function handleSlotClick(index) {
         const data = savedLocations[index];
-        // setTarget raderar nu waypoints automatiskt
         if (data) { currentTargetName = data.name; isTracking = false; setTarget(data.coords, true); map.flyTo(data.coords, 14); isShowingUser = true; }
     }
 
@@ -604,11 +602,18 @@
         });
     }
 
-    function setupLongPress() {
+    function setupInteractions() {
         document.querySelectorAll('.slot-btn').forEach((btn, i) => {
+            // Långtryck för mobiler
             btn.addEventListener('touchstart', () => { touchTimer = setTimeout(() => saveCurrentPos(i), 800); }, {passive: true});
             btn.addEventListener('touchend', () => clearTimeout(touchTimer));
             btn.addEventListener('touchmove', () => clearTimeout(touchTimer));
+            
+            // Högerklick för datorer
+            btn.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                saveCurrentPos(i);
+            });
         });
     }
 
@@ -627,7 +632,6 @@
                 const pos = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
                 currentTargetName = data[0].display_name.split(',')[0];
                 isTracking = false; 
-                // setTarget raderar nu waypoints automatiskt
                 setTarget(pos, true); 
                 map.flyTo(pos, 14);
                 els.searchContainer.classList.add('hidden'); isShowingUser = true;
