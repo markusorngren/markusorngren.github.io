@@ -19,7 +19,7 @@
         }
 
         body { 
-            font-family: 'Segoe UI', sans-serif; 
+            font-family: 'Segoe UI', sans-serif;
             margin: 0; 
             background: #fdf6e3; 
             overflow: hidden; 
@@ -125,9 +125,9 @@
         }
 
         .panel { 
-            padding: 10px 10px calc(15px + env(safe-area-inset-bottom)); 
+            padding: 10px 10px calc(15px + env(safe-area-inset-bottom));
             background: white; text-align: center; box-shadow: 0 -4px 15px rgba(0,0,0,0.1); 
-            z-index: 1000; border-radius: 20px 20px 0 0; flex-shrink: 0; 
+            z-index: 1000; border-radius: 20px 20px 0 0; flex-shrink: 0;
         }
         
         button { cursor: pointer; font-weight: bold; transition: all 0.2s; border: none; color: #000; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
@@ -191,7 +191,7 @@
             position: fixed; top: 50% !important; left: 50% !important; z-index: 9999; 
             font-size: 6rem; animation: victoryWiggle 0.8s infinite ease-in-out; 
             margin: 0; background: rgba(253, 246, 227, 0.95); width: 100vw; height: 100svh; 
-            display: flex; align-items: center; justify-content: center; 
+            display: flex; align-items: center; justify-content: center;
         }
 
         .confetti {
@@ -297,18 +297,16 @@
     let currentTargetName = "MÅLET";
     let initialZoomPerformed = false; 
     let isShowingUser = true; 
-    let isTracking = false; 
+    let isTracking = false;
     let hasReachedTurnaround = false;
     let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
     let wakeLock = null;
-    
     let travelMode = 0; 
     const modes = [
         { icon: '🚗', factor: 1.0, distMult: 1, osrm: 'car' },
         { icon: '🚶', factor: 0.1, distMult: 1, osrm: 'foot' },
         { icon: '🚶↔️', factor: 0.1, distMult: 2, osrm: 'foot' } 
     ];
-
     let lastTargetRaw = JSON.parse(localStorage.getItem('mouse_last_target'));
     let lastTarget = null;
     if (lastTargetRaw) {
@@ -325,7 +323,6 @@
     let initialTotalKm = 0;
     let gameStartBirdDist = 0; // Referensavstånd fågelvägen vid start
     let lastMouseIndex = 0;
-
     const els = {
         distInfo: document.getElementById('dist-info'),
         startBtn: document.getElementById('start-btn'),
@@ -398,7 +395,7 @@
     function playVictorySound() {
         if (!audioCtx) return;
         const now = audioCtx.currentTime;
-        const notes = [523.25, 659.25, 783.99, 1046.50]; 
+        const notes = [523.25, 659.25, 783.99, 1046.50];
         notes.forEach((freq, i) => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -448,6 +445,21 @@
             isTracking = false; 
             setTarget(e.latlng, true); 
             map.panTo(e.latlng);
+        });
+        
+        // NY KOD: Långtryck på kartan för att sätta mål
+        map.on('mousedown', (e) => {
+            touchTimer = setTimeout(() => {
+                if(gameState !== 'MAP') return;
+                playClickSound(); 
+                currentTargetName = "Markerad plats"; 
+                isTracking = false; 
+                setTarget(e.latlng, true); 
+                map.panTo(e.latlng);
+            }, 800);
+        });
+        map.on('mouseup dragstart', () => {
+            clearTimeout(touchTimer);
         });
 
         map.on('movestart', (e) => { if (!e.hard) isTracking = false; });
@@ -624,7 +636,6 @@
         gameStartBirdDist = map.distance(userCoords, currentTargetCoords) / 1000;
         hasReachedTurnaround = false; 
         els.shareBtn.classList.add('hidden');
-        
         // Här fixar vi buggen: Vi använder textens avstånd (vägen) för antalet äpplen, 
         // men vi sparar det för att kunna jämföra progress linjärt sen.
         const distStr = els.distInfo.innerText.split(' ')[0];
@@ -657,7 +668,6 @@
 
     function updateGameLogic() {
         if (gameState !== 'GAME') return;
-        
         // Nuvarande avstånd fågelvägen
         const currentDistToTarget = map.distance(userCoords, currentTargetCoords) / 1000;
         const currentDistToStart = map.distance(userCoords, startCoords) / 1000;
@@ -677,7 +687,7 @@
                 finishedSteps = Math.floor(progress * (initialTotalKm / 2));
             } else {
                 // Hemvägen: Progress baseras på hur nära start vi är igen
-                const returnProgress = Math.max(0, 1 - (currentDistToStart / gameStartBirdBirdDist || gameStartBirdDist));
+                const returnProgress = Math.max(0, 1 - (currentDistToStart / gameStartBirdDist || gameStartBirdDist));
                 finishedSteps = Math.floor((initialTotalKm / 2) + (returnProgress * (initialTotalKm / 2)));
             }
         } else {
@@ -700,7 +710,6 @@
         const winDistance = (travelMode === 0) ? 0.08 : 0.025; 
         const isHomeAgain = travelMode === 2 && hasReachedTurnaround && currentDistToStart < winDistance;
         const isAtOneWayTarget = travelMode !== 2 && currentDistToTarget < winDistance;
-
         if (isHomeAgain || isAtOneWayTarget) {
             moveMouse(initialTotalKm - 1);
             setTimeout(finishGame, 500);
@@ -739,7 +748,8 @@
     async function shareApp() {
         playClickSound();
         const shareData = { title: 'Marcus Mouse & Cheese Tracker', text: 'Hjälp musen hitta osten!', url: window.location.href };
-        try { if (navigator.share) await navigator.share(shareData); else alert("Länk: " + window.location.href); } catch (err) {}
+        try { if (navigator.share) await navigator.share(shareData); else alert("Länk: " + window.location.href);
+        } catch (err) {}
     }
 
     window.onload = initMap;
