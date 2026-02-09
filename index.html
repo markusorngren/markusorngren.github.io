@@ -381,6 +381,12 @@
 
     function handlePositionUpdate(pos) {
         userCoords = [pos.coords.latitude, pos.coords.longitude];
+        
+        // Uppdaterar texten till frågan när GPS-positionen har hittats och inget mål är satt
+        if (!currentTargetCoords) {
+            els.distInfo.innerHTML = "Vart ska vi åka? 🐭";
+        }
+
         if (!userMarker) {
             userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, fillOpacity: 0.8}).addTo(map);
         } else userMarker.setLatLng(userCoords);
