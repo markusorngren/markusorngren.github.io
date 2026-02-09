@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mouse-tracker-v29'; // Uppdaterat nummer för att tvinga fram refresh på iPhone
+const CACHE_NAME = 'mouse-tracker-v30'; // Uppdaterat nummer för att tvinga fram refresh på iPhone
 const ASSETS = [
   './',
   './index.html',
