@@ -1,3 +1,264 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Markus Mouse & Cheese Tracker</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4CAF50">
+    <link rel="apple-touch-icon" href="icon.png">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root {
+            --app-height: 100svh;
+            --primary: #4CAF50;
+            --blue: #2196F3;
+            --orange: #FF9800;
+        }
+
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            margin: 0; 
+            background: #fdf6e3; 
+            overflow: hidden; 
+            height: var(--app-height); 
+            width: 100vw; 
+            position: fixed; 
+            display: flex;
+            flex-direction: column;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #version-tag {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 10000;
+            background: rgba(255, 255, 255, 0.4);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.65rem;
+            font-family: monospace;
+            pointer-events: none;
+            color: rgba(0, 0, 0, 0.5);
+            font-weight: bold;
+        }
+
+        #ios-install-prompt {
+            position: fixed;
+            bottom: calc(20px + env(safe-area-inset-bottom));
+            left: 15px;
+            right: 15px;
+            background: white;
+            padding: 18px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            z-index: 100000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            border: 3px solid var(--primary);
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .ios-header { display: flex; align-items: center; gap: 10px; font-weight: bold; color: var(--primary); font-size: 1.1rem; }
+        .ios-instructions { font-size: 0.95rem; text-align: center; color: #444; line-height: 1.4; }
+        .ios-footer { display: flex; align-items: center; justify-content: center; gap: 8px; background: #f9f9f9; padding: 8px 15px; border-radius: 12px; width: 100%; box-sizing: border-box; }
+        .close-ios-btn { background: none; border: none; color: #999; text-decoration: underline; font-size: 0.8rem; margin-top: 5px; }
+        
+        #map-page, #game-page { height: var(--app-height); width: 100vw; display: flex; flex-direction: column; overflow: hidden; }
+
+        .action-container { display: flex; justify-content: center; gap: 8px; width: 100%; max-width: 400px; margin: 0 auto; }
+
+        #locate-btn { order: 1; }
+        #text-btn   { order: 2; }
+        #voice-btn  { order: 3; }
+        #start-btn  { order: 4; }
+
+        @media (orientation: landscape) {
+            #map-page { flex-direction: row; }
+            .panel { 
+                width: 300px; height: 100%; border-radius: 0 !important; 
+                box-shadow: -4px 0 15px rgba(0,0,0,0.1) !important;
+                display: flex; flex-direction: column; justify-content: flex-start;
+                padding: env(safe-area-inset-top) 15px calc(20px + env(safe-area-inset-bottom)) 15px !important;
+                box-sizing: border-box; gap: 10px;
+            }
+            .save-btn-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 5px; }
+            #mode-btn { display: flex !important; }
+            .action-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; flex: none; margin-top: 10px; }
+            #mode-btn { grid-column: 1; order: 1; width: 100%; height: 50px; }
+            #start-btn { grid-column: 2; order: 2; width: 100%; height: 50px; display: flex !important; }
+            #voice-btn { grid-column: 1 / span 2; order: 3; width: 100%; }
+            #text-btn  { grid-column: 1 / span 2; order: 4; width: 100%; }
+            #locate-btn { grid-column: 1 / span 2; order: 5; width: 100%; }
+            .apple-grid { grid-template-columns: repeat(10, 1fr) !important; max-width: 80% !important; padding-top: 30px !important; }
+        }
+
+        #map { flex: 1; width: 100%; min-height: 0; z-index: 1; }
+        .hidden { display: none !important; }
+        
+        #welcome-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 99999; display: flex;
+            align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;
+        }
+        .welcome-content {
+            background: white; padding: 25px; border-radius: 25px;
+            max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .welcome-content h2 { margin-top: 0; color: var(--orange); }
+        .welcome-content ul { text-align: left; margin: 20px 0; line-height: 1.6; }
+        .ok-btn {
+            background: var(--primary); color: white; padding: 12px 30px;
+            border-radius: 30px; font-size: 1.1rem; width: 100%; border: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .panel { 
+            padding: 10px 10px calc(15px + env(safe-area-inset-bottom)); 
+            background: white; text-align: center; box-shadow: 0 -4px 15px rgba(0,0,0,0.1); 
+            z-index: 1000; border-radius: 20px 20px 0 0; flex-shrink: 0; 
+        }
+        
+        button { cursor: pointer; font-weight: bold; transition: all 0.2s; border: none; color: #000; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+        button:active { transform: scale(0.95); }
+
+        .save-btn-container { display: flex; justify-content: center; gap: 10px; margin-bottom: 8px; padding: 2px; align-items: center; }
+        .slot-btn { 
+            width: 50px; height: 50px; box-shadow: 0 3px 6px rgba(0,0,0,0.2); 
+            display: flex; align-items: center; justify-content: center; padding: 0 2px; flex-shrink: 0;
+            opacity: 0.8; border: 2px solid transparent;
+        }
+        .slot-btn.filled { opacity: 1; border: 2px solid rgba(0,0,0,0.3); box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+
+        .mode-btn { width: 50px; height: 50px; border-radius: 12px; background: #f0f0f0; font-size: 1.2rem; border: 2px solid #ddd; box-shadow: 0 3px 6px rgba(0,0,0,0.1); flex-shrink: 0; }
+        .btn-text-container { width: 90%; overflow: hidden; white-space: nowrap; position: relative; mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent); }
+        .scrolling-text { display: inline-block; font-size: 0.55rem; text-transform: uppercase; pointer-events: none; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); padding: 0 5px; white-space: nowrap; }
+        .animate-scroll { animation: marquee 6s linear infinite; }
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50.5%); } }
+
+        #btn-0 { border-radius: 50%; background: var(--primary); } 
+        #btn-1 { border-radius: 8px; background: var(--blue); } 
+        #btn-2 { background: var(--orange); width: 55px; height: 55px; clip-path: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0% 50%); } 
+        #btn-3 { width: 55px; height: 50px; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); padding-top: 10px; background: #9C27B0; } 
+
+        #search-container { display: flex; gap: 5px; margin-bottom: 10px; transition: all 0.3s ease; }
+        #text-search-input { flex: 1; padding: 8px 15px; border-radius: 20px; border: 2px solid #ddd; font-size: 16px; outline: none; }
+        #go-btn { background: #17a2b8; color: white; border-radius: 50%; width: 40px; height: 40px; font-size: 1.2rem; }
+
+        .action-btn { flex: 1; padding: 8px 5px; border-radius: 40px; font-size: 0.75rem; box-shadow: 0 4px 0 rgba(0,0,0,0.15); min-height: 42px; }
+        #locate-btn { background: #007bff; color: white; text-transform: uppercase; }
+        #text-btn { background: #17a2b8; color: white; } 
+        #voice-btn { background: #444; color: white; }
+        #voice-btn.listening { background: #ff4444; animation: pulse 1.5s infinite; }
+        #start-btn { background: #ffcc00; color: #000; }
+
+        #dist-info { margin-bottom: 8px; font-weight: bold; font-size: 0.95rem; color: #000; min-height: 1.2em; }
+        #share-btn { position: fixed; top: 15px; left: 15px; z-index: 10000; background: white; border-radius: 50%; width: 45px; height: 45px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-size: 1.2rem; }
+        
+        #game-page { align-items: center; padding: 5px; position: relative; }
+        .apple-grid { 
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; width: 95%; 
+            max-width: 280px; margin-top: 10px; padding: 25px 10px 10px 10px; 
+            background: rgba(255,255,255,0.5); border-radius: 15px; position: relative; 
+            max-height: 70vh; overflow-y: auto;
+        }
+        .step { font-size: 1.4rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; transition: all 0.5s ease; }
+        
+        @keyframes mouseWobble { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } }
+        #the-mouse { position: absolute; font-size: 1.8rem; transition: all 0.8s ease-in-out; z-index: 100; margin-top: -12px; margin-left: -8px; pointer-events: none; animation: mouseWobble 1s infinite ease-in-out; }
+        .eat-animation { transform: scale(0.6) !important; opacity: 0.3 !important; }
+
+        @keyframes victoryWiggle {
+            0% { transform: translate(-50%, -50%) scale(1.8) rotate(0deg); }
+            25% { transform: translate(-50%, -50%) scale(2.2) rotate(-20deg); }
+            50% { transform: translate(-50%, -50%) scale(1.8) rotate(0deg); }
+            75% { transform: translate(-50%, -50%) scale(2.2) rotate(20deg); }
+            100% { transform: translate(-50%, -50%) scale(1.8) rotate(0deg); }
+        }
+        
+        #the-mouse.victory { 
+            position: fixed; top: 50% !important; left: 50% !important; z-index: 9999; 
+            font-size: 6rem; animation: victoryWiggle 0.8s infinite ease-in-out; 
+            margin: 0; background: rgba(253, 246, 227, 0.95); width: 100vw; height: 100svh; 
+            display: flex; align-items: center; justify-content: center; 
+        }
+
+        .confetti {
+            position: fixed; width: 10px; height: 10px; background-color: #f00;
+            z-index: 10000; top: -20px; animation: fall 3s linear forwards;
+        }
+        @keyframes fall {
+            to { transform: translateY(105vh) rotate(720deg); }
+        }
+    </style>
+</head>
+<body>
+
+<div id="version-tag">V...</div>
+<button id="share-btn" onclick="shareApp()">🔗</button>
+
+<div id="welcome-overlay">
+    <div class="welcome-content">
+        <h2>Hej! 🐭</h2>
+        <p>Hjälp musen att hitta osten!</p>
+        <ul>
+            <li>📍 <b>Klicka på kartan eller sök</b> för att välja resmål.</li>
+            <li>💡 <b>Högerklicka/Långtryck</b> för att lägga till via-punkter!</li>
+            <li>💾 <b>Högerklicka/Långtryck</b> på en spara-knapp för att spara en favorit.</li>
+            <li>🚶↔️ <b>Välj färdsätt</b> bil eller promenad.</li>
+            <li>🚀 Tryck på <b>STARTA</b> för att börja resan!</li>
+        </ul>
+        <button class="ok-btn" onclick="closeInstructions()">Okej! Jag förstår!</button>
+    </div>
+</div>
+
+<div id="ios-install-prompt" class="hidden">
+    <div class="ios-header"><span>🐭 Cheese Tracker</span></div>
+    <div class="ios-instructions">Installera appen för att få fullskärm och snabb åtkomst!</div>
+    <div class="ios-footer">Tryck på <img src="https://developer.apple.com/library/archive/documentation/NetworkingInternet/Conceptual/SafariVisualGuide/Art/Action_2x.png" width="20" style="margin: 0 3px;"> och välj <b>"Lägg till på hemskärmen"</b>.</div>
+    <button class="close-ios-btn" onclick="this.parentElement.classList.add('hidden')">Kanske senare</button>
+</div>
+
+<div id="map-page">
+    <div id="map"></div>
+    <div class="panel">
+        <div id="dist-info">Söker din GPS... 📍</div>
+        <div class="save-btn-container">
+            <button id="btn-0" class="slot-btn" onclick="handleSlotClick(0)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
+            <button id="btn-1" class="slot-btn" onclick="handleSlotClick(1)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
+            <button id="btn-2" class="slot-btn" onclick="handleSlotClick(2)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
+            <button id="btn-3" class="slot-btn" onclick="handleSlotClick(3)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
+            <button id="mode-btn" class="mode-btn" onclick="toggleTravelMode()">🚗</button>
+        </div>
+        <div id="search-container" class="hidden">
+            <input type="text" id="text-search-input" placeholder="Vart ska vi?">
+            <button id="go-btn" onclick="executeTextSearch()">➔</button>
+        </div>
+        <div class="action-container">
+            <button id="start-btn" class="action-btn hidden" onclick="startGame()">STARTA 🧀</button>
+            <button id="voice-btn" class="action-btn" onclick="startVoiceSearch()">🎤 RÖST</button>
+            <button id="text-btn" class="action-btn" onclick="toggleSearchUI()">🔍 SÖK</button> 
+            <button id="locate-btn" class="action-btn" onclick="toggleView()">🎯 HITTA MEJ</button>
+        </div>
+    </div>
+</div>
+
+<div id="game-page" class="hidden">
+    <button style="background:#ff4444; color:white; margin-top: 10px; border-radius: 20px; padding: 6px 15px; font-size: 0.75rem; z-index: 10000; position: relative;" onclick="stopGame()">AVBRYT</button>
+    <div class="apple-grid" id="path"><div id="the-mouse">🐭</div></div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
     if ('serviceWorker' in navigator) {
@@ -34,13 +295,13 @@
     let startCoords = null;
     let currentTargetName = "MÅLET";
     let initialZoomPerformed = false; 
+    let isShowingUser = true; 
     let isTracking = false; 
-    let isShowingUser = true;
     let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
     let wakeLock = null;
     let currentRouteCoords = []; 
+    
     let travelMode = 0; 
-
     const modes = [
         { icon: '🚗', factor: 1.0, osrm: 'car' },
         { icon: '🚶', factor: 0.1, osrm: 'foot' },
@@ -167,7 +428,6 @@
         els.startBtn.classList.remove('hidden');
     }
 
-    // --- Resterande funktioner (startGame, moveMouse, etc.) behålls men anropas av den optimerade logiken ---
     function setTarget(latlng, shouldSave) {
         waypoints = []; waypointMarkers.forEach(m => map.removeLayer(m)); waypointMarkers = [];
         currentTargetCoords = latlng;
@@ -186,14 +446,11 @@
         else { map.flyTo(currentTargetCoords, 14); isShowingUser = true; isTracking = false; }
         updateLocateBtnText();
     }
-    function updateLocateBtnText() { els.locateBtn.innerHTML = (!currentTargetCoords || isShowingUser) ? "🎯 HITTA MEJ" : `🏁 ${currentTargetName.toUpperCase()}`; }
+    function updateLocateBtnText() { els.locateBtn.innerHTML = (!currentTargetCoords || isShowingUser) ? "🎯 HITTA ME" : `🏁 ${currentTargetName.toUpperCase()}`; }
     function toggleTravelMode() { travelMode = (travelMode + 1) % modes.length; els.modeBtn.innerText = modes[travelMode].icon; updateMapLogic(); }
-    function playClickSound() { if (audioCtx) { const o = audioCtx.createOscillator(); const g = audioCtx.createGain(); o.type='triangle'; o.frequency.setValueAtTime(3000, audioCtx.currentTime); g.gain.setValueAtTime(0.05, audioCtx.currentTime); o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+0.1); } }
-
-    // Start/Game logik
+    
     function startGame() {
         if (!currentTargetCoords || !userCoords) return;
-        if (navigator.wakeLock) navigator.wakeLock.request('screen').then(lock => wakeLock = lock);
         gameState = 'GAME';
         startCoords = [...userCoords];
         const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', '');
@@ -247,7 +504,7 @@
         createConfetti();
     }
 
-    function stopGame() { if (wakeLock) wakeLock.release(); gameState = 'MAP'; els.gamePage.classList.add('hidden'); els.mapPage.classList.remove('hidden'); }
+    function stopGame() { gameState = 'MAP'; els.gamePage.classList.add('hidden'); els.mapPage.classList.remove('hidden'); }
     function handleOrientationLayout() { if (window.innerHeight < window.innerWidth) { els.actionContainer.prepend(els.modeBtn); } else { document.querySelector('.save-btn-container').appendChild(els.modeBtn); } }
     function toggleSearchUI() { els.searchContainer.classList.toggle('hidden'); if (!els.searchContainer.classList.contains('hidden')) els.searchInput.focus(); }
     async function executeTextSearch() {
@@ -272,7 +529,9 @@
     function saveCurrentPos(i) { if (!currentTargetCoords) return; const l = prompt("Spara som:", currentTargetName); if (l) { savedLocations[i] = {coords: currentTargetCoords, name: l}; localStorage.setItem('mouse_favs', JSON.stringify(savedLocations)); updateButtonUI(); } }
     function setupInteractions() { document.querySelectorAll('.slot-btn').forEach((b, i) => { b.oncontextmenu = (e) => { e.preventDefault(); saveCurrentPos(i); }; }); }
     function createConfetti() { for(let i=0; i<30; i++) { const c = document.createElement('div'); c.className='confetti'; c.style.left=Math.random()*100+'vw'; c.style.backgroundColor=`hsl(${Math.random()*360},70%,50%)`; document.body.appendChild(c); setTimeout(()=>c.remove(),3000); } }
-    
+    function playClickSound() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); const o = audioCtx.createOscillator(); o.type='triangle'; o.frequency.setValueAtTime(3000, audioCtx.currentTime); o.start(); o.stop(audioCtx.currentTime+0.1); }
+    function closeInstructions() { els.welcomeOverlay.classList.add('hidden'); sessionStorage.setItem('introSeen', 'true'); }
+    function shareApp() { const d = {title:'Cheese Tracker', url:window.location.href}; if(navigator.share) navigator.share(d); }
     window.onload = initMap;
 </script>
 </body>
