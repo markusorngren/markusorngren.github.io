@@ -19,7 +19,7 @@
         }
 
         body { 
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', sans-serif; 
             margin: 0; 
             background: #fdf6e3; 
             overflow: hidden; 
@@ -34,498 +34,715 @@
 
         #version-tag {
             position: fixed;
-            bottom: 5px;
-            right: 5px;
-            font-size: 10px;
-            color: rgba(0,0,0,0.3);
-            z-index: 9999;
+            top: 10px;
+            right: 10px;
+            z-index: 10000;
+            background: rgba(255, 255, 255, 0.4);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.65rem;
+            font-family: monospace;
             pointer-events: none;
-        }
-
-        header {
-            background: white;
-            padding: 10px 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            z-index: 1000;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .stats-container {
-            display: flex;
-            gap: 15px;
-            font-size: 14px;
+            color: rgba(0, 0, 0, 0.5);
             font-weight: bold;
         }
 
-        #map { 
-            flex-grow: 1;
-            width: 100%;
-            z-index: 1;
-        }
-
-        #game-area {
-            height: 180px;
-            background: #fff;
-            border-top: 3px solid #ddd;
-            position: relative;
-            z-index: 1000;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .game-controls {
-            padding: 10px;
-            display: flex;
-            gap: 10px;
-            background: #eee;
-        }
-
-        .apple-grid {
-            flex-grow: 1;
-            padding: 20px;
-            overflow-y: auto;
-            position: relative;
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 15px;
-            align-content: start;
-            scroll-behavior: smooth;
-        }
-
-        .apple-step {
-            font-size: 24px;
-            text-align: center;
-            opacity: 0.3;
-            transition: opacity 0.3s;
-            position: relative;
-        }
-
-        .apple-step.reached { opacity: 1; }
-        .apple-step.target { filter: drop-shadow(0 0 5px gold); opacity: 1; }
-
-        #the-mouse {
-            position: absolute;
-            font-size: 30px;
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 10;
-            pointer-events: none;
-            margin-top: -5px;
-            margin-left: -5px;
-        }
-
-        .btn {
-            padding: 10px 15px;
-            border: none;
-            border-radius: 8px;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            flex: 1;
-            font-size: 14px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            active-transform: translateY(2px);
-        }
-
-        .btn-primary { background: var(--primary); }
-        .btn-blue { background: var(--blue); }
-        .btn-orange { background: var(--orange); }
-        .btn:disabled { background: #ccc; }
-
-        #victory-screen {
+        #ios-install-prompt {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: var(--app-height);
-            background: rgba(76, 175, 80, 0.95);
-            display: none;
+            bottom: calc(20px + env(safe-area-inset-bottom));
+            left: 15px;
+            right: 15px;
+            background: white;
+            padding: 18px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            z-index: 100000;
+            display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
-            z-index: 9999;
-            color: white;
-            text-align: center;
+            gap: 12px;
+            border: 3px solid var(--primary);
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .ios-header { display: flex; align-items: center; gap: 10px; font-weight: bold; color: var(--primary); font-size: 1.1rem; }
+        .ios-instructions { font-size: 0.95rem; text-align: center; color: #444; line-height: 1.4; }
+        .ios-footer { display: flex; align-items: center; justify-content: center; gap: 8px; background: #f9f9f9; padding: 8px 15px; border-radius: 12px; width: 100%; box-sizing: border-box; }
+        .close-ios-btn { background: none; border: none; color: #999; text-decoration: underline; font-size: 0.8rem; margin-top: 5px; }
+        
+        #map-page, #game-page { height: var(--app-height); width: 100vw; display: flex; flex-direction: column; overflow: hidden; }
+
+        .action-container { display: flex; justify-content: center; gap: 8px; width: 100%; max-width: 400px; margin: 0 auto; }
+
+        #locate-btn { order: 1; }
+        #text-btn   { order: 2; }
+        #voice-btn  { order: 3; }
+        #start-btn  { order: 4; }
+
+        @media (orientation: landscape) {
+            #map-page { flex-direction: row; }
+            .panel { 
+                width: 300px; height: 100%; border-radius: 0 !important; 
+                box-shadow: -4px 0 15px rgba(0,0,0,0.1) !important;
+                display: flex; flex-direction: column; justify-content: flex-start;
+                padding: env(safe-area-inset-top) 15px calc(20px + env(safe-area-inset-bottom)) 15px !important;
+                box-sizing: border-box; gap: 10px;
+            }
+            .save-btn-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 5px; }
+            #mode-btn { display: flex !important; }
+            .action-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; flex: none; margin-top: 10px; }
+            #mode-btn { grid-column: 1; order: 1; width: 100%; height: 50px; }
+            #start-btn { grid-column: 2; order: 2; width: 100%; height: 50px; display: flex !important; }
+            #voice-btn { grid-column: 1 / span 2; order: 3; width: 100%; }
+            #text-btn  { grid-column: 1 / span 2; order: 4; width: 100%; }
+            #locate-btn { grid-column: 1 / span 2; order: 5; width: 100%; }
+            .apple-grid { grid-template-columns: repeat(10, 1fr) !important; max-width: 80% !important; padding-top: 30px !important; }
+        }
+
+        #map { flex: 1; width: 100%; min-height: 0; z-index: 1; }
+        .hidden { display: none !important; }
+        
+        #welcome-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 99999; display: flex;
+            align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;
+        }
+        .welcome-content {
+            background: white; padding: 25px; border-radius: 25px;
+            max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .welcome-content h2 { margin-top: 0; color: var(--orange); }
+        .welcome-content ul { text-align: left; margin: 20px 0; line-height: 1.6; }
+        .ok-btn {
+            background: var(--primary); color: white; padding: 12px 30px;
+            border-radius: 30px; font-size: 1.1rem; width: 100%; border: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .panel { 
+            padding: 10px 10px calc(15px + env(safe-area-inset-bottom)); 
+            background: white; text-align: center; box-shadow: 0 -4px 15px rgba(0,0,0,0.1); 
+            z-index: 1000; border-radius: 20px 20px 0 0; flex-shrink: 0; 
+        }
+        
+        button { cursor: pointer; font-weight: bold; transition: all 0.2s; border: none; color: #000; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+        button:active { transform: scale(0.95); }
+
+        .save-btn-container { display: flex; justify-content: center; gap: 10px; margin-bottom: 8px; padding: 2px; align-items: center; }
+        .slot-btn { 
+            width: 50px; height: 50px; box-shadow: 0 3px 6px rgba(0,0,0,0.2); 
+            display: flex; align-items: center; justify-content: center; padding: 0 2px; flex-shrink: 0;
+            opacity: 0.8; border: 2px solid transparent;
+        }
+        .slot-btn.filled { opacity: 1; border: 2px solid rgba(0,0,0,0.3); box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+
+        .mode-btn { width: 50px; height: 50px; border-radius: 12px; background: #f0f0f0; font-size: 1.2rem; border: 2px solid #ddd; box-shadow: 0 3px 6px rgba(0,0,0,0.1); flex-shrink: 0; }
+        .btn-text-container { width: 90%; overflow: hidden; white-space: nowrap; position: relative; mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent); }
+        .scrolling-text { display: inline-block; font-size: 0.55rem; text-transform: uppercase; pointer-events: none; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); padding: 0 5px; white-space: nowrap; }
+        .animate-scroll { animation: marquee 6s linear infinite; }
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50.5%); } }
+
+        #btn-0 { border-radius: 50%; background: var(--primary); } 
+        #btn-1 { border-radius: 8px; background: var(--blue); } 
+        #btn-2 { background: var(--orange); width: 55px; height: 55px; clip-path: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0% 50%); } 
+        #btn-3 { width: 55px; height: 50px; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); padding-top: 10px; background: #9C27B0; } 
+
+        #search-container { display: flex; gap: 5px; margin-bottom: 10px; transition: all 0.3s ease; }
+        #text-search-input { flex: 1; padding: 8px 15px; border-radius: 20px; border: 2px solid #ddd; font-size: 16px; outline: none; }
+        #go-btn { background: #17a2b8; color: white; border-radius: 50%; width: 40px; height: 40px; font-size: 1.2rem; }
+
+        .action-btn { flex: 1; padding: 8px 5px; border-radius: 40px; font-size: 0.75rem; box-shadow: 0 4px 0 rgba(0,0,0,0.15); min-height: 42px; }
+        #locate-btn { background: #007bff; color: white; text-transform: uppercase; }
+        #text-btn { background: #17a2b8; color: white; } 
+        #voice-btn { background: #444; color: white; }
+        #voice-btn.listening { background: #ff4444; animation: pulse 1.5s infinite; }
+        #start-btn { background: #ffcc00; color: #000; }
+
+        #dist-info { margin-bottom: 8px; font-weight: bold; font-size: 0.95rem; color: #000; min-height: 1.2em; }
+        #share-btn { position: fixed; top: 15px; left: 15px; z-index: 10000; background: white; border-radius: 50%; width: 45px; height: 45px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-size: 1.2rem; }
+        
+        #game-page { align-items: center; padding: 5px; position: relative; }
+        .apple-grid { 
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; width: 95%; 
+            max-width: 280px; margin-top: 10px; padding: 25px 10px 10px 10px; 
+            background: rgba(255,255,255,0.5); border-radius: 15px; position: relative; 
+            max-height: 70vh; overflow-y: auto;
+        }
+        .step { font-size: 1.4rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; transition: all 0.5s ease; }
+        
+        @keyframes mouseWobble { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } }
+        #the-mouse { position: absolute; font-size: 1.8rem; transition: all 0.8s ease-in-out; z-index: 100; margin-top: -12px; margin-left: -8px; pointer-events: none; animation: mouseWobble 1s infinite ease-in-out; }
+        .eat-animation { transform: scale(0.6) !important; opacity: 0.3 !important; }
+
+        @keyframes victoryWiggle {
+            0% { transform: translate(-50%, -50%) scale(1.8) rotate(0deg); }
+            25% { transform: translate(-50%, -50%) scale(2.2) rotate(-20deg); }
+            50% { transform: translate(-50%, -50%) scale(1.8) rotate(0deg); }
+            75% { transform: translate(-50%, -50%) scale(2.2) rotate(20deg); }
+            100% { transform: translate(-50%, -50%) scale(1.8) rotate(0deg); }
+        }
+        
+        #the-mouse.victory { 
+            position: fixed; top: 50% !important; left: 50% !important; z-index: 9999; 
+            font-size: 6rem; animation: victoryWiggle 0.8s infinite ease-in-out; 
+            margin: 0; background: rgba(253, 246, 227, 0.95); width: 100vw; height: 100svh; 
+            display: flex; align-items: center; justify-content: center; 
         }
 
         .confetti {
-            position: absolute;
-            width: 10px; height: 10px;
-            background: yellow;
-            animation: fall 3s linear forwards;
+            position: fixed; width: 10px; height: 10px; background-color: #f00;
+            z-index: 10000; top: -20px; animation: fall 3s linear forwards;
         }
-
         @keyframes fall {
-            to { transform: translateY(100vh) rotate(360deg); }
-        }
-
-        .mode-selector {
-            display: flex;
-            gap: 5px;
-            background: #ddd;
-            padding: 3px;
-            border-radius: 8px;
-        }
-
-        .mode-btn {
-            padding: 5px 10px;
-            border: none;
-            border-radius: 6px;
-            font-size: 12px;
-            cursor: pointer;
-            background: transparent;
-        }
-
-        .mode-btn.active {
-            background: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        #target-info {
-            position: absolute;
-            top: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(255,255,255,0.9);
-            padding: 5px 15px;
-            border-radius: 20px;
-            z-index: 500;
-            font-size: 12px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            pointer-events: none;
+            to { transform: translateY(105vh) rotate(720deg); }
         }
     </style>
 </head>
 <body>
 
-    <div id="version-tag">v1.1.2-stable</div>
+<div id="version-tag">V...</div>
+<button id="share-btn" onclick="shareApp()">🔗</button>
 
-    <header>
-        <div class="stats-container">
-            <div>📍 <span id="dist-val">0.0</span> km</div>
-            <div>🍎 <span id="apple-count">0</span></div>
-        </div>
-        <div class="mode-selector">
-            <button id="mode-1" class="mode-btn active" onclick="setMode(1)">Enkel</button>
-            <button id="mode-2" class="mode-btn" onclick="setMode(2)">Retur</button>
-        </div>
-    </header>
+<div id="welcome-overlay">
+    <div class="welcome-content">
+        <h2>Hej! 🐭</h2>
+        <p>Hjälp musen att hitta osten!</p>
+        <ul>
+            <li>📍 <b>Klicka på kartan eller sök</b> för att välja resmål.</li>
+            <li>💾 <b>Håll inne en spara-knapp</b> för att spara en favorit.</li>
+            <li>🚶↔️ <b>Välj färdsätt</b> bil eller promenad.</li>
+            <li>🚀 Tryck på <b>STARTA</b> för att börja resan!</li>
+        </ul>
+        <button class="ok-btn" onclick="closeInstructions()">Okej! Jag förstår!</button>
+    </div>
+</div>
 
-    <div id="target-info">Klicka på kartan för att sätta mål</div>
+<div id="ios-install-prompt" class="hidden">
+    <div class="ios-header"><span>🐭 Cheese Tracker</span></div>
+    <div class="ios-instructions">Installera appen för att få fullskärm och snabb åtkomst!</div>
+    <div class="ios-footer">Tryck på <img src="https://developer.apple.com/library/archive/documentation/NetworkingInternet/Conceptual/SafariVisualGuide/Art/Action_2x.png" width="20" style="margin: 0 3px;"> och välj <b>"Lägg till på hemskärmen"</b>.</div>
+    <button class="close-ios-btn" onclick="this.parentElement.classList.add('hidden')">Kanske senare</button>
+</div>
+
+<div id="map-page">
     <div id="map"></div>
-
-    <div id="game-area">
-        <div class="game-controls">
-            <button id="start-btn" class="btn btn-primary" onclick="startGame()">STARTA RESAN</button>
-            <button id="share-btn" class="btn btn-blue" onclick="shareApp()">DELA</button>
-            <button id="reset-btn" class="btn btn-orange" onclick="resetGame()">RESET</button>
+    <div class="panel">
+        <div id="dist-info">Söker din GPS... 📍</div>
+        <div class="save-btn-container">
+            <button id="btn-0" class="slot-btn" onclick="handleSlotClick(0)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
+            <button id="btn-1" class="slot-btn" onclick="handleSlotClick(1)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
+            <button id="btn-2" class="slot-btn" onclick="handleSlotClick(2)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
+            <button id="btn-3" class="slot-btn" onclick="handleSlotClick(3)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
+            <button id="mode-btn" class="mode-btn" onclick="toggleTravelMode()">🚗</button>
         </div>
-        <div class="apple-grid" id="apple-grid">
-            <div id="the-mouse">🐭</div>
-            </div>
+        <div id="search-container" class="hidden">
+            <input type="text" id="text-search-input" placeholder="Vart ska vi?">
+            <button id="go-btn" onclick="executeTextSearch()">➔</button>
+        </div>
+        <div class="action-container">
+            <button id="start-btn" class="action-btn hidden" onclick="startGame()">STARTA 🧀</button>
+            <button id="voice-btn" class="action-btn" onclick="startVoiceSearch()">🎤 RÖST</button>
+            <button id="text-btn" class="action-btn" onclick="toggleSearchUI()">🔍 SÖK</button> 
+            <button id="locate-btn" class="action-btn" onclick="toggleView()">🎯 HITTA ME</button>
+        </div>
     </div>
+</div>
 
-    <div id="victory-screen">
-        <h1>MUMS! 🧀</h1>
-        <p>Musen är mätt och belåten!</p>
-        <div style="font-size: 80px; margin: 20px;">🐭🧀</div>
-        <button class="btn btn-primary" style="flex:none; width: 200px;" onclick="location.reload()">SPELA IGEN</button>
-    </div>
+<div id="game-page" class="hidden">
+    <button style="background:#ff4444; color:white; margin-top: 10px; border-radius: 20px; padding: 6px 15px; font-size: 0.75rem; z-index: 10000; position: relative;" onclick="stopGame()">AVBRYT</button>
+    <div class="apple-grid" id="path"><div id="the-mouse">🐭</div></div>
+</div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        // --- TILLSTÅND & VARIABLER ---
-        let map, userMarker, targetMarker, pathPolyline;
-        let userCoords = null;
-        let targetCoords = JSON.parse(localStorage.getItem('lastTarget')) || null;
-        let gameState = 'IDLE'; // IDLE, GAME, FINISHED
-        let travelMode = 1; // 1 = Enkel, 2 = Tur & Retur
-        let initialDist = 0;
-        let initialTotalKm = 0;
-        let lastMouseIndex = 0;
-        let initialZoomPerformed = false;
-        
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js').then(reg => {
+                const askVersion = (worker) => {
+                    if (!worker) return;
+                    const msgChan = new MessageChannel();
+                    msgChan.port1.onmessage = (event) => {
+                        if (event.data && event.data.version) {
+                            document.getElementById('version-tag').innerText = event.data.version.toUpperCase();
+                        }
+                    };
+                    worker.postMessage({ type: 'GET_VERSION' }, [msgChan.port2]);
+                };
 
-        // --- APPLIKATIONS-LOGIK ---
+                if (reg.active) askVersion(reg.active);
 
-        function initApp() {
-            // Fixa höjd för mobiler
-            const setHeight = () => document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
-            window.addEventListener('resize', setHeight);
-            setHeight();
-
-            // Initiera karta
-            map = L.map('map', { zoomControl: false }).setView([59.3293, 18.0686], 13);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-            // Mus-ikon (Användarens position)
-            const mouseIcon = L.divIcon({ html: '📍', className: 'user-icon', iconSize: [30, 30] });
-            userMarker = L.marker([0,0], {icon: mouseIcon}).addTo(map);
-
-            if (targetCoords) {
-                setTarget(targetCoords, false);
-                map.setView(targetCoords, 14);
-                initialZoomPerformed = true;
-            }
-
-            // Klick-lyssnare för karta
-            let touchTimer;
-            map.on('mousedown', (e) => {
-                touchTimer = setTimeout(() => setTarget(e.latlng), 500);
+                reg.addEventListener('updatefound', () => {
+                    const newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'activated') {
+                            askVersion(newWorker);
+                        }
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            window.location.reload();
+                        }
+                    });
+                });
             });
-            map.on('mouseup mousemove dragstart', () => clearTimeout(touchTimer));
-            map.on('click', (e) => setTarget(e.latlng));
+        });
+    }
 
-            // GPS-spårning
-            if ("geolocation" in navigator) {
-                navigator.geolocation.watchPosition(handlePositionUpdate, 
-                    (err) => console.log("GPS Error:", err), 
-                    { enableHighAccuracy: true, maximumAge: 1000 }
-                );
-            }
+    let map, targetMarker, userMarker, connectionLine, userCoords;
+    let currentTargetCoords = null;
+    let startCoords = null;
+    let currentTargetName = "MÅLET";
+    let initialZoomPerformed = false; 
+    let isShowingUser = true; 
+    let isTracking = false; 
+    let hasReachedTurnaround = false;
+    let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
+    let wakeLock = null;
+    
+    let travelMode = 0; 
+    const modes = [
+        { icon: '🚗', factor: 1.0, distMult: 1, osrm: 'car' },
+        { icon: '🚶', factor: 0.1, distMult: 1, osrm: 'foot' },
+        { icon: '🚶↔️', factor: 0.1, distMult: 2, osrm: 'foot' } 
+    ];
 
-            // Service Worker för PWA
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('sw.js').catch(() => {});
-            }
+    let lastTargetRaw = JSON.parse(localStorage.getItem('mouse_last_target'));
+    let lastTarget = null;
+    if (lastTargetRaw) {
+        const threeHours = 3 * 60 * 60 * 1000;
+        if (Date.now() - lastTargetRaw.timestamp < threeHours) {
+            lastTarget = lastTargetRaw;
+        } else {
+            localStorage.removeItem('mouse_last_target');
         }
+    }
 
-        function setMode(m) {
-            if (gameState !== 'IDLE') return;
-            travelMode = m;
-            document.querySelectorAll('.mode-btn').forEach((b, i) => {
-                b.classList.toggle('active', i + 1 === m);
-            });
-            playClickSound();
-            updatePath();
+    let touchTimer, audioCtx;
+    let gameState = 'MAP';
+    let initialTotalKm = 0;
+    let gameStartBirdDist = 0; // Referensavstånd fågelvägen vid start
+    let lastMouseIndex = 0;
+
+    const els = {
+        distInfo: document.getElementById('dist-info'),
+        startBtn: document.getElementById('start-btn'),
+        mapPage: document.getElementById('map-page'),
+        gamePage: document.getElementById('game-page'),
+        pathGrid: document.getElementById('path'),
+        locateBtn: document.getElementById('locate-btn'),
+        searchContainer: document.getElementById('search-container'),
+        searchInput: document.getElementById('text-search-input'),
+        voiceBtn: document.getElementById('voice-btn'),
+        welcomeOverlay: document.getElementById('welcome-overlay'),
+        shareBtn: document.getElementById('share-btn'),
+        modeBtn: document.getElementById('mode-btn'),
+        actionContainer: document.querySelector('.action-container')
+    };
+
+    function checkIosInstall() {
+        const isIphone = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+        if (isIphone && !isStandalone) {
+            setTimeout(() => {
+                document.getElementById('ios-install-prompt').classList.remove('hidden');
+            }, 2000);
         }
+    }
 
-        function handlePositionUpdate(pos) {
-            userCoords = [pos.coords.latitude, pos.coords.longitude];
-            userMarker.setLatLng(userCoords);
-            
-            if (!initialZoomPerformed && userCoords) {
-                zoomToUser();
-                initialZoomPerformed = true;
+    async function requestWakeLock() {
+        try {
+            if ('wakeLock' in navigator) {
+                wakeLock = await navigator.wakeLock.request('screen');
             }
+        } catch (err) {}
+    }
 
-            if (gameState === 'GAME') {
-                updateProgress();
-            } else {
-                updatePath();
-            }
+    document.addEventListener('visibilitychange', async () => {
+        if (wakeLock !== null && document.visibilityState === 'visible') {
+            await requestWakeLock();
         }
+    });
 
-        function zoomToUser() {
-            if (userCoords) map.flyTo(userCoords, 15);
-        }
+    function closeInstructions() {
+        playClickSound();
+        els.welcomeOverlay.classList.add('hidden');
+        sessionStorage.setItem('introSeen', 'true');
+    }
 
-        async function setTarget(latlng, save = true) {
-            if (gameState !== 'IDLE') return;
-            if (targetMarker) map.removeLayer(targetMarker);
-            
-            targetCoords = latlng;
-            targetMarker = L.marker(latlng, {
-                icon: L.divIcon({ html: '🧀', className: 'cheese-icon', iconSize: [30,30] })
-            }).addTo(map);
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    function initAudio() {
+        if (!AudioContext) return;
+        if (!audioCtx) audioCtx = new AudioContext();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
 
-            if (save) {
-                localStorage.setItem('lastTarget', JSON.stringify(latlng));
-                playClickSound();
-            }
-            
-            updatePath();
-        }
+    document.body.addEventListener('touchstart', initAudio, { once: true });
+    document.body.addEventListener('click', initAudio, { once: true });
 
-        async function updatePath() {
-            if (!userCoords || !targetCoords) return;
-            
-            try {
-                const response = await fetch(`https://router.project-osrm.org/route/v1/walking/${userCoords[1]},${userCoords[0]};${targetCoords.lng},${targetCoords.lat}?overview=full&geometries=geojson`);
-                const data = await response.json();
-                
-                if (data.routes && data.routes[0]) {
-                    const route = data.routes[0];
-                    initialDist = route.distance / 1000;
-                    document.getElementById('dist-val').innerText = initialDist.toFixed(2);
-                    
-                    if (pathPolyline) map.removeLayer(pathPolyline);
-                    pathPolyline = L.geoJSON(route.geometry, { color: '#4CAF50', weight: 5, opacity: 0.6 }).addTo(map);
-                }
-            } catch (e) {
-                console.error("Route error", e);
-            }
-        }
-
-        function startGame() {
-            if (!userCoords || !targetCoords || initialDist < 0.01) {
-                alert("Välj ett mål på kartan först!");
-                return;
-            }
-            
-            gameState = 'GAME';
-            document.getElementById('start-btn').disabled = true;
-            
-            // Beräkna total distans (Dubbla om tur-och-retur)
-            initialTotalKm = travelMode === 2 ? initialDist * 2 : initialDist;
-            
-            // Fix för att undvika ojämna steg vid mode 2
-            if (travelMode === 2 && Math.floor(initialTotalKm) % 2 !== 0) {
-                // Vi lägger inte till fysisk distans, men vi ser till att logiken har ett jämnt antal steg
-            }
-
-            const steps = Math.max(5, Math.floor(initialTotalKm * 10)); // Ett äpple per 100m
-            const grid = document.getElementById('apple-grid');
-            
-            // Rensa gamla äpplen (behåll musen)
-            const mouseHtml = document.getElementById('the-mouse').outerHTML;
-            grid.innerHTML = mouseHtml;
-
-            for (let i = 0; i < steps; i++) {
-                const div = document.createElement('div');
-                div.id = `step-${i}`;
-                div.className = 'apple-step';
-                div.innerHTML = (i === steps - 1) ? '🧀' : '🍎';
-                grid.appendChild(div);
-            }
-
-            document.getElementById('apple-count').innerText = steps;
-            setTimeout(() => moveMouse(0), 100);
-            playClickSound();
-        }
-
-        function updateProgress() {
-            if (!userCoords || !targetCoords || gameState !== 'GAME') return;
-
-            const currentDistToTarget = map.distance(userCoords, targetCoords) / 1000;
-            let finishedSteps = 0;
-            
-            if (travelMode === 1) {
-                const progress = Math.min(1, 1 - (currentDistToTarget / initialDist));
-                finishedSteps = Math.floor(progress * initialTotalKm * 10);
-            } else {
-                // Tur och Retur logik
-                const hasReachedTarget = currentDistToTarget < 0.05;
-                if (!window.targetReached && hasReachedTarget) {
-                    window.targetReached = true;
-                    playVictorySound();
-                }
-
-                if (!window.targetReached) {
-                    const progress = Math.min(0.5, (1 - (currentDistToTarget / initialDist)) * 0.5);
-                    finishedSteps = Math.floor(progress * initialTotalKm * 10);
-                } else {
-                    const distHome = map.distance(userCoords, JSON.parse(localStorage.getItem('startPoint') || JSON.stringify(userCoords))) / 1000;
-                    // Förenklad retur-logik
-                    const returnProgress = Math.min(1, 1 - (currentDistToTarget / initialDist)); 
-                    finishedSteps = Math.floor((0.5 + (returnProgress * 0.5)) * initialTotalKm * 10);
-                }
-            }
-
-            // Markera avklarade äpplen
-            const steps = document.querySelectorAll('.apple-step');
-            steps.forEach((s, i) => {
-                if (i <= finishedSteps) s.classList.add('reached');
-            });
-
-            if (finishedSteps >= steps.length - 1) {
-                setTimeout(finishGame, 500);
-            } else {
-                const safeIndex = Math.max(0, Math.min(finishedSteps, steps.length - 1));
-                moveMouse(safeIndex); 
-            }
-        }
-
-        function finishGame() {
-            if (gameState === 'FINISHED') return;
-            gameState = 'FINISHED';
-            const mouse = document.getElementById('the-mouse');
-            mouse.innerHTML = '🐭🧀'; 
-            mouse.classList.add('victory');
-            
-            playVictorySound();
-            createConfetti();
-            document.getElementById('victory-screen').style.display = 'flex';
-            
-            const interval = setInterval(() => {
-                if(gameState !== 'FINISHED') clearInterval(interval);
-                else createConfetti();
-            }, 1000);
-        }
-
-        function moveMouse(index) {
-            if (gameState !== 'GAME') return;
-            lastMouseIndex = index;
-            const mouse = document.getElementById('the-mouse');
-            const targetStep = document.getElementById(`step-${index}`);
-            if (targetStep) {
-                mouse.style.left = targetStep.offsetLeft + "px";
-                mouse.style.top = targetStep.offsetTop + "px";
-                
-                // NYTT: Scrolla så att musen alltid är i bild i grid-vyn
-                targetStep.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        }
-
-        function resetGame() {
-            if (confirm("Vill du nollställa resan?")) {
-                location.reload();
-            }
-        }
-
-        // --- LJUD & EFFEKTER ---
-
-        function playClickSound() {
+    function playClickSound() {
+        if (!audioCtx) return;
+        try {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(3000, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
             osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.frequency.setValueAtTime(400, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
             osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+        } catch(e) {}
+    }
+
+    function playVictorySound() {
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.50]; 
+        notes.forEach((freq, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + i * 0.1);
+            gain.gain.setValueAtTime(0.1, now + i * 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.5);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(now + i * 0.1); osc.stop(now + i * 0.1 + 0.6);
+        });
+    }
+
+    function createConfetti() {
+        for(let i=0; i<50; i++) {
+            const c = document.createElement('div');
+            c.className = 'confetti';
+            c.style.left = Math.random() * 100 + 'vw';
+            c.style.backgroundColor = `hsl(${Math.random() * 360}, 70%, 50%)`;
+            c.style.animationDuration = (Math.random() * 2 + 1) + 's';
+            c.style.opacity = Math.random();
+            document.body.appendChild(c);
+            setTimeout(() => c.remove(), 3000);
+        }
+    }
+
+    function initMap() {
+        if(sessionStorage.getItem('introSeen')) els.welcomeOverlay.classList.add('hidden');
+        map = L.map('map', { zoomControl: false, attributionControl: false }).setView([59.3, 14.1], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        if (lastTarget) {
+            currentTargetName = lastTarget.name || "Mål";
+            setTarget(lastTarget.coords, false);
+            map.setView(lastTarget.coords, 14); 
+            initialZoomPerformed = true;
+            updateLocateBtnText();
         }
 
-        function playVictorySound() {
-            const notes = [523.25, 659.25, 783.99, 1046.50];
-            notes.forEach((f, i) => {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.connect(gain); gain.connect(audioCtx.destination);
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(f, audioCtx.currentTime + (i * 0.15));
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime + (i * 0.15));
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + (i * 0.15) + 0.4);
-                osc.start(audioCtx.currentTime + (i * 0.15));
-                osc.stop(audioCtx.currentTime + (i * 0.15) + 0.4);
-            });
+        if (navigator.geolocation) {
+            navigator.geolocation.watchPosition(handlePositionUpdate, null, { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 });
         }
 
-        function createConfetti() {
-            for (let i = 0; i < 30; i++) {
-                const c = document.createElement('div');
-                c.className = 'confetti';
-                c.style.left = Math.random() * 100 + 'vw';
-                c.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
-                c.style.animationDuration = (Math.random() * 2 + 1) + 's';
-                document.body.appendChild(c);
-                setTimeout(() => c.remove(), 3000);
+        map.on('click', e => { 
+            if(gameState !== 'MAP') return;
+            playClickSound(); 
+            currentTargetName = "Markerad plats"; 
+            isTracking = false; 
+            setTarget(e.latlng, true); 
+            map.panTo(e.latlng);
+        });
+
+        map.on('movestart', (e) => { if (!e.hard) isTracking = false; });
+        setupLongPress();
+        updateButtonUI();
+        window.addEventListener('resize', handleOrientationLayout);
+        handleOrientationLayout();
+        checkIosInstall();
+    }
+
+    function handleOrientationLayout() {
+        if (window.innerHeight < window.innerWidth) {
+            if (els.modeBtn.parentElement !== els.actionContainer) els.actionContainer.prepend(els.modeBtn);
+        } else {
+            const saveContainer = document.querySelector('.save-btn-container');
+            if (els.modeBtn.parentElement !== saveContainer) saveContainer.appendChild(els.modeBtn);
+        }
+    }
+
+    function toggleTravelMode() {
+        playClickSound();
+        travelMode = (travelMode + 1) % modes.length;
+        els.modeBtn.innerText = modes[travelMode].icon;
+        updateMapLogic();
+    }
+
+    function handlePositionUpdate(pos) {
+        userCoords = [pos.coords.latitude, pos.coords.longitude];
+        if (els.distInfo.innerHTML.includes("Söker din GPS")) els.distInfo.innerHTML = "Vart ska vi?";
+        if (!userMarker) {
+            userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8}).addTo(map);
+        } else userMarker.setLatLng(userCoords);
+        if (isTracking && gameState === 'MAP') map.setView(userCoords, map.getZoom());
+        if (!initialZoomPerformed) { zoomToUser(); initialZoomPerformed = true; isTracking = true; }
+        if (gameState === 'MAP') updateMapLogic();
+        else if (gameState === 'GAME') updateGameLogic();
+    }
+
+    function toggleView() {
+        if (!currentTargetCoords || isShowingUser) { zoomToUser(); isShowingUser = false; isTracking = true; }
+        else { map.flyTo(currentTargetCoords, 14); isShowingUser = true; isTracking = false; }
+        updateLocateBtnText();
+    }
+
+    function updateLocateBtnText() { els.locateBtn.innerHTML = (!currentTargetCoords || isShowingUser) ? "🎯 HITTA ME" : `🏁 ${currentTargetName.toUpperCase()}`; }
+    function zoomToUser() { if (userCoords) map.flyTo(userCoords, 16); }
+
+    function setTarget(latlng, shouldSave = true) {
+        currentTargetCoords = latlng;
+        if (targetMarker) targetMarker.setLatLng(latlng);
+        else targetMarker = L.marker(latlng).addTo(map);
+        if (shouldSave) {
+            lastTargetRaw = { coords: latlng, name: currentTargetName, timestamp: Date.now() };
+            localStorage.setItem('mouse_last_target', JSON.stringify(lastTargetRaw));
+        }
+        updateMapLogic(); 
+        updateLocateBtnText();
+    }
+
+    async function updateMapLogic() {
+        if (userCoords && currentTargetCoords) {
+            const mode = modes[travelMode];
+            const url = `https://router.project-osrm.org/route/v1/${mode.osrm}/${userCoords[1]},${userCoords[0]};${currentTargetCoords.lng},${currentTargetCoords.lat}?overview=full&geometries=geojson`;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.code === 'Ok') {
+                    const route = data.routes[0];
+                    const actualDistKm = route.distance / 1000;
+                    const displayDist = actualDistKm * mode.distMult;
+                    
+                    const latlngs = route.geometry.coordinates.map(c => [c[1], c[0]]);
+                    if (connectionLine) {
+                        connectionLine.setLatLngs(latlngs);
+                        connectionLine.setStyle({ dashArray: null, opacity: 0.6 });
+                    } else {
+                        connectionLine = L.polyline(latlngs, {color: '#007bff', weight: 4, opacity: 0.6}).addTo(map);
+                    }
+                    
+                    els.distInfo.innerHTML = `<b>${displayDist.toFixed(2)} km</b> till ${currentTargetName} ${travelMode === 2 ? 'och tillbaka.' : ''}`;
+                    els.startBtn.classList.remove('hidden');
+                } else {
+                    fallbackDist();
+                }
+            } catch (e) {
+                fallbackDist();
             }
         }
+    }
 
-        async function shareApp() {
-            playClickSound();
-            const shareData = {
-                title: 'Marcus Mouse & Cheese Tracker',
-                text: 'Hjälp musen hitta osten! Jag har ' + document.getElementById('dist-val').innerText + ' km kvar!',
-                url: window.location.href
-            };
-            try {
-                if (navigator.share) await navigator.share(shareData);
-                else alert("Länken är: " + window.location.href);
-            } catch (e) {}
+    function fallbackDist() {
+        const d = map.distance(userCoords, currentTargetCoords) / 1000;
+        const displayDist = d * modes[travelMode].distMult;
+        if (connectionLine) connectionLine.setLatLngs([userCoords, currentTargetCoords]);
+        else connectionLine = L.polyline([userCoords, currentTargetCoords], {color: '#007bff', weight: 3, dashArray: '10, 10'}).addTo(map);
+        els.distInfo.innerHTML = `<b>${displayDist.toFixed(2)} km</b> till ${currentTargetName} (fågelvägen)`;
+        els.startBtn.classList.remove('hidden');
+    }
+
+    function saveCurrentPos(index) {
+        if (!currentTargetCoords) return;
+        const label = prompt("Spara som:", currentTargetName);
+        if (label) {
+            savedLocations[index] = { coords: currentTargetCoords, name: label };
+            localStorage.setItem('mouse_favs', JSON.stringify(savedLocations));
+            updateButtonUI();
+        }
+    }
+
+    function handleSlotClick(index) {
+        const data = savedLocations[index];
+        if (data) { currentTargetName = data.name; isTracking = false; setTarget(data.coords, true); map.flyTo(data.coords, 14); isShowingUser = true; }
+    }
+
+    function updateButtonUI() {
+        savedLocations.forEach((loc, i) => {
+            const btn = document.getElementById(`btn-${i}`);
+            const container = btn.querySelector('.btn-text-container');
+            const textSpan = btn.querySelector('.scrolling-text');
+            const displayName = loc ? loc.name : "SPARA " + (i + 1);
+            textSpan.classList.remove('animate-scroll');
+            textSpan.innerText = displayName;
+            if (loc) btn.classList.add('filled'); else btn.classList.remove('filled');
+            setTimeout(() => { if (textSpan.offsetWidth > container.offsetWidth) { textSpan.innerText = displayName + " \u00A0\u00A0\u00A0\u00A0 • \u00A0\u00A0\u00A0\u00A0 " + displayName + " \u00A0\u00A0\u00A0\u00A0 • "; textSpan.classList.add('animate-scroll'); } }, 100);
+        });
+    }
+
+    function setupLongPress() {
+        document.querySelectorAll('.slot-btn').forEach((btn, i) => {
+            btn.addEventListener('touchstart', () => { touchTimer = setTimeout(() => saveCurrentPos(i), 800); }, {passive: true});
+            btn.addEventListener('touchend', () => clearTimeout(touchTimer));
+            btn.addEventListener('touchmove', () => clearTimeout(touchTimer));
+        });
+    }
+
+    function toggleSearchUI() {
+        els.searchContainer.classList.toggle('hidden');
+        if (!els.searchContainer.classList.contains('hidden')) els.searchInput.focus();
+    }
+
+    async function executeTextSearch() {
+        const query = els.searchInput.value;
+        if (!query) return;
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+            const data = await res.json();
+            if (data.length > 0) {
+                const pos = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+                currentTargetName = data[0].display_name.split(',')[0];
+                isTracking = false; setTarget(pos, true); map.flyTo(pos, 14);
+                els.searchContainer.classList.add('hidden'); isShowingUser = true;
+            }
+        } catch (e) {}
+    }
+
+    function startVoiceSearch() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) return;
+        const rec = new SpeechRecognition();
+        rec.lang = 'sv-SE';
+        els.voiceBtn.classList.add('listening');
+        rec.start();
+        rec.onresult = (e) => { els.searchInput.value = e.results[0][0].transcript; executeTextSearch(); };
+        rec.onend = () => els.voiceBtn.classList.remove('listening');
+    }
+
+    function startGame() {
+        if (!currentTargetCoords || !userCoords) return;
+        requestWakeLock();
+        gameState = 'GAME';
+        startCoords = [...userCoords];
+        gameStartBirdDist = map.distance(userCoords, currentTargetCoords) / 1000;
+        hasReachedTurnaround = false; 
+        els.shareBtn.classList.add('hidden');
+        
+        // Här fixar vi buggen: Vi använder textens avstånd (vägen) för antalet äpplen, 
+        // men vi sparar det för att kunna jämföra progress linjärt sen.
+        const distStr = els.distInfo.innerText.split(' ')[0];
+        const distKm = parseFloat(distStr);
+        const mode = modes[travelMode];
+        initialTotalKm = Math.max(1, Math.ceil(distKm / mode.factor));
+        
+        els.mapPage.classList.add('hidden');
+        els.gamePage.classList.remove('hidden');
+        els.pathGrid.innerHTML = '<div id="the-mouse">🐭</div>';
+        const frag = document.createDocumentFragment();
+        for (let i = 0; i < initialTotalKm; i++) {
+            const step = document.createElement('div');
+            step.className = 'step'; 
+            step.id = `step-${i}`;
+            step.innerHTML = (i === initialTotalKm - 1) ? '🧀' : '🍎';
+            frag.appendChild(step);
+        }
+        els.pathGrid.appendChild(frag);
+        setTimeout(() => moveMouse(0), 100);
+    }
+
+    function stopGame() {
+        if (wakeLock !== null) { wakeLock.release(); wakeLock = null; }
+        gameState = 'MAP';
+        els.shareBtn.classList.remove('hidden');
+        els.gamePage.classList.add('hidden');
+        els.mapPage.classList.remove('hidden');
+    }
+
+    function updateGameLogic() {
+        if (gameState !== 'GAME') return;
+        
+        // Nuvarande avstånd fågelvägen
+        const currentDistToTarget = map.distance(userCoords, currentTargetCoords) / 1000;
+        const currentDistToStart = map.distance(userCoords, startCoords) / 1000;
+        
+        let finishedSteps;
+
+        if (travelMode === 2) { 
+            // Fram och tillbaka
+            if (!hasReachedTurnaround && currentDistToTarget < 0.05) {
+                hasReachedTurnaround = true;
+                playClickSound(); 
+            } 
+            
+            if (!hasReachedTurnaround) {
+                // Progress baseras på hur mycket av den ursprungliga fågelvägen vi "ätit upp"
+                const progress = Math.max(0, 1 - (currentDistToTarget / gameStartBirdDist));
+                finishedSteps = Math.floor(progress * (initialTotalKm / 2));
+            } else {
+                // Hemvägen: Progress baseras på hur nära start vi är igen
+                const returnProgress = Math.max(0, 1 - (currentDistToStart / gameStartBirdBirdDist || gameStartBirdDist));
+                finishedSteps = Math.floor((initialTotalKm / 2) + (returnProgress * (initialTotalKm / 2)));
+            }
+        } else {
+            // Enkel resa: Vi mäter procentuellt mot startavståndet (fågelvägen)
+            const progress = Math.max(0, 1 - (currentDistToTarget / gameStartBirdDist));
+            finishedSteps = Math.floor(progress * initialTotalKm);
         }
 
-        // Starta allt
-        window.onload = initApp;
-    </script>
+        for (let i = 0; i < initialTotalKm - 1; i++) {
+            const step = document.getElementById(`step-${i}`);
+            if (step) {
+                if (i < finishedSteps) {
+                    if (!step.classList.contains('eat-animation')) step.classList.add('eat-animation');
+                } else {
+                    step.classList.remove('eat-animation');
+                }
+            }
+        }
+        
+        const winDistance = (travelMode === 0) ? 0.08 : 0.025; 
+        const isHomeAgain = travelMode === 2 && hasReachedTurnaround && currentDistToStart < winDistance;
+        const isAtOneWayTarget = travelMode !== 2 && currentDistToTarget < winDistance;
+
+        if (isHomeAgain || isAtOneWayTarget) {
+            moveMouse(initialTotalKm - 1);
+            setTimeout(finishGame, 500);
+        } else {
+            const safeIndex = Math.max(0, Math.min(finishedSteps, initialTotalKm - 2));
+            moveMouse(safeIndex); 
+        }
+    }
+
+    function finishGame() {
+        if (gameState === 'FINISHED') return;
+        gameState = 'FINISHED';
+        const mouse = document.getElementById('the-mouse');
+        mouse.innerHTML = '🐭🧀'; 
+        mouse.classList.add('victory');
+        
+        playVictorySound();
+        createConfetti();
+        const interval = setInterval(() => {
+            if(gameState !== 'FINISHED') clearInterval(interval);
+            else createConfetti();
+        }, 1000);
+    }
+
+    function moveMouse(index) {
+        if (gameState !== 'GAME') return;
+        lastMouseIndex = index;
+        const mouse = document.getElementById('the-mouse');
+        const targetStep = document.getElementById(`step-${index}`);
+        if (targetStep) {
+            mouse.style.left = targetStep.offsetLeft + "px";
+            mouse.style.top = targetStep.offsetTop + "px";
+        }
+    }
+
+    async function shareApp() {
+        playClickSound();
+        const shareData = { title: 'Marcus Mouse & Cheese Tracker', text: 'Hjälp musen hitta osten!', url: window.location.href };
+        try { if (navigator.share) await navigator.share(shareData); else alert("Länk: " + window.location.href); } catch (err) {}
+    }
+
+    window.onload = initMap;
+</script>
 </body>
 </html>
