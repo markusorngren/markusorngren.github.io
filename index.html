@@ -294,8 +294,8 @@
 
     let map, targetMarker, userMarker, connectionLine, userCoords;
     let currentTargetCoords = null;
-    let waypoints = []; // Nytt: Lista för via-punkter
-    let waypointMarkers = []; // Nytt: Visuella punkter på kartan
+    let waypoints = []; 
+    let waypointMarkers = []; 
     let startCoords = null;
     let currentTargetName = "MÅLET";
     let initialZoomPerformed = false; 
@@ -326,7 +326,7 @@
     let touchTimer, audioCtx;
     let gameState = 'MAP';
     let initialTotalKm = 0;
-    let gameStartBirdDist = 0; // Referensavstånd fågelvägen vid start
+    let gameStartBirdDist = 0; 
     let lastMouseIndex = 0;
 
     const els = {
@@ -453,7 +453,6 @@
             map.panTo(e.latlng);
         });
 
-        // Nytt: Hantera via-punkter (högerklick/långtryck)
         map.on('contextmenu', e => {
             if(gameState !== 'MAP' || !currentTargetCoords) return;
             playClickSound();
@@ -511,7 +510,7 @@
     function zoomToUser() { if (userCoords) map.flyTo(userCoords, 16); }
 
     function setTarget(latlng, shouldSave = true) {
-        // Återställ via-punkter vid nytt mål
+        // RADERA ALLA WAYPOINTS VID NYTT SLUTMÅL
         waypoints = [];
         waypointMarkers.forEach(m => map.removeLayer(m));
         waypointMarkers = [];
@@ -531,7 +530,6 @@
         if (userCoords && currentTargetCoords) {
             const mode = modes[travelMode];
             
-            // Bygg koordinatsträng för rutt: Start -> Waypoints -> Mål
             let coordsString = `${userCoords[1]},${userCoords[0]}`;
             waypoints.forEach(wp => { coordsString += `;${wp.lng},${wp.lat}`; });
             coordsString += `;${currentTargetCoords.lng},${currentTargetCoords.lat}`;
@@ -589,6 +587,7 @@
 
     function handleSlotClick(index) {
         const data = savedLocations[index];
+        // setTarget raderar nu waypoints automatiskt
         if (data) { currentTargetName = data.name; isTracking = false; setTarget(data.coords, true); map.flyTo(data.coords, 14); isShowingUser = true; }
     }
 
@@ -627,7 +626,10 @@
             if (data.length > 0) {
                 const pos = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
                 currentTargetName = data[0].display_name.split(',')[0];
-                isTracking = false; setTarget(pos, true); map.flyTo(pos, 14);
+                isTracking = false; 
+                // setTarget raderar nu waypoints automatiskt
+                setTarget(pos, true); 
+                map.flyTo(pos, 14);
                 els.searchContainer.classList.add('hidden'); isShowingUser = true;
             }
         } catch (e) {}
