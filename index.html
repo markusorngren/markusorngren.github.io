@@ -304,6 +304,7 @@
     let hasReachedTurnaround = false;
     let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
     let wakeLock = null;
+    let currentRouteCoords = []; // Ny variabel för rutt-koordinater
     
     let travelMode = 0; 
     const modes = [
@@ -541,6 +542,8 @@
                 
                 if (data.code === 'Ok') {
                     const route = data.routes[0];
+                    currentRouteCoords = route.geometry.coordinates.map(c => [c[1], c[0]]); // Sparar rutt-koordinater
+                    
                     const actualDistKm = route.distance / 1000;
                     const displayDist = actualDistKm * mode.distMult;
                     
@@ -572,6 +575,7 @@
         else connectionLine = L.polyline([userCoords, currentTargetCoords], {color: '#007bff', weight: 3, dashArray: '10, 10'}).addTo(map);
         els.distInfo.innerHTML = `<b>${displayDist.toFixed(2)} km</b> till ${currentTargetName} (fågelvägen)`;
         els.startBtn.classList.remove('hidden');
+        currentRouteCoords = [[userCoords[0], userCoords[1]], [currentTargetCoords.lat, currentTargetCoords.lng]];
     }
 
     function saveCurrentPos(index) {
@@ -604,12 +608,10 @@
 
     function setupInteractions() {
         document.querySelectorAll('.slot-btn').forEach((btn, i) => {
-            // Långtryck för mobiler
             btn.addEventListener('touchstart', () => { touchTimer = setTimeout(() => saveCurrentPos(i), 800); }, {passive: true});
             btn.addEventListener('touchend', () => clearTimeout(touchTimer));
             btn.addEventListener('touchmove', () => clearTimeout(touchTimer));
             
-            // Högerklick för datorer
             btn.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 saveCurrentPos(i);
@@ -688,31 +690,51 @@
     }
 
     function updateGameLogic() {
-        if (gameState !== 'GAME') return;
-        
-        const currentDistToTarget = map.distance(userCoords, currentTargetCoords) / 1000;
-        const currentDistToStart = map.distance(userCoords, startCoords) / 1000;
-        
-        let finishedSteps;
+        if (gameState !== 'GAME' || !currentRouteCoords.length) return;
 
-        if (travelMode === 2) { 
-            if (!hasReachedTurnaround && currentDistToTarget < 0.05) {
+        // 1. Hitta den punkt på rutten som är närmast din GPS just nu
+        let minSourceDist = Infinity;
+        let closestNodeIndex = 0;
+
+        currentRouteCoords.forEach((coord, index) => {
+            const d = map.distance(userCoords, coord);
+            if (d < minSourceDist) {
+                minSourceDist = d;
+                closestNodeIndex = index;
+            }
+        });
+
+        // 2. Räkna ut hur långt det är från ruttens början till den punkten (längs vägen)
+        let distanceTraveledAlongRoute = 0;
+        for (let i = 0; i < closestNodeIndex; i++) {
+            distanceTraveledAlongRoute += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]);
+        }
+        
+        // Räkna med avståndet fram till rutt-linjen (fågelvägen) för precision
+        const totalEffectiveDistance = (distanceTraveledAlongRoute + minSourceDist) / 1000;
+
+        // 3. Räkna ut framsteg baserat på färdsätt
+        const mode = modes[travelMode];
+        let finishedSteps = 0;
+
+        if (travelMode === 2) { // Hanterar fram-och-tillbaka läget
+            const fullRouteDistKm = (els.distInfo.innerText.split(' ')[0]) / 2; // Envägs avstånd
+            if (!hasReachedTurnaround && map.distance(userCoords, currentTargetCoords) < 50) {
                 hasReachedTurnaround = true;
-                playClickSound(); 
-            } 
-            
+                playClickSound();
+            }
+
             if (!hasReachedTurnaround) {
-                const progress = Math.max(0, 1 - (currentDistToTarget / gameStartBirdDist));
-                finishedSteps = Math.floor(progress * (initialTotalKm / 2));
+                finishedSteps = Math.floor(totalEffectiveDistance / mode.factor);
             } else {
-                const returnProgress = Math.max(0, 1 - (currentDistToStart / gameStartBirdDist));
-                finishedSteps = Math.floor((initialTotalKm / 2) + (returnProgress * (initialTotalKm / 2)));
+                const returnDist = map.distance(userCoords, currentTargetCoords) / 1000; 
+                finishedSteps = Math.floor((fullRouteDistKm + returnDist) / mode.factor);
             }
         } else {
-            const progress = Math.max(0, 1 - (currentDistToTarget / gameStartBirdDist));
-            finishedSteps = Math.floor(progress * initialTotalKm);
+            finishedSteps = Math.floor(totalEffectiveDistance / mode.factor);
         }
 
+        // 4. Uppdatera musen och äpplena
         for (let i = 0; i < initialTotalKm - 1; i++) {
             const step = document.getElementById(`step-${i}`);
             if (step) {
@@ -725,8 +747,8 @@
         }
         
         const winDistance = (travelMode === 0) ? 0.08 : 0.025; 
-        const isHomeAgain = travelMode === 2 && hasReachedTurnaround && currentDistToStart < winDistance;
-        const isAtOneWayTarget = travelMode !== 2 && currentDistToTarget < winDistance;
+        const isHomeAgain = travelMode === 2 && hasReachedTurnaround && map.distance(userCoords, startCoords) < 30;
+        const isAtOneWayTarget = travelMode !== 2 && map.distance(userCoords, currentTargetCoords) < 50;
 
         if (isHomeAgain || isAtOneWayTarget) {
             moveMouse(initialTotalKm - 1);
