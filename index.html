@@ -214,6 +214,7 @@
         <p>Hjälp musen att hitta osten!</p>
         <ul>
             <li>📍 <b>Klicka på kartan eller sök</b> för att välja resmål.</li>
+            <li>💡 <b>Högerklicka/Långtryck</b> för att lägga till via-punkter!</li>
             <li>💾 <b>Håll inne en spara-knapp</b> för att spara en favorit.</li>
             <li>🚶↔️ <b>Välj färdsätt</b> bil eller promenad.</li>
             <li>🚀 Tryck på <b>STARTA</b> för att börja resan!</li>
@@ -293,6 +294,8 @@
 
     let map, targetMarker, userMarker, connectionLine, userCoords;
     let currentTargetCoords = null;
+    let waypoints = []; // Nytt: Lista för via-punkter
+    let waypointMarkers = []; // Nytt: Visuella punkter på kartan
     let startCoords = null;
     let currentTargetName = "MÅLET";
     let initialZoomPerformed = false; 
@@ -450,6 +453,18 @@
             map.panTo(e.latlng);
         });
 
+        // Nytt: Hantera via-punkter (högerklick/långtryck)
+        map.on('contextmenu', e => {
+            if(gameState !== 'MAP' || !currentTargetCoords) return;
+            playClickSound();
+            waypoints.push(e.latlng);
+            const wpMarker = L.circleMarker(e.latlng, {
+                radius: 6, fillColor: "#FF9800", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8
+            }).addTo(map);
+            waypointMarkers.push(wpMarker);
+            updateMapLogic();
+        });
+
         map.on('movestart', (e) => { if (!e.hard) isTracking = false; });
         setupLongPress();
         updateButtonUI();
@@ -496,6 +511,11 @@
     function zoomToUser() { if (userCoords) map.flyTo(userCoords, 16); }
 
     function setTarget(latlng, shouldSave = true) {
+        // Återställ via-punkter vid nytt mål
+        waypoints = [];
+        waypointMarkers.forEach(m => map.removeLayer(m));
+        waypointMarkers = [];
+
         currentTargetCoords = latlng;
         if (targetMarker) targetMarker.setLatLng(latlng);
         else targetMarker = L.marker(latlng).addTo(map);
@@ -510,7 +530,13 @@
     async function updateMapLogic() {
         if (userCoords && currentTargetCoords) {
             const mode = modes[travelMode];
-            const url = `https://router.project-osrm.org/route/v1/${mode.osrm}/${userCoords[1]},${userCoords[0]};${currentTargetCoords.lng},${currentTargetCoords.lat}?overview=full&geometries=geojson`;
+            
+            // Bygg koordinatsträng för rutt: Start -> Waypoints -> Mål
+            let coordsString = `${userCoords[1]},${userCoords[0]}`;
+            waypoints.forEach(wp => { coordsString += `;${wp.lng},${wp.lat}`; });
+            coordsString += `;${currentTargetCoords.lng},${currentTargetCoords.lat}`;
+
+            const url = `https://router.project-osrm.org/route/v1/${mode.osrm}/${coordsString}?overview=full&geometries=geojson`;
             
             try {
                 const response = await fetch(url);
@@ -529,7 +555,9 @@
                         connectionLine = L.polyline(latlngs, {color: '#007bff', weight: 4, opacity: 0.6}).addTo(map);
                     }
                     
-                    els.distInfo.innerHTML = `<b>${displayDist.toFixed(2)} km</b> till ${currentTargetName} ${travelMode === 2 ? 'och tillbaka.' : ''}`;
+                    let infoSuffix = travelMode === 2 ? ' och tillbaka.' : '';
+                    let wpCount = waypoints.length > 0 ? ` via ${waypoints.length} stopp` : '';
+                    els.distInfo.innerHTML = `<b>${displayDist.toFixed(2)} km</b>${wpCount} till ${currentTargetName}${infoSuffix}`;
                     els.startBtn.classList.remove('hidden');
                 } else {
                     fallbackDist();
@@ -625,8 +653,6 @@
         hasReachedTurnaround = false; 
         els.shareBtn.classList.add('hidden');
         
-        // Här fixar vi buggen: Vi använder textens avstånd (vägen) för antalet äpplen, 
-        // men vi sparar det för att kunna jämföra progress linjärt sen.
         const distStr = els.distInfo.innerText.split(' ')[0];
         const distKm = parseFloat(distStr);
         const mode = modes[travelMode];
@@ -658,30 +684,25 @@
     function updateGameLogic() {
         if (gameState !== 'GAME') return;
         
-        // Nuvarande avstånd fågelvägen
         const currentDistToTarget = map.distance(userCoords, currentTargetCoords) / 1000;
         const currentDistToStart = map.distance(userCoords, startCoords) / 1000;
         
         let finishedSteps;
 
         if (travelMode === 2) { 
-            // Fram och tillbaka
             if (!hasReachedTurnaround && currentDistToTarget < 0.05) {
                 hasReachedTurnaround = true;
                 playClickSound(); 
             } 
             
             if (!hasReachedTurnaround) {
-                // Progress baseras på hur mycket av den ursprungliga fågelvägen vi "ätit upp"
                 const progress = Math.max(0, 1 - (currentDistToTarget / gameStartBirdDist));
                 finishedSteps = Math.floor(progress * (initialTotalKm / 2));
             } else {
-                // Hemvägen: Progress baseras på hur nära start vi är igen
-                const returnProgress = Math.max(0, 1 - (currentDistToStart / gameStartBirdBirdDist || gameStartBirdDist));
+                const returnProgress = Math.max(0, 1 - (currentDistToStart / gameStartBirdDist));
                 finishedSteps = Math.floor((initialTotalKm / 2) + (returnProgress * (initialTotalKm / 2)));
             }
         } else {
-            // Enkel resa: Vi mäter procentuellt mot startavståndet (fågelvägen)
             const progress = Math.max(0, 1 - (currentDistToTarget / gameStartBirdDist));
             finishedSteps = Math.floor(progress * initialTotalKm);
         }
