@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mouse-tracker-v31'; // Uppdaterat för att tvinga refresh
+const CACHE_NAME = 'mouse-tracker-v30'; // Ändrad version för att tvinga fram update
 const ASSETS = [
   './',
   './index.html',
