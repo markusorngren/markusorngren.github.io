@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mouse-tracker-v32'; // Ändrad version för att tvinga fram update
+const CACHE_NAME = 'mouse-tracker-v33'; // Uppdaterad version för att tvinga fram update
 const ASSETS = [
   './',
   './index.html',
@@ -8,6 +8,7 @@ const ASSETS = [
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
 ];
 
+// Installation - Cachear alla filer
 self.addEventListener('install', (e) => {
   self.skipWaiting();
   e.waitUntil(
@@ -15,6 +16,7 @@ self.addEventListener('install', (e) => {
   );
 });
 
+// Aktivering - Rensar gamla cachar
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) => {
@@ -25,12 +27,14 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+// Fetch - Serverar från cache om det går
 self.addEventListener('fetch', (e) => {
   e.respondWith(
     caches.match(e.request).then(res => res || fetch(e.request))
   );
 });
 
+// Lyssnar på meddelanden från index.html för att visa versionen i appen
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'GET_VERSION') {
     const versionNumber = CACHE_NAME.split('-').pop(); 

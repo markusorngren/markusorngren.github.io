@@ -163,6 +163,12 @@
         #voice-btn.listening { background: #ff4444; animation: pulse 1.5s infinite; }
         #start-btn { background: #ffcc00; color: #000; }
 
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(255, 68, 68, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 68, 68, 0); }
+        }
+
         #dist-info { margin-bottom: 8px; font-weight: bold; font-size: 0.95rem; color: #000; min-height: 1.2em; }
         #share-btn { position: fixed; top: 15px; left: 15px; z-index: 10000; background: white; border-radius: 50%; width: 45px; height: 45px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-size: 1.2rem; }
         
@@ -180,15 +186,15 @@
         .eat-animation { transform: scale(0.6) !important; opacity: 0.3 !important; }
 
         @keyframes victoryWiggle {
-            0% { transform: translate(-50%, -50%) scale(1.8) rotate(0deg); }
-            25% { transform: translate(-50%, -50%) scale(2.2) rotate(-20deg); }
-            50% { transform: translate(-50%, -50%) scale(1.8) rotate(0deg); }
-            75% { transform: translate(-50%, -50%) scale(2.2) rotate(20deg); }
-            100% { transform: translate(-50%, -50%) scale(1.8) rotate(0deg); }
+            0% { transform: scale(1.2) rotate(0deg); }
+            25% { transform: scale(1.5) rotate(-15deg); }
+            50% { transform: scale(1.2) rotate(0deg); }
+            75% { transform: scale(1.5) rotate(15deg); }
+            100% { transform: scale(1.2) rotate(0deg); }
         }
         
         #the-mouse.victory { 
-            position: fixed; top: 50% !important; left: 50% !important; z-index: 9999; 
+            position: fixed; top: 0; left: 0; z-index: 9999; 
             font-size: 6rem; animation: victoryWiggle 0.8s infinite ease-in-out; 
             margin: 0; background: rgba(253, 246, 227, 0.95); width: 100vw; height: 100svh; 
             display: flex; align-items: center; justify-content: center; 
@@ -204,7 +210,6 @@
     </style>
 </head>
 <body>
-
 <div id="version-tag">V...</div>
 <button id="share-btn" onclick="shareApp()">🔗</button>
 
@@ -314,7 +319,7 @@
         lastTarget = lastTargetRaw;
     }
 
-    let touchTimer, audioCtx;
+    let audioCtx;
     let gameState = 'MAP';
     let initialTotalKm = 0;
 
@@ -382,7 +387,6 @@
     function handlePositionUpdate(pos) {
         userCoords = [pos.coords.latitude, pos.coords.longitude];
         
-        // Uppdaterar texten till frågan när GPS-positionen har hittats och inget mål är satt
         if (!currentTargetCoords) {
             els.distInfo.innerHTML = "Vart ska vi åka? 🐭";
         }
@@ -455,6 +459,58 @@
     function updateLocateBtnText() { els.locateBtn.innerHTML = (!currentTargetCoords || isShowingUser) ? "🎯 HITTA MEJ" : `🏁 ${currentTargetName.toUpperCase()}`; }
     function toggleTravelMode() { travelMode = (travelMode + 1) % modes.length; els.modeBtn.innerText = modes[travelMode].icon; updateMapLogic(); }
     
+    async function requestWakeLock() {
+        try {
+            if ('wakeLock' in navigator) {
+                wakeLock = await navigator.wakeLock.request('screen');
+                console.log('Wake Lock is active! Screen will stay on.');
+            }
+        } catch (err) {
+            console.error(`${err.name}, ${err.message}`);
+        }
+    }
+
+    function releaseWakeLock() {
+        if (wakeLock !== null) {
+            wakeLock.release().then(() => { wakeLock = null; });
+        }
+    }
+
+    function startVoiceSearch() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("Tyvärr, din webbläsare stöder inte röstsök. Testa Chrome eller Safari.");
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'sv-SE';
+        recognition.interimResults = false;
+
+        recognition.onstart = () => {
+            els.voiceBtn.classList.add('listening');
+            els.voiceBtn.innerText = "LYSSNAR...";
+        };
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            els.searchInput.value = transcript;
+            els.searchContainer.classList.remove('hidden');
+            executeTextSearch();
+        };
+
+        recognition.onerror = () => {
+            alert("Kunde inte höra dig, försök igen.");
+        };
+
+        recognition.onend = () => {
+            els.voiceBtn.classList.remove('listening');
+            els.voiceBtn.innerText = "🎤 RÖST";
+        };
+
+        recognition.start();
+    }
+
     function startGame() {
         if (!currentTargetCoords || !userCoords) return;
         gameState = 'GAME';
@@ -464,6 +520,10 @@
         
         els.mapPage.classList.add('hidden');
         els.gamePage.classList.remove('hidden');
+        els.shareBtn.classList.add('hidden');
+        
+        requestWakeLock();
+
         els.pathGrid.innerHTML = '<div id="the-mouse">🐭</div>';
         for (let i = 0; i < initialTotalKm; i++) {
             const step = document.createElement('div');
@@ -508,11 +568,21 @@
         const m = document.getElementById('the-mouse');
         m.innerHTML = '🐭🧀'; m.classList.add('victory');
         createConfetti();
+        els.shareBtn.classList.remove('hidden');
+        releaseWakeLock();
     }
 
-    function stopGame() { gameState = 'MAP'; els.gamePage.classList.add('hidden'); els.mapPage.classList.remove('hidden'); }
+    function stopGame() { 
+        gameState = 'MAP'; 
+        els.gamePage.classList.add('hidden'); 
+        els.mapPage.classList.remove('hidden'); 
+        els.shareBtn.classList.remove('hidden');
+        releaseWakeLock();
+    }
+
     function handleOrientationLayout() { if (window.innerHeight < window.innerWidth) { els.actionContainer.prepend(els.modeBtn); } else { document.querySelector('.save-btn-container').appendChild(els.modeBtn); } }
     function toggleSearchUI() { els.searchContainer.classList.toggle('hidden'); if (!els.searchContainer.classList.contains('hidden')) els.searchInput.focus(); }
+    
     async function executeTextSearch() {
         const q = els.searchInput.value; if (!q) return;
         const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`);
@@ -523,6 +593,7 @@
             map.flyTo(currentTargetCoords, 14); els.searchContainer.classList.add('hidden');
         }
     }
+
     function updateButtonUI() {
         savedLocations.forEach((loc, i) => {
             const btn = document.getElementById(`btn-${i}`);
