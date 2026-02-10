@@ -294,6 +294,7 @@
     }
 
     let map, targetMarker, userMarker, connectionLine, userCoords;
+    let fixedStartCoords = null; 
     let currentTargetCoords = null;
     let waypoints = []; 
     let waypointMarkers = []; 
@@ -398,18 +399,23 @@
         if (isTracking && gameState === 'MAP') map.panTo(userCoords);
         if (!initialZoomPerformed) { zoomToUser(); initialZoomPerformed = true; isTracking = true; }
         
-        if (gameState === 'MAP') updateMapLogic();
+        if (gameState === 'MAP') {
+            if (!fixedStartCoords) {
+                updateMapLogic();
+            }
+        }
         else if (gameState === 'GAME') updateGameLogic();
     }
 
     async function updateMapLogic() {
         if (!userCoords || !currentTargetCoords) return;
         
+        const startPoint = fixedStartCoords || userCoords;
         const mode = modes[travelMode];
-        let pts = [`${userCoords[1]},${userCoords[0]}`];
+        let pts = [`${startPoint[1]},${startPoint[0]}`];
         waypoints.forEach(wp => pts.push(`${wp.lng},${wp.lat}`));
         pts.push(`${currentTargetCoords.lng},${currentTargetCoords.lat}`);
-        if (travelMode === 2) pts.push(`${userCoords[1]},${userCoords[0]}`);
+        if (travelMode === 2) pts.push(`${startPoint[1]},${startPoint[0]}`);
 
         const url = `https://router.project-osrm.org/route/v1/${mode.osrm}/${pts.join(';')}?overview=full&geometries=geojson`;
         
@@ -431,14 +437,19 @@
     }
 
     function fallbackDist() {
-        const d = map.distance(userCoords, currentTargetCoords) / 1000;
+        const startPoint = fixedStartCoords || userCoords;
+        const d = map.distance(startPoint, currentTargetCoords) / 1000;
         const total = d * (travelMode === 2 ? 2 : 1);
-        currentRouteCoords = [[userCoords[0], userCoords[1]], [currentTargetCoords.lat, currentTargetCoords.lng]];
+        currentRouteCoords = [[startPoint[0], startPoint[1]], [currentTargetCoords.lat, currentTargetCoords.lng]];
         els.distInfo.innerHTML = `<b>${total.toFixed(2)} km</b> (fågelvägen)`;
         els.startBtn.classList.remove('hidden');
     }
 
     function setTarget(latlng, shouldSave) {
+        if (userCoords) {
+            fixedStartCoords = [...userCoords];
+        }
+
         waypoints = []; waypointMarkers.forEach(m => map.removeLayer(m)); waypointMarkers = [];
         currentTargetCoords = latlng;
         if (targetMarker) targetMarker.setLatLng(latlng);
@@ -463,11 +474,8 @@
         try {
             if ('wakeLock' in navigator) {
                 wakeLock = await navigator.wakeLock.request('screen');
-                console.log('Wake Lock is active! Screen will stay on.');
             }
-        } catch (err) {
-            console.error(`${err.name}, ${err.message}`);
-        }
+        } catch (err) {}
     }
 
     function releaseWakeLock() {
@@ -497,10 +505,6 @@
             els.searchInput.value = transcript;
             els.searchContainer.classList.remove('hidden');
             executeTextSearch();
-        };
-
-        recognition.onerror = () => {
-            alert("Kunde inte höra dig, försök igen.");
         };
 
         recognition.onend = () => {
@@ -574,6 +578,7 @@
 
     function stopGame() { 
         gameState = 'MAP'; 
+        fixedStartCoords = null;
         els.gamePage.classList.add('hidden'); 
         els.mapPage.classList.remove('hidden'); 
         els.shareBtn.classList.remove('hidden');
@@ -594,14 +599,29 @@
         }
     }
 
+    // FIXAD FUNKTION: Nu rullar texten om den är för lång!
     function updateButtonUI() {
         savedLocations.forEach((loc, i) => {
             const btn = document.getElementById(`btn-${i}`);
+            const container = btn.querySelector('.btn-text-container');
             const span = btn.querySelector('.scrolling-text');
-            span.innerText = loc ? loc.name : "SPARA " + (i + 1);
+            const textContent = loc ? loc.name : "SPARA " + (i + 1);
+            
+            // Återställ först
+            span.innerText = textContent;
+            span.classList.remove('animate-scroll');
+            
+            // Kolla om texten är bredare än knappen
+            if (span.scrollWidth > container.offsetWidth) {
+                // Dubblera texten med mellanrum för en sömlös rullning
+                span.innerText = textContent + " \u00A0\u00A0\u00A0 " + textContent + " \u00A0\u00A0\u00A0 ";
+                span.classList.add('animate-scroll');
+            }
+            
             loc ? btn.classList.add('filled') : btn.classList.remove('filled');
         });
     }
+
     function handleSlotClick(i) { const d = savedLocations[i]; if (d) { currentTargetName = d.name; setTarget(d.coords, true); map.flyTo(d.coords, 14); } }
     function saveCurrentPos(i) { if (!currentTargetCoords) return; const l = prompt("Spara som:", currentTargetName); if (l) { savedLocations[i] = {coords: currentTargetCoords, name: l}; localStorage.setItem('mouse_favs', JSON.stringify(savedLocations)); updateButtonUI(); } }
     function setupInteractions() { document.querySelectorAll('.slot-btn').forEach((b, i) => { b.oncontextmenu = (e) => { e.preventDefault(); saveCurrentPos(i); }; }); }
