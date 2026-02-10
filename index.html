@@ -461,10 +461,10 @@
         updateLocateBtnText();
     }
 
-    function zoomToUser() { if (userCoords) map.flyTo(userCoords, 16); }
+    function zoomToUser() { if (userCoords) map.flyTo(userCoords, 18); }
     function toggleView() { 
         if (!currentTargetCoords || isShowingUser) { zoomToUser(); isShowingUser = false; isTracking = true; }
-        else { map.flyTo(currentTargetCoords, 14); isShowingUser = true; isTracking = false; }
+        else { map.flyTo(currentTargetCoords, 18); isShowingUser = true; isTracking = false; }
         updateLocateBtnText();
     }
     function updateLocateBtnText() { els.locateBtn.innerHTML = (!currentTargetCoords || isShowingUser) ? "🎯 HITTA MEJ" : `🏁 ${currentTargetName.toUpperCase()}`; }
@@ -595,7 +595,7 @@
         if (d.length > 0) {
             currentTargetName = d[0].display_name.split(',')[0];
             setTarget({lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon)}, true);
-            map.flyTo(currentTargetCoords, 14); els.searchContainer.classList.add('hidden');
+            map.flyTo(currentTargetCoords, 18); els.searchContainer.classList.add('hidden');
         }
     }
 
