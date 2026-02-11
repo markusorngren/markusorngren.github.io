@@ -138,6 +138,7 @@
             width: 50px; height: 50px; box-shadow: 0 3px 6px rgba(0,0,0,0.2); 
             display: flex; align-items: center; justify-content: center; padding: 0 2px; flex-shrink: 0;
             opacity: 0.8; border: 2px solid transparent;
+            -webkit-touch-callout: none;
         }
         .slot-btn.filled { opacity: 1; border: 2px solid rgba(0,0,0,0.3); box-shadow: 0 0 10px rgba(0,0,0,0.1); }
 
@@ -194,7 +195,7 @@
         }
         
         #the-mouse.victory { 
-            position: fixed; top: 0; left: 0; z-index: 9999; 
+            position: fixed; top: 0 !important; left: 0 !important; z-index: 9999; 
             font-size: 6rem; animation: victoryWiggle 0.8s infinite ease-in-out; 
             margin: 0; background: rgba(253, 246, 227, 0.95); width: 100vw; height: 100svh; 
             display: flex; align-items: center; justify-content: center; 
@@ -461,10 +462,10 @@
         updateLocateBtnText();
     }
 
-    function zoomToUser() { if (userCoords) map.flyTo(userCoords, 16); }
+    function zoomToUser() { if (userCoords) map.flyTo(userCoords, 18); }
     function toggleView() { 
         if (!currentTargetCoords || isShowingUser) { zoomToUser(); isShowingUser = false; isTracking = true; }
-        else { map.flyTo(currentTargetCoords, 14); isShowingUser = true; isTracking = false; }
+        else { map.flyTo(currentTargetCoords, 18); isShowingUser = true; isTracking = false; }
         updateLocateBtnText();
     }
     function updateLocateBtnText() { els.locateBtn.innerHTML = (!currentTargetCoords || isShowingUser) ? "🎯 HITTA MEJ" : `🏁 ${currentTargetName.toUpperCase()}`; }
@@ -553,7 +554,7 @@
         }
 
         const goal = (travelMode === 2) ? startCoords : currentTargetCoords;
-        if (map.distance(userCoords, goal) < 40 && steps > (initialTotalKm * 0.8)) {
+        if (map.distance(userCoords, goal) < 40 && steps > (initialTotalKm * 0.1)) {
             moveMouse(initialTotalKm - 1); setTimeout(finishGame, 500);
         } else {
             moveMouse(Math.max(0, Math.min(steps, initialTotalKm - 2)));
@@ -563,7 +564,21 @@
     function moveMouse(index) {
         const m = document.getElementById('the-mouse');
         const s = document.getElementById(`step-${index}`);
-        if (s) { m.style.left = s.offsetLeft + "px"; m.style.top = s.offsetTop + "px"; }
+        const container = els.pathGrid;
+
+        if (s && container) { 
+            m.style.left = s.offsetLeft + "px"; 
+            m.style.top = s.offsetTop + "px"; 
+            
+            const rowHeight = s.offsetHeight + 5; 
+            const buffer = rowHeight * 2.5;
+
+            let targetScroll = (s.offsetTop + buffer) - container.clientHeight;
+
+            if (targetScroll > 0) {
+                container.scrollTo({ top: targetScroll, behavior: 'smooth' });
+            }
+        }
     }
 
     function finishGame() {
@@ -595,11 +610,10 @@
         if (d.length > 0) {
             currentTargetName = d[0].display_name.split(',')[0];
             setTarget({lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon)}, true);
-            map.flyTo(currentTargetCoords, 14); els.searchContainer.classList.add('hidden');
+            map.flyTo(currentTargetCoords, 18); els.searchContainer.classList.add('hidden');
         }
     }
 
-    // FIXAD FUNKTION: Nu rullar texten om den är för lång!
     function updateButtonUI() {
         savedLocations.forEach((loc, i) => {
             const btn = document.getElementById(`btn-${i}`);
@@ -607,13 +621,10 @@
             const span = btn.querySelector('.scrolling-text');
             const textContent = loc ? loc.name : "SPARA " + (i + 1);
             
-            // Återställ först
             span.innerText = textContent;
             span.classList.remove('animate-scroll');
             
-            // Kolla om texten är bredare än knappen
             if (span.scrollWidth > container.offsetWidth) {
-                // Dubblera texten med mellanrum för en sömlös rullning
                 span.innerText = textContent + " \u00A0\u00A0\u00A0 " + textContent + " \u00A0\u00A0\u00A0 ";
                 span.classList.add('animate-scroll');
             }
@@ -623,8 +634,51 @@
     }
 
     function handleSlotClick(i) { const d = savedLocations[i]; if (d) { currentTargetName = d.name; setTarget(d.coords, true); map.flyTo(d.coords, 14); } }
-    function saveCurrentPos(i) { if (!currentTargetCoords) return; const l = prompt("Spara som:", currentTargetName); if (l) { savedLocations[i] = {coords: currentTargetCoords, name: l}; localStorage.setItem('mouse_favs', JSON.stringify(savedLocations)); updateButtonUI(); } }
-    function setupInteractions() { document.querySelectorAll('.slot-btn').forEach((b, i) => { b.oncontextmenu = (e) => { e.preventDefault(); saveCurrentPos(i); }; }); }
+    
+    function saveCurrentPos(i) { 
+        if (!currentTargetCoords) return; 
+        const l = prompt("Spara som:", currentTargetName); 
+        if (l) { 
+            savedLocations[i] = {coords: currentTargetCoords, name: l}; 
+            localStorage.setItem('mouse_favs', JSON.stringify(savedLocations)); 
+            updateButtonUI(); 
+        } 
+    }
+
+    function setupInteractions() {
+        document.querySelectorAll('.slot-btn').forEach((b, i) => {
+            let lastTriggerTime = 0;
+
+            const triggerSave = (e) => {
+                const now = Date.now();
+                if (now - lastTriggerTime < 3000) return;
+                lastTriggerTime = now;
+
+                if (e) {
+                    if (typeof e.preventDefault === 'function') e.preventDefault();
+                    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+                }
+                
+                saveCurrentPos(i);
+            };
+
+            b.oncontextmenu = (e) => {
+                triggerSave(e);
+                return false;
+            };
+
+            let pressTimer;
+            b.addEventListener('touchstart', (e) => {
+                pressTimer = setTimeout(() => {
+                    triggerSave(e);
+                }, 600);
+            }, {passive: true});
+
+            b.addEventListener('touchend', () => clearTimeout(pressTimer));
+            b.addEventListener('touchmove', () => clearTimeout(pressTimer));
+        });
+    }
+
     function createConfetti() { for(let i=0; i<30; i++) { const c = document.createElement('div'); c.className='confetti'; c.style.left=Math.random()*100+'vw'; c.style.backgroundColor=`hsl(${Math.random()*360},70%,50%)`; document.body.appendChild(c); setTimeout(()=>c.remove(),3000); } }
     function playClickSound() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); const o = audioCtx.createOscillator(); o.type='triangle'; o.frequency.setValueAtTime(3000, audioCtx.currentTime); o.start(); o.stop(audioCtx.currentTime+0.1); }
     function closeInstructions() { els.welcomeOverlay.classList.add('hidden'); sessionStorage.setItem('introSeen', 'true'); }

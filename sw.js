@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mouse-tracker-v34'; // Uppdaterad version för att tvinga fram update
+const CACHE_NAME = 'mouse-tracker-v40'; // Uppdaterad version för att tvinga fram update
 const ASSETS = [
   './',
   './index.html',
@@ -40,4 +40,5 @@ self.addEventListener('message', (event) => {
     const versionNumber = CACHE_NAME.split('-').pop(); 
     event.ports[0].postMessage({ version: versionNumber });
   }
+
 });
