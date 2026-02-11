@@ -553,7 +553,7 @@
         }
 
         const goal = (travelMode === 2) ? startCoords : currentTargetCoords;
-        if (map.distance(userCoords, goal) < 40 && steps > (initialTotalKm * 0.8)) {
+        if (map.distance(userCoords, goal) < 40 && steps > (initialTotalKm * 0.1)) {
             moveMouse(initialTotalKm - 1); setTimeout(finishGame, 500);
         } else {
             moveMouse(Math.max(0, Math.min(steps, initialTotalKm - 2)));
@@ -632,4 +632,5 @@
     window.onload = initMap;
 </script>
 </body>
+
 </html>
