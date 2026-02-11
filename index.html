@@ -138,7 +138,6 @@
             width: 50px; height: 50px; box-shadow: 0 3px 6px rgba(0,0,0,0.2); 
             display: flex; align-items: center; justify-content: center; padding: 0 2px; flex-shrink: 0;
             opacity: 0.8; border: 2px solid transparent;
-            /* Förhindra iOS systemmeny vid långtryck */
             -webkit-touch-callout: none;
         }
         .slot-btn.filled { opacity: 1; border: 2px solid rgba(0,0,0,0.3); box-shadow: 0 0 10px rgba(0,0,0,0.1); }
@@ -568,21 +567,14 @@
         const container = els.pathGrid;
 
         if (s && container) { 
-            // Flytta musen visuellt (samma som förut)
             m.style.left = s.offsetLeft + "px"; 
             m.style.top = s.offsetTop + "px"; 
             
-            // Logik för att scrolla listan:
-            // Vi räknar ut radhöjden (elementets höjd + gapet i CSS som är 5px)
             const rowHeight = s.offsetHeight + 5; 
-            // Vi vill ha ca 2.5 rader "buffert" under musen
             const buffer = rowHeight * 2.5;
 
-            // Målet är att botten av fönstret (scroll + höjd) ska vara vid 's.offsetTop + buffer'
-            // Formel: targetScroll = (MusensTop + Buffer) - FönstretsHöjd
             let targetScroll = (s.offsetTop + buffer) - container.clientHeight;
 
-            // Scrolla mjukt till den nya positionen
             if (targetScroll > 0) {
                 container.scrollTo({ top: targetScroll, behavior: 'smooth' });
             }
@@ -655,24 +647,33 @@
 
     function setupInteractions() {
         document.querySelectorAll('.slot-btn').forEach((b, i) => {
-            // PC: Standard högerklick
-            b.oncontextmenu = (e) => { 
-                e.preventDefault(); 
-                e.stopPropagation();
-                saveCurrentPos(i); 
+            let lastTriggerTime = 0;
+
+            const triggerSave = (e) => {
+                const now = Date.now();
+                if (now - lastTriggerTime < 1000) return;
+                lastTriggerTime = now;
+
+                if (e) {
+                    if (typeof e.preventDefault === 'function') e.preventDefault();
+                    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+                }
+                
+                saveCurrentPos(i);
+            };
+
+            b.oncontextmenu = (e) => {
+                triggerSave(e);
                 return false;
             };
 
-            // Mobil/iPhone: Simulera långtryck med touch-events
             let pressTimer;
             b.addEventListener('touchstart', (e) => {
                 pressTimer = setTimeout(() => {
-                    // Om man håller kvar i 600ms
-                    saveCurrentPos(i);
+                    triggerSave(e);
                 }, 600);
             }, {passive: true});
 
-            // Om man släpper fingret eller scrollar, avbryt timern
             b.addEventListener('touchend', () => clearTimeout(pressTimer));
             b.addEventListener('touchmove', () => clearTimeout(pressTimer));
         });
