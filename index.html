@@ -138,6 +138,8 @@
             width: 50px; height: 50px; box-shadow: 0 3px 6px rgba(0,0,0,0.2); 
             display: flex; align-items: center; justify-content: center; padding: 0 2px; flex-shrink: 0;
             opacity: 0.8; border: 2px solid transparent;
+            /* Förhindra iOS systemmeny vid långtryck */
+            -webkit-touch-callout: none;
         }
         .slot-btn.filled { opacity: 1; border: 2px solid rgba(0,0,0,0.3); box-shadow: 0 0 10px rgba(0,0,0,0.1); }
 
@@ -194,7 +196,7 @@
         }
         
         #the-mouse.victory { 
-            position: fixed; top: 0; left: 0; z-index: 9999; 
+            position: fixed; top: 0 !important; left: 0 !important; z-index: 9999; 
             font-size: 6rem; animation: victoryWiggle 0.8s infinite ease-in-out; 
             margin: 0; background: rgba(253, 246, 227, 0.95); width: 100vw; height: 100svh; 
             display: flex; align-items: center; justify-content: center; 
@@ -599,7 +601,6 @@
         }
     }
 
-    // FIXAD FUNKTION: Nu rullar texten om den är för lång!
     function updateButtonUI() {
         savedLocations.forEach((loc, i) => {
             const btn = document.getElementById(`btn-${i}`);
@@ -607,13 +608,10 @@
             const span = btn.querySelector('.scrolling-text');
             const textContent = loc ? loc.name : "SPARA " + (i + 1);
             
-            // Återställ först
             span.innerText = textContent;
             span.classList.remove('animate-scroll');
             
-            // Kolla om texten är bredare än knappen
             if (span.scrollWidth > container.offsetWidth) {
-                // Dubblera texten med mellanrum för en sömlös rullning
                 span.innerText = textContent + " \u00A0\u00A0\u00A0 " + textContent + " \u00A0\u00A0\u00A0 ";
                 span.classList.add('animate-scroll');
             }
@@ -623,8 +621,42 @@
     }
 
     function handleSlotClick(i) { const d = savedLocations[i]; if (d) { currentTargetName = d.name; setTarget(d.coords, true); map.flyTo(d.coords, 14); } }
-    function saveCurrentPos(i) { if (!currentTargetCoords) return; const l = prompt("Spara som:", currentTargetName); if (l) { savedLocations[i] = {coords: currentTargetCoords, name: l}; localStorage.setItem('mouse_favs', JSON.stringify(savedLocations)); updateButtonUI(); } }
-    function setupInteractions() { document.querySelectorAll('.slot-btn').forEach((b, i) => { b.oncontextmenu = (e) => { e.preventDefault(); saveCurrentPos(i); }; }); }
+    
+    function saveCurrentPos(i) { 
+        if (!currentTargetCoords) return; 
+        const l = prompt("Spara som:", currentTargetName); 
+        if (l) { 
+            savedLocations[i] = {coords: currentTargetCoords, name: l}; 
+            localStorage.setItem('mouse_favs', JSON.stringify(savedLocations)); 
+            updateButtonUI(); 
+        } 
+    }
+
+    function setupInteractions() {
+        document.querySelectorAll('.slot-btn').forEach((b, i) => {
+            // PC: Standard högerklick
+            b.oncontextmenu = (e) => { 
+                e.preventDefault(); 
+                e.stopPropagation();
+                saveCurrentPos(i); 
+                return false;
+            };
+
+            // Mobil/iPhone: Simulera långtryck med touch-events
+            let pressTimer;
+            b.addEventListener('touchstart', (e) => {
+                pressTimer = setTimeout(() => {
+                    // Om man håller kvar i 600ms
+                    saveCurrentPos(i);
+                }, 600);
+            }, {passive: true});
+
+            // Om man släpper fingret eller scrollar, avbryt timern
+            b.addEventListener('touchend', () => clearTimeout(pressTimer));
+            b.addEventListener('touchmove', () => clearTimeout(pressTimer));
+        });
+    }
+
     function createConfetti() { for(let i=0; i<30; i++) { const c = document.createElement('div'); c.className='confetti'; c.style.left=Math.random()*100+'vw'; c.style.backgroundColor=`hsl(${Math.random()*360},70%,50%)`; document.body.appendChild(c); setTimeout(()=>c.remove(),3000); } }
     function playClickSound() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); const o = audioCtx.createOscillator(); o.type='triangle'; o.frequency.setValueAtTime(3000, audioCtx.currentTime); o.start(); o.stop(audioCtx.currentTime+0.1); }
     function closeInstructions() { els.welcomeOverlay.classList.add('hidden'); sessionStorage.setItem('introSeen', 'true'); }
@@ -632,5 +664,4 @@
     window.onload = initMap;
 </script>
 </body>
-
 </html>
