@@ -565,7 +565,28 @@
     function moveMouse(index) {
         const m = document.getElementById('the-mouse');
         const s = document.getElementById(`step-${index}`);
-        if (s) { m.style.left = s.offsetLeft + "px"; m.style.top = s.offsetTop + "px"; }
+        const container = els.pathGrid;
+
+        if (s && container) { 
+            // Flytta musen visuellt (samma som förut)
+            m.style.left = s.offsetLeft + "px"; 
+            m.style.top = s.offsetTop + "px"; 
+            
+            // Logik för att scrolla listan:
+            // Vi räknar ut radhöjden (elementets höjd + gapet i CSS som är 5px)
+            const rowHeight = s.offsetHeight + 5; 
+            // Vi vill ha ca 2.5 rader "buffert" under musen
+            const buffer = rowHeight * 2.5;
+
+            // Målet är att botten av fönstret (scroll + höjd) ska vara vid 's.offsetTop + buffer'
+            // Formel: targetScroll = (MusensTop + Buffer) - FönstretsHöjd
+            let targetScroll = (s.offsetTop + buffer) - container.clientHeight;
+
+            // Scrolla mjukt till den nya positionen
+            if (targetScroll > 0) {
+                container.scrollTo({ top: targetScroll, behavior: 'smooth' });
+            }
+        }
     }
 
     function finishGame() {
