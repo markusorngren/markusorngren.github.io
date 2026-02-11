@@ -654,29 +654,39 @@
     }
 
     function setupInteractions() {
-        document.querySelectorAll('.slot-btn').forEach((b, i) => {
-            // PC: Standard högerklick
-            b.oncontextmenu = (e) => { 
-                e.preventDefault(); 
-                e.stopPropagation();
-                saveCurrentPos(i); 
+    document.querySelectorAll('.slot-btn').forEach((b, i) => {
+        let hasHandledLongPress = false; // Vår "vakt"
+
+        // PC & Android Standard (högerklick/system-långtryck)
+        b.oncontextmenu = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Om timern redan har kört saveCurrentPos, gör inget här
+            if (hasHandledLongPress) {
+                hasHandledLongPress = false; // Återställ till nästa gång
                 return false;
-            };
+            }
+            
+            saveCurrentPos(i);
+            return false;
+        };
 
-            // Mobil/iPhone: Simulera långtryck med touch-events
-            let pressTimer;
-            b.addEventListener('touchstart', (e) => {
-                pressTimer = setTimeout(() => {
-                    // Om man håller kvar i 600ms
-                    saveCurrentPos(i);
-                }, 600);
-            }, {passive: true});
+        // Mobil/iPhone: Manuellt långtryck
+        let pressTimer;
+        b.addEventListener('touchstart', (e) => {
+            hasHandledLongPress = false; // Nollställ vid varje ny beröring
+            pressTimer = setTimeout(() => {
+                hasHandledLongPress = true; // Markera att vi hanterat detta tryck
+                saveCurrentPos(i);
+            }, 600);
+        }, {passive: true});
 
-            // Om man släpper fingret eller scrollar, avbryt timern
-            b.addEventListener('touchend', () => clearTimeout(pressTimer));
-            b.addEventListener('touchmove', () => clearTimeout(pressTimer));
-        });
-    }
+        // Om man släpper fingret eller scrollar, avbryt timern
+        b.addEventListener('touchend', () => clearTimeout(pressTimer));
+        b.addEventListener('touchmove', () => clearTimeout(pressTimer));
+    });
+}
 
     function createConfetti() { for(let i=0; i<30; i++) { const c = document.createElement('div'); c.className='confetti'; c.style.left=Math.random()*100+'vw'; c.style.backgroundColor=`hsl(${Math.random()*360},70%,50%)`; document.body.appendChild(c); setTimeout(()=>c.remove(),3000); } }
     function playClickSound() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); const o = audioCtx.createOscillator(); o.type='triangle'; o.frequency.setValueAtTime(3000, audioCtx.currentTime); o.start(); o.stop(audioCtx.currentTime+0.1); }
