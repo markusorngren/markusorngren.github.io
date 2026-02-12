@@ -370,14 +370,22 @@
         });
 
         // ---------------------------------------------------------
-        // Långtryck på kartan (förbättrad stabilietet)
+        // Långtryck på kartan (förbättrad för zoom/multi-touch)
         // ---------------------------------------------------------
         let mapPressTimer;
         let startX, startY;
         const mapContainer = map.getContainer();
 
         mapContainer.addEventListener('pointerdown', (e) => {
+            // Om det är en mus, tillåt bara vänsterklick (0) för timern
             if (e.pointerType === 'mouse' && e.button !== 0) return;
+            
+            // Om det redan är flera fingrar på skärmen (zoom påbörjad), avbryt direkt
+            if (!e.isPrimary) {
+                clearTimeout(mapPressTimer);
+                return;
+            }
+
             startX = e.clientX;
             startY = e.clientY;
 
@@ -392,7 +400,7 @@
                 waypointMarkers.push(wpMarker);
                 updateMapLogic();
                 if (navigator.vibrate) navigator.vibrate(50);
-            }, 800); // Ökad tid för mindre känslighet
+            }, 800);
         });
 
         const cancelMapPress = (e) => {
@@ -406,7 +414,9 @@
         mapContainer.addEventListener('pointermove', cancelMapPress);
         mapContainer.addEventListener('pointerup', cancelMapPress);
         mapContainer.addEventListener('pointercancel', cancelMapPress);
-        map.on('movestart', () => clearTimeout(mapPressTimer));
+        
+        // Viktigt: Om kartan rör sig (zoom eller pan) - döda timern omedelbart!
+        map.on('movestart zoomstart', () => clearTimeout(mapPressTimer));
 
         map.on('contextmenu', e => {
             if(gameState !== 'MAP' || !currentTargetCoords) return;
@@ -419,7 +429,6 @@
             updateMapLogic();
         });
 
-        map.on('movestart', (e) => { if (!e.hard) isTracking = false; });
         setupInteractions();
         updateButtonUI();
         handleOrientationLayout();
@@ -583,7 +592,7 @@
             b.addEventListener('pointerdown', (e) => {
                 if(e.button === 0 || e.pointerType === 'touch') {
                     startX = e.clientX; startY = e.clientY;
-                    pressTimer = setTimeout(() => saveCurrentPos(i), 800); // Ökad tid
+                    pressTimer = setTimeout(() => saveCurrentPos(i), 800);
                 }
             });
 
