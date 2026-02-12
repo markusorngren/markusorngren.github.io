@@ -221,8 +221,8 @@
         <p>Hjälp musen att hitta osten!</p>
         <ul>
             <li>📍 <b>Klicka på kartan eller sök</b> för att välja resmål.</li>
-            <li>💡 <b>Högerklicka/Långtryck</b> för att lägga till via-punkter!</li>
-            <li>💾 <b>Högerklicka/Långtryck</b> på en spara-knapp för att spara en favorit.</li>
+            <li>💡 <b>Håll länge på kartan</b> för att lägga till via-punkter!</li>
+            <li>💾 <b>Håll länge på en knapp</b> för att spara en favorit.</li>
             <li>🚶↔️ <b>Välj färdsätt</b> bil eller promenad.</li>
             <li>🚀 Tryck på <b>STARTA</b> för att börja resan!</li>
         </ul>
@@ -370,46 +370,44 @@
         });
 
         // ---------------------------------------------------------
-        // START: Lösning för långtryck på kartan (iPhone fix)
+        // Långtryck på kartan (förbättrad stabilietet)
         // ---------------------------------------------------------
         let mapPressTimer;
+        let startX, startY;
         const mapContainer = map.getContainer();
 
-        // Starta timer vid tryck
         mapContainer.addEventListener('pointerdown', (e) => {
-            // Ignorera om det är högerklick på PC (låt contextmenu hantera det)
             if (e.pointerType === 'mouse' && e.button !== 0) return;
+            startX = e.clientX;
+            startY = e.clientY;
 
             mapPressTimer = setTimeout(() => {
                 if(gameState !== 'MAP' || !currentTargetCoords) return;
-
-                // Konvertera skärmtryck till kart-koordinater
                 const latlng = map.mouseEventToLatLng(e);
-                
                 playClickSound();
                 waypoints.push(latlng);
-                
-                // Skapa orange prick
                 const wpMarker = L.circleMarker(latlng, {
                     radius: 6, fillColor: "#FF9800", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8
                 }).addTo(map);
                 waypointMarkers.push(wpMarker);
-                
                 updateMapLogic();
-
-                // Vibration om enheten stöder det
                 if (navigator.vibrate) navigator.vibrate(50);
-            }, 600); // Tiden för långtryck
+            }, 800); // Ökad tid för mindre känslighet
         });
 
-        const cancelMapPress = () => { if (mapPressTimer) clearTimeout(mapPressTimer); };
+        const cancelMapPress = (e) => {
+            if (e && e.type === 'pointermove') {
+                const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
+                if (dist < 10) return; // Ignorera små darrningar
+            }
+            if (mapPressTimer) clearTimeout(mapPressTimer);
+        };
 
-        // Avbryt om man släpper, drar eller ångrar
+        mapContainer.addEventListener('pointermove', cancelMapPress);
         mapContainer.addEventListener('pointerup', cancelMapPress);
         mapContainer.addEventListener('pointercancel', cancelMapPress);
-        map.on('movestart', cancelMapPress); // Avbryt om kartan panorerar (viktigt!)
+        map.on('movestart', () => clearTimeout(mapPressTimer));
 
-        // Behåll standard contextmenu för PC högerklick
         map.on('contextmenu', e => {
             if(gameState !== 'MAP' || !currentTargetCoords) return;
             playClickSound();
@@ -420,9 +418,6 @@
             waypointMarkers.push(wpMarker);
             updateMapLogic();
         });
-        // ---------------------------------------------------------
-        // SLUT: Lösning för långtryck
-        // ---------------------------------------------------------
 
         map.on('movestart', (e) => { if (!e.hard) isTracking = false; });
         setupInteractions();
@@ -433,29 +428,17 @@
 
     function handlePositionUpdate(pos) {
         userCoords = [pos.coords.latitude, pos.coords.longitude];
-        
-        if (!currentTargetCoords) {
-            els.distInfo.innerHTML = "Vart ska vi åka? 🐭";
-        }
-
-        if (!userMarker) {
-            userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, fillOpacity: 0.8}).addTo(map);
-        } else userMarker.setLatLng(userCoords);
-        
+        if (!currentTargetCoords) els.distInfo.innerHTML = "Vart ska vi åka? 🐭";
+        if (!userMarker) userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, fillOpacity: 0.8}).addTo(map);
+        else userMarker.setLatLng(userCoords);
         if (isTracking && gameState === 'MAP') map.panTo(userCoords);
         if (!initialZoomPerformed) { zoomToUser(); initialZoomPerformed = true; isTracking = true; }
-        
-        if (gameState === 'MAP') {
-            if (!fixedStartCoords) {
-                updateMapLogic();
-            }
-        }
+        if (gameState === 'MAP') { if (!fixedStartCoords) updateMapLogic(); }
         else if (gameState === 'GAME') updateGameLogic();
     }
 
     async function updateMapLogic() {
         if (!userCoords || !currentTargetCoords) return;
-        
         const startPoint = fixedStartCoords || userCoords;
         const mode = modes[travelMode];
         let pts = [`${startPoint[1]},${startPoint[0]}`];
@@ -463,46 +446,34 @@
         pts.push(`${currentTargetCoords.lng},${currentTargetCoords.lat}`);
         if (travelMode === 2) pts.push(`${startPoint[1]},${startPoint[0]}`);
 
-        const url = `https://router.project-osrm.org/route/v1/${mode.osrm}/${pts.join(';')}?overview=full&geometries=geojson`;
-        
         try {
-            const res = await fetch(url);
+            const res = await fetch(`https://router.project-osrm.org/route/v1/${mode.osrm}/${pts.join(';')}?overview=full&geometries=geojson`);
             const data = await res.json();
             if (data.code === 'Ok') {
                 const route = data.routes[0];
                 currentRouteCoords = route.geometry.coordinates.map(c => [c[1], c[0]]);
-                const distKm = route.distance / 1000;
-                
                 if (connectionLine) connectionLine.setLatLngs(currentRouteCoords);
                 else connectionLine = L.polyline(currentRouteCoords, {color: '#007bff', weight: 4, opacity: 0.6}).addTo(map);
-                
-                els.distInfo.innerHTML = `<b>${distKm.toFixed(2)} km</b> till ${currentTargetName}`;
+                els.distInfo.innerHTML = `<b>${(route.distance / 1000).toFixed(2)} km</b> till ${currentTargetName}`;
                 els.startBtn.classList.remove('hidden');
-            } else { fallbackDist(); }
+            } else fallbackDist();
         } catch (e) { fallbackDist(); }
     }
 
     function fallbackDist() {
         const startPoint = fixedStartCoords || userCoords;
         const d = map.distance(startPoint, currentTargetCoords) / 1000;
-        const total = d * (travelMode === 2 ? 2 : 1);
-        currentRouteCoords = [[startPoint[0], startPoint[1]], [currentTargetCoords.lat, currentTargetCoords.lng]];
-        els.distInfo.innerHTML = `<b>${total.toFixed(2)} km</b> (fågelvägen)`;
+        els.distInfo.innerHTML = `<b>${(d * (travelMode === 2 ? 2 : 1)).toFixed(2)} km</b> (fågelvägen)`;
         els.startBtn.classList.remove('hidden');
     }
 
     function setTarget(latlng, shouldSave) {
-        if (userCoords) {
-            fixedStartCoords = [...userCoords];
-        }
-
+        if (userCoords) fixedStartCoords = [...userCoords];
         waypoints = []; waypointMarkers.forEach(m => map.removeLayer(m)); waypointMarkers = [];
         currentTargetCoords = latlng;
         if (targetMarker) targetMarker.setLatLng(latlng);
         else targetMarker = L.marker(latlng).addTo(map);
-        if (shouldSave) {
-            localStorage.setItem('mouse_last_target', JSON.stringify({coords: latlng, name: currentTargetName, timestamp: Date.now()}));
-        }
+        if (shouldSave) localStorage.setItem('mouse_last_target', JSON.stringify({coords: latlng, name: currentTargetName, timestamp: Date.now()}));
         updateMapLogic();
         updateLocateBtnText();
     }
@@ -516,48 +487,17 @@
     function updateLocateBtnText() { els.locateBtn.innerHTML = (!currentTargetCoords || isShowingUser) ? "🎯 HITTA MEJ" : `🏁 ${currentTargetName.toUpperCase()}`; }
     function toggleTravelMode() { travelMode = (travelMode + 1) % modes.length; els.modeBtn.innerText = modes[travelMode].icon; updateMapLogic(); }
     
-    async function requestWakeLock() {
-        try {
-            if ('wakeLock' in navigator) {
-                wakeLock = await navigator.wakeLock.request('screen');
-            }
-        } catch (err) {}
-    }
-
-    function releaseWakeLock() {
-        if (wakeLock !== null) {
-            wakeLock.release().then(() => { wakeLock = null; });
-        }
-    }
+    async function requestWakeLock() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} }
+    function releaseWakeLock() { if (wakeLock !== null) wakeLock.release().then(() => wakeLock = null); }
 
     function startVoiceSearch() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            alert("Tyvärr, din webbläsare stöder inte röstsök. Testa Chrome eller Safari.");
-            return;
-        }
-
+        if (!SpeechRecognition) return alert("Röstsök stöds inte i din webbläsare.");
         const recognition = new SpeechRecognition();
         recognition.lang = 'sv-SE';
-        recognition.interimResults = false;
-
-        recognition.onstart = () => {
-            els.voiceBtn.classList.add('listening');
-            els.voiceBtn.innerText = "LYSSNAR...";
-        };
-
-        recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            els.searchInput.value = transcript;
-            els.searchContainer.classList.remove('hidden');
-            executeTextSearch();
-        };
-
-        recognition.onend = () => {
-            els.voiceBtn.classList.remove('listening');
-            els.voiceBtn.innerText = "🎤 RÖST";
-        };
-
+        recognition.onstart = () => { els.voiceBtn.classList.add('listening'); els.voiceBtn.innerText = "LYSSNAR..."; };
+        recognition.onresult = (e) => { els.searchInput.value = e.results[0][0].transcript; els.searchContainer.classList.remove('hidden'); executeTextSearch(); };
+        recognition.onend = () => { els.voiceBtn.classList.remove('listening'); els.voiceBtn.innerText = "🎤 RÖST"; };
         recognition.start();
     }
 
@@ -567,13 +507,8 @@
         startCoords = [...userCoords];
         const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', '');
         initialTotalKm = Math.max(1, Math.ceil(parseFloat(distStr) / modes[travelMode].factor));
-        
-        els.mapPage.classList.add('hidden');
-        els.gamePage.classList.remove('hidden');
-        els.shareBtn.classList.add('hidden');
-        
+        els.mapPage.classList.add('hidden'); els.gamePage.classList.remove('hidden'); els.shareBtn.classList.add('hidden');
         requestWakeLock();
-
         els.pathGrid.innerHTML = '<div id="the-mouse">🐭</div>';
         for (let i = 0; i < initialTotalKm; i++) {
             const step = document.createElement('div');
@@ -588,142 +523,88 @@
         if (gameState !== 'GAME' || !currentRouteCoords.length) return;
         let minD = Infinity, idx = 0;
         currentRouteCoords.forEach((c, i) => { const d = map.distance(userCoords, c); if (d < minD) { minD = d; idx = i; } });
-        
         let traveled = 0;
         for (let i = 0; i < idx; i++) traveled += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]);
-        
         let steps = Math.floor((traveled / 1000) / modes[travelMode].factor);
         for (let i = 0; i < initialTotalKm - 1; i++) {
             const s = document.getElementById(`step-${i}`);
             if (s) i < steps ? s.classList.add('eat-animation') : s.classList.remove('eat-animation');
         }
-
         const goal = (travelMode === 2) ? startCoords : currentTargetCoords;
-        if (map.distance(userCoords, goal) < 40 && steps > (initialTotalKm * 0.1)) {
-            moveMouse(initialTotalKm - 1); setTimeout(finishGame, 500);
-        } else {
-            moveMouse(Math.max(0, Math.min(steps, initialTotalKm - 2)));
-        }
+        if (map.distance(userCoords, goal) < 40 && steps > (initialTotalKm * 0.1)) { moveMouse(initialTotalKm - 1); setTimeout(finishGame, 500); }
+        else moveMouse(Math.max(0, Math.min(steps, initialTotalKm - 2)));
     }
 
     function moveMouse(index) {
         const m = document.getElementById('the-mouse');
         const s = document.getElementById(`step-${index}`);
-        const container = els.pathGrid;
-
-        if (s && container) { 
-            m.style.left = s.offsetLeft + "px"; 
-            m.style.top = s.offsetTop + "px"; 
-            
-            const rowHeight = s.offsetHeight + 5; 
-            const buffer = rowHeight * 2.5;
-
-            let targetScroll = (s.offsetTop + buffer) - container.clientHeight;
-
-            if (targetScroll > 0) {
-                container.scrollTo({ top: targetScroll, behavior: 'smooth' });
-            }
+        if (s) { 
+            m.style.left = s.offsetLeft + "px"; m.style.top = s.offsetTop + "px"; 
+            let targetScroll = (s.offsetTop + s.offsetHeight * 2.5) - els.pathGrid.clientHeight;
+            if (targetScroll > 0) els.pathGrid.scrollTo({ top: targetScroll, behavior: 'smooth' });
         }
     }
 
-    function finishGame() {
-        if (gameState === 'FINISHED') return;
-        gameState = 'FINISHED';
-        const m = document.getElementById('the-mouse');
-        m.innerHTML = '🐭🧀'; m.classList.add('victory');
-        createConfetti();
-        els.shareBtn.classList.remove('hidden');
-        releaseWakeLock();
-    }
-
-    function stopGame() { 
-        gameState = 'MAP'; 
-        fixedStartCoords = null;
-        els.gamePage.classList.add('hidden'); 
-        els.mapPage.classList.remove('hidden'); 
-        els.shareBtn.classList.remove('hidden');
-        releaseWakeLock();
-    }
-
-    function handleOrientationLayout() { if (window.innerHeight < window.innerWidth) { els.actionContainer.prepend(els.modeBtn); } else { document.querySelector('.save-btn-container').appendChild(els.modeBtn); } }
+    function finishGame() { if (gameState === 'FINISHED') return; gameState = 'FINISHED'; const m = document.getElementById('the-mouse'); m.innerHTML = '🐭🧀'; m.classList.add('victory'); createConfetti(); els.shareBtn.classList.remove('hidden'); releaseWakeLock(); }
+    function stopGame() { gameState = 'MAP'; fixedStartCoords = null; els.gamePage.classList.add('hidden'); els.mapPage.classList.remove('hidden'); els.shareBtn.classList.remove('hidden'); releaseWakeLock(); }
+    function handleOrientationLayout() { if (window.innerHeight < window.innerWidth) els.actionContainer.prepend(els.modeBtn); else document.querySelector('.save-btn-container').appendChild(els.modeBtn); }
     function toggleSearchUI() { els.searchContainer.classList.toggle('hidden'); if (!els.searchContainer.classList.contains('hidden')) els.searchInput.focus(); }
     
     async function executeTextSearch() {
         const q = els.searchInput.value; if (!q) return;
         const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`);
         const d = await res.json();
-        if (d.length > 0) {
-            currentTargetName = d[0].display_name.split(',')[0];
-            setTarget({lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon)}, true);
-            map.flyTo(currentTargetCoords, 18); els.searchContainer.classList.add('hidden');
-        }
+        if (d.length > 0) { currentTargetName = d[0].display_name.split(',')[0]; setTarget({lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon)}, true); map.flyTo(currentTargetCoords, 18); els.searchContainer.classList.add('hidden'); }
     }
 
     function updateButtonUI() {
         savedLocations.forEach((loc, i) => {
             const btn = document.getElementById(`btn-${i}`);
-            const container = btn.querySelector('.btn-text-container');
             const span = btn.querySelector('.scrolling-text');
             const textContent = loc ? loc.name : "SPARA " + (i + 1);
-            
             span.innerText = textContent;
             span.classList.remove('animate-scroll');
-            
-            if (span.scrollWidth > container.offsetWidth) {
+            if (span.scrollWidth > btn.querySelector('.btn-text-container').offsetWidth) {
                 span.innerText = textContent + " \u00A0\u00A0\u00A0 " + textContent + " \u00A0\u00A0\u00A0 ";
                 span.classList.add('animate-scroll');
             }
-            
             loc ? btn.classList.add('filled') : btn.classList.remove('filled');
         });
     }
 
     function handleSlotClick(i) { const d = savedLocations[i]; if (d) { currentTargetName = d.name; setTarget(d.coords, true); map.flyTo(d.coords, 14); } }
-    
-    function saveCurrentPos(i) { 
-        if (!currentTargetCoords) return; 
-        const l = prompt("Spara som:", currentTargetName); 
-        if (l) { 
-            savedLocations[i] = {coords: currentTargetCoords, name: l}; 
-            localStorage.setItem('mouse_favs', JSON.stringify(savedLocations)); 
-            updateButtonUI(); 
-        } 
-    }
+    function saveCurrentPos(i) { if (!currentTargetCoords) return; const l = prompt("Spara som:", currentTargetName); if (l) { savedLocations[i] = {coords: currentTargetCoords, name: l}; localStorage.setItem('mouse_favs', JSON.stringify(savedLocations)); updateButtonUI(); } }
 
     function setupInteractions() {
         document.querySelectorAll('.slot-btn').forEach((b, i) => {
-            let pressTimer;
-            const triggerSave = (e) => {
-                if (e && e.preventDefault) e.preventDefault();
-                saveCurrentPos(i);
-            };
-
-            b.oncontextmenu = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
-            };
+            let pressTimer, startX, startY;
+            b.oncontextmenu = (e) => { e.preventDefault(); return false; };
 
             b.addEventListener('pointerdown', (e) => {
                 if(e.button === 0 || e.pointerType === 'touch') {
-                    pressTimer = setTimeout(() => {
-                        triggerSave(e);
-                    }, 600);
+                    startX = e.clientX; startY = e.clientY;
+                    pressTimer = setTimeout(() => saveCurrentPos(i), 800); // Ökad tid
                 }
             });
 
-            const cancelPress = () => clearTimeout(pressTimer);
+            const cancel = (e) => {
+                if (e.type === 'pointermove') {
+                    if (Math.hypot(e.clientX - startX, e.clientY - startY) < 10) return;
+                }
+                clearTimeout(pressTimer);
+            };
             
-            b.addEventListener('pointerup', cancelPress);
-            b.addEventListener('pointerleave', cancelPress);
-            b.addEventListener('pointercancel', cancelPress);
+            b.addEventListener('pointerup', cancel);
+            b.addEventListener('pointerleave', cancel);
+            b.addEventListener('pointermove', cancel);
+            b.addEventListener('pointercancel', cancel);
         });
     }
 
     function createConfetti() { for(let i=0; i<30; i++) { const c = document.createElement('div'); c.className='confetti'; c.style.left=Math.random()*100+'vw'; c.style.backgroundColor=`hsl(${Math.random()*360},70%,50%)`; document.body.appendChild(c); setTimeout(()=>c.remove(),3000); } }
     function playClickSound() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); const o = audioCtx.createOscillator(); o.type='triangle'; o.frequency.setValueAtTime(3000, audioCtx.currentTime); o.start(); o.stop(audioCtx.currentTime+0.1); }
     function closeInstructions() { els.welcomeOverlay.classList.add('hidden'); sessionStorage.setItem('introSeen', 'true'); }
-    function shareApp() { const d = {title:'Cheese Tracker', url:window.location.href}; if(navigator.share) navigator.share(d); }
+    function shareApp() { if(navigator.share) navigator.share({title:'Cheese Tracker', url:window.location.href}); }
     window.onload = initMap;
 </script>
 </body>
