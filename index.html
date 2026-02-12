@@ -138,6 +138,8 @@
             width: 50px; height: 50px; box-shadow: 0 3px 6px rgba(0,0,0,0.2); 
             display: flex; align-items: center; justify-content: center; padding: 0 2px; flex-shrink: 0;
             opacity: 0.8; border: 2px solid transparent;
+            /* Viktigt för Pointer Events på touch-skärmar så man inte scrollar */
+            touch-action: none; 
             -webkit-touch-callout: none;
         }
         .slot-btn.filled { opacity: 1; border: 2px solid rgba(0,0,0,0.3); box-shadow: 0 0 10px rgba(0,0,0,0.1); }
@@ -645,37 +647,40 @@
         } 
     }
 
+    // UPDATED FUNCTION: Uses Pointer Events for cross-platform long-press
     function setupInteractions() {
         document.querySelectorAll('.slot-btn').forEach((b, i) => {
-            let lastTriggerTime = 0;
+            let pressTimer;
 
+            // 1. Trigger function
             const triggerSave = (e) => {
-                const now = Date.now();
-                if (now - lastTriggerTime < 3000) return;
-                lastTriggerTime = now;
-
-                if (e) {
-                    if (typeof e.preventDefault === 'function') e.preventDefault();
-                    if (typeof e.stopPropagation === 'function') e.stopPropagation();
-                }
-                
+                if (e && e.preventDefault) e.preventDefault();
                 saveCurrentPos(i);
             };
 
+            // 2. Prevent default context menu (Standard PC right click)
             b.oncontextmenu = (e) => {
-                triggerSave(e);
+                e.preventDefault();
+                e.stopPropagation();
                 return false;
             };
 
-            let pressTimer;
-            b.addEventListener('touchstart', (e) => {
-                pressTimer = setTimeout(() => {
-                    triggerSave(e);
-                }, 600);
-            }, {passive: true});
+            // 3. Pointer Down: Start the timer
+            b.addEventListener('pointerdown', (e) => {
+                // Allows Left Click (0) or Touch.
+                if(e.button === 0 || e.pointerType === 'touch') {
+                    pressTimer = setTimeout(() => {
+                        triggerSave(e);
+                    }, 600); // 600ms = Long Press
+                }
+            });
 
-            b.addEventListener('touchend', () => clearTimeout(pressTimer));
-            b.addEventListener('touchmove', () => clearTimeout(pressTimer));
+            // 4. Cancel if we release or leave
+            const cancelPress = () => clearTimeout(pressTimer);
+            
+            b.addEventListener('pointerup', cancelPress);
+            b.addEventListener('pointerleave', cancelPress);
+            b.addEventListener('pointercancel', cancelPress);
         });
     }
 
