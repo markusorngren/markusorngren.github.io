@@ -307,7 +307,8 @@
     let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
     let wakeLock = null;
     let currentRouteCoords = []; 
-    
+    let ignoreClick = false; // NY VARIABEL FÖR ATT FIXA IPHONE-KLICK
+
     let travelMode = 0; 
     const modes = [
         { icon: '🚗', factor: 1.0, osrm: 'car' },
@@ -363,6 +364,8 @@
 
         map.on('click', e => { 
             if(gameState !== 'MAP') return;
+            if(ignoreClick) return; // FIX: Om vi nyss långtryckte, ignorera detta klick!
+            
             playClickSound(); 
             currentTargetName = "Markerad plats"; 
             setTarget(e.latlng, true); 
@@ -370,6 +373,12 @@
 
         map.on('contextmenu', e => {
             if(gameState !== 'MAP' || !currentTargetCoords) return;
+            
+            // FIX START: Sätt en flagga för att blockera nästa klick (iPhone-fixen)
+            ignoreClick = true;
+            setTimeout(() => { ignoreClick = false; }, 600);
+            // FIX SLUT
+            
             playClickSound();
             waypoints.push(e.latlng);
             const wpMarker = L.circleMarker(e.latlng, {
