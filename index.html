@@ -201,7 +201,6 @@
             display: flex; align-items: center; justify-content: center; 
         }
 
-        /* FIXAD KONFETTI */
         .confetti {
             position: fixed; 
             width: 10px; 
@@ -209,22 +208,23 @@
             z-index: 10000; 
             pointer-events: none;
             border-radius: 50%;
-            /* Använder cubic-bezier för en "pop"-effekt (snabb start, långsamt slut) */
             animation: pop 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
         }
         @keyframes pop {
-            0% { 
-                transform: translate(0, 0) scale(0); 
-                opacity: 0; 
-            }
-            10% {
-                opacity: 1;
-                transform: translate(0, 0) scale(1);
-            }
-            100% { 
-                transform: translate(var(--dx), var(--dy)) rotate(720deg) scale(0.5); 
-                opacity: 0; 
-            }
+            0% { transform: translate(0, 0) scale(0); opacity: 0; }
+            10% { opacity: 1; transform: translate(0, 0) scale(1); }
+            100% { transform: translate(var(--dx), var(--dy)) rotate(720deg) scale(0.5); opacity: 0; }
+        }
+
+        /* NY STIL FÖR WAYPOINT-VAL */
+        #waypoint-menu {
+            position: fixed; z-index: 10001; background: white; 
+            border-radius: 15px; padding: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            display: flex; flex-direction: column; gap: 8px; border: 2px solid var(--orange);
+        }
+        .wp-menu-btn {
+            padding: 10px 15px; border-radius: 10px; font-size: 0.9rem;
+            color: white; font-weight: bold; white-space: nowrap;
         }
     </style>
 </head>
@@ -315,8 +315,12 @@
     let map, targetMarker, userMarker, connectionLine, userCoords;
     let fixedStartCoords = null; 
     let currentTargetCoords = null;
-    let waypoints = []; 
+    
+    // NYA LISTOR FÖR WAYPOINTS
+    let waypointsDit = []; 
+    let waypointsHem = []; 
     let waypointMarkers = []; 
+
     let startCoords = null;
     let currentTargetName = "MÅLET";
     let initialZoomPerformed = false; 
@@ -327,6 +331,7 @@
     let currentRouteCoords = []; 
     let ignoreClick = false; 
     let confettiInterval = null;
+    let maxStepsReached = 0;
 
     let travelMode = 0; 
     const modes = [
@@ -384,7 +389,6 @@
         map.on('click', e => { 
             if(gameState !== 'MAP') return;
             if(ignoreClick) return; 
-            
             playClickSound(); 
             currentTargetName = "Markerad plats"; 
             setTarget(e.latlng, true); 
@@ -395,12 +399,12 @@
             ignoreClick = true;
             setTimeout(() => { ignoreClick = false; }, 600);
             playClickSound();
-            waypoints.push(e.latlng);
-            const wpMarker = L.circleMarker(e.latlng, {
-                radius: 6, fillColor: "#FF9800", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8
-            }).addTo(map);
-            waypointMarkers.push(wpMarker);
-            updateMapLogic();
+
+            if (travelMode === 2) {
+                showWaypointChoiceMenu(e);
+            } else {
+                addWaypoint(e.latlng, 'dit');
+            }
         });
 
         map.on('movestart', (e) => { if (!e.hard) isTracking = false; });
@@ -408,6 +412,62 @@
         updateButtonUI();
         handleOrientationLayout();
         window.addEventListener('resize', handleOrientationLayout);
+    }
+
+    // NY FUNKTION: MENY FÖR ATT VÄLJA DIT ELLER HEM
+    function showWaypointChoiceMenu(e) {
+        const oldMenu = document.getElementById('waypoint-menu');
+        if (oldMenu) oldMenu.remove();
+
+        const menu = document.createElement('div');
+        menu.id = 'waypoint-menu';
+        // Positionera menyn vid klicket (justerat för skärmkanter)
+        menu.style.left = Math.min(window.innerWidth - 160, Math.max(10, e.containerPoint.x)) + "px";
+        menu.style.top = Math.min(window.innerHeight - 120, Math.max(10, e.containerPoint.y)) + "px";
+
+        const btnDit = document.createElement('button');
+        btnDit.className = 'wp-menu-btn';
+        btnDit.style.background = 'var(--blue)';
+        btnDit.innerText = 'På vägen dit';
+        btnDit.onclick = () => { addWaypoint(e.latlng, 'dit'); menu.remove(); };
+
+        const btnHem = document.createElement('button');
+        btnHem.className = 'wp-menu-btn';
+        btnHem.style.background = 'var(--orange)';
+        btnHem.innerText = 'På vägen tillbaka';
+        btnHem.onclick = () => { addWaypoint(e.latlng, 'hem'); menu.remove(); };
+
+        const btnCancel = document.createElement('button');
+        btnCancel.innerText = 'Avbryt';
+        btnCancel.style.fontSize = '0.7rem';
+        btnCancel.style.background = 'none';
+        btnCancel.onclick = () => menu.remove();
+
+        menu.appendChild(btnDit);
+        menu.appendChild(btnHem);
+        menu.appendChild(btnCancel);
+        document.body.appendChild(menu);
+
+        // Stäng menyn om man klickar utanför
+        setTimeout(() => {
+            const close = () => { menu.remove(); document.removeEventListener('click', close); };
+            document.addEventListener('click', close);
+        }, 100);
+    }
+
+    function addWaypoint(latlng, direction) {
+        if (direction === 'dit') {
+            waypointsDit.push(latlng);
+        } else {
+            waypointsHem.push(latlng);
+        }
+
+        const color = direction === 'dit' ? "#2196F3" : "#FF9800";
+        const wpMarker = L.circleMarker(latlng, {
+            radius: 7, fillColor: color, color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8
+        }).addTo(map);
+        waypointMarkers.push(wpMarker);
+        updateMapLogic();
     }
 
     function handlePositionUpdate(pos) {
@@ -426,10 +486,22 @@
         if (!userCoords || !currentTargetCoords) return;
         const startPoint = fixedStartCoords || userCoords;
         const mode = modes[travelMode];
+        
+        // BYGG RUTTEN RÄTT
         let pts = [`${startPoint[1]},${startPoint[0]}`];
-        waypoints.forEach(wp => pts.push(`${wp.lng},${wp.lat}`));
+        
+        // 1. Lägg till waypoints på vägen dit
+        waypointsDit.forEach(wp => pts.push(`${wp.lng},${wp.lat}`));
+        
+        // 2. Målet (Vändpunkten)
         pts.push(`${currentTargetCoords.lng},${currentTargetCoords.lat}`);
-        if (travelMode === 2) pts.push(`${startPoint[1]},${startPoint[0]}`);
+        
+        // 3. Om tur och retur: Lägg till hem-waypoints och sen startpunkten igen
+        if (travelMode === 2) {
+            waypointsHem.forEach(wp => pts.push(`${wp.lng},${wp.lat}`));
+            pts.push(`${startPoint[1]},${startPoint[0]}`);
+        }
+
         const url = `https://router.project-osrm.org/route/v1/${mode.osrm}/${pts.join(';')}?overview=full&geometries=geojson`;
         try {
             const res = await fetch(url);
@@ -457,7 +529,13 @@
 
     function setTarget(latlng, shouldSave) {
         if (userCoords) fixedStartCoords = [...userCoords];
-        waypoints = []; waypointMarkers.forEach(m => map.removeLayer(m)); waypointMarkers = [];
+        
+        // Rensa alla waypoints
+        waypointsDit = []; 
+        waypointsHem = []; 
+        waypointMarkers.forEach(m => map.removeLayer(m)); 
+        waypointMarkers = [];
+
         currentTargetCoords = latlng;
         if (targetMarker) targetMarker.setLatLng(latlng);
         else targetMarker = L.marker(latlng).addTo(map);
@@ -495,6 +573,8 @@
         if (!currentTargetCoords || !userCoords) return;
         gameState = 'GAME';
         startCoords = [...userCoords];
+        maxStepsReached = 0;
+
         const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', '');
         initialTotalKm = Math.max(1, Math.ceil(parseFloat(distStr) / modes[travelMode].factor));
         els.mapPage.classList.add('hidden');
@@ -517,15 +597,23 @@
         currentRouteCoords.forEach((c, i) => { const d = map.distance(userCoords, c); if (d < minD) { minD = d; idx = i; } });
         let traveled = 0;
         for (let i = 0; i < idx; i++) traveled += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]);
-        let steps = Math.floor((traveled / 1000) / modes[travelMode].factor);
+        
+        let currentSteps = Math.floor((traveled / 1000) / modes[travelMode].factor);
+        if (currentSteps > maxStepsReached) {
+            maxStepsReached = currentSteps;
+        }
+
         for (let i = 0; i < initialTotalKm - 1; i++) {
             const s = document.getElementById(`step-${i}`);
-            if (s) i < steps ? s.classList.add('eat-animation') : s.classList.remove('eat-animation');
+            if (s) i < maxStepsReached ? s.classList.add('eat-animation') : s.classList.remove('eat-animation');
         }
         const goal = (travelMode === 2) ? startCoords : currentTargetCoords;
-        if (map.distance(userCoords, goal) < 40 && steps > (initialTotalKm * 0.1)) {
+        
+        if (map.distance(userCoords, goal) < 40 && maxStepsReached > (initialTotalKm * 0.1)) {
             moveMouse(initialTotalKm - 1); setTimeout(finishGame, 500);
-        } else moveMouse(Math.max(0, Math.min(steps, initialTotalKm - 2)));
+        } else {
+            moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 2)));
+        }
     }
 
     function moveMouse(index) {
@@ -545,10 +633,8 @@
         gameState = 'FINISHED';
         const m = document.getElementById('the-mouse');
         m.innerHTML = '🐭🧀'; m.classList.add('victory');
-        
         createConfettiBurst(); 
         confettiInterval = setInterval(createConfettiBurst, 800); 
-        
         els.shareBtn.classList.remove('hidden');
         releaseWakeLock();
     }
@@ -568,32 +654,20 @@
     }
 
     function createConfettiBurst() {
-        // Skapa explosion från slumpmässig plats
         const startX = Math.random() * window.innerWidth;
         const startY = Math.random() * window.innerHeight;
-        
         const colors = ['#ff0000', '#ffa500', '#ffff00', '#00ff00', '#0000ff', '#800080', '#ffc0cb'];
-        
         for(let i=0; i<40; i++) {
             const c = document.createElement('div');
             c.className = 'confetti';
             c.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-            
-            // Sätt startposition
             c.style.left = startX + 'px';
             c.style.top = startY + 'px';
-            
-            // Beräkna riktning och avstånd
             const angle = Math.random() * Math.PI * 2;
-            const dist = 60 + Math.random() * 200; // Lite längre avstånd för mer "pop"
-            
-            // Sätt CSS-variabler för animationen
+            const dist = 60 + Math.random() * 200; 
             c.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
             c.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
-            
             document.body.appendChild(c);
-            
-            // Ta bort elementet efter animationen
             setTimeout(() => c.remove(), 1200);
         }
     }
