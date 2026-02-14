@@ -201,15 +201,30 @@
             display: flex; align-items: center; justify-content: center; 
         }
 
+        /* FIXAD KONFETTI */
         .confetti {
-            position: fixed; width: 8px; height: 8px;
-            z-index: 10000; pointer-events: none;
+            position: fixed; 
+            width: 10px; 
+            height: 10px;
+            z-index: 10000; 
+            pointer-events: none;
             border-radius: 50%;
-            animation: pop 1.5s ease-out forwards;
+            /* Använder cubic-bezier för en "pop"-effekt (snabb start, långsamt slut) */
+            animation: pop 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
         }
         @keyframes pop {
-            0% { transform: translate(0, 0) scale(1); opacity: 1; }
-            100% { transform: translate(var(--dx), var(--dy)) rotate(360deg) scale(0); opacity: 0; }
+            0% { 
+                transform: translate(0, 0) scale(0); 
+                opacity: 0; 
+            }
+            10% {
+                opacity: 1;
+                transform: translate(0, 0) scale(1);
+            }
+            100% { 
+                transform: translate(var(--dx), var(--dy)) rotate(720deg) scale(0.5); 
+                opacity: 0; 
+            }
         }
     </style>
 </head>
@@ -553,21 +568,33 @@
     }
 
     function createConfettiBurst() {
-        const x = Math.random() * window.innerWidth;
-        const y = Math.random() * window.innerHeight;
+        // Skapa explosion från slumpmässig plats
+        const startX = Math.random() * window.innerWidth;
+        const startY = Math.random() * window.innerHeight;
+        
         const colors = ['#ff0000', '#ffa500', '#ffff00', '#00ff00', '#0000ff', '#800080', '#ffc0cb'];
+        
         for(let i=0; i<40; i++) {
             const c = document.createElement('div');
             c.className = 'confetti';
-            c.style.left = x + 'px';
-            c.style.top = y + 'px';
             c.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            
+            // Sätt startposition
+            c.style.left = startX + 'px';
+            c.style.top = startY + 'px';
+            
+            // Beräkna riktning och avstånd
             const angle = Math.random() * Math.PI * 2;
-            const dist = 50 + Math.random() * 150;
+            const dist = 60 + Math.random() * 200; // Lite längre avstånd för mer "pop"
+            
+            // Sätt CSS-variabler för animationen
             c.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
             c.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+            
             document.body.appendChild(c);
-            setTimeout(() => c.remove(), 1500);
+            
+            // Ta bort elementet efter animationen
+            setTimeout(() => c.remove(), 1200);
         }
     }
 
