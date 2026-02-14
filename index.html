@@ -312,7 +312,7 @@
         });
     }
 
-    let map, targetMarker, userMarker, connectionLine, userCoords;
+    let map, targetMarker, userMarker, connectionLine, connectionLineReturn, userCoords;
     let fixedStartCoords = null; 
     let currentTargetCoords = null;
     
@@ -509,9 +509,34 @@
             if (data.code === 'Ok') {
                 const route = data.routes[0];
                 currentRouteCoords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+                
+                // HITTA VÄNDPUNKTEN FÖR ATT DELA LINJEN
+                let splitIndex = currentRouteCoords.length;
+                if (travelMode === 2) {
+                    let minD = Infinity;
+                    currentRouteCoords.forEach((c, i) => {
+                        const d = L.latLng(c).distanceTo(currentTargetCoords);
+                        if (d < minD) { minD = d; splitIndex = i; }
+                    });
+                }
+
+                const coordsDit = currentRouteCoords.slice(0, splitIndex + 1);
+                const coordsRetur = currentRouteCoords.slice(splitIndex);
+
+                // RITA VÄGEN DIT (BLÅ)
+                if (connectionLine) connectionLine.setLatLngs(coordsDit);
+                else connectionLine = L.polyline(coordsDit, {color: '#007bff', weight: 4, opacity: 0.7}).addTo(map);
+
+                // RITA VÄGEN TILLBAKA (ORANGE) OM TUR OCH RETUR
+                if (travelMode === 2) {
+                    if (connectionLineReturn) connectionLineReturn.setLatLngs(coordsRetur);
+                    else connectionLineReturn = L.polyline(coordsRetur, {color: '#FF9800', weight: 4, opacity: 0.7}).addTo(map);
+                } else if (connectionLineReturn) {
+                    map.removeLayer(connectionLineReturn);
+                    connectionLineReturn = null;
+                }
+
                 const distKm = route.distance / 1000;
-                if (connectionLine) connectionLine.setLatLngs(currentRouteCoords);
-                else connectionLine = L.polyline(currentRouteCoords, {color: '#007bff', weight: 4, opacity: 0.6}).addTo(map);
                 els.distInfo.innerHTML = `<b>${distKm.toFixed(2)} km</b> till ${currentTargetName}`;
                 els.startBtn.classList.remove('hidden');
             } else { fallbackDist(); }
@@ -522,7 +547,20 @@
         const startPoint = fixedStartCoords || userCoords;
         const d = map.distance(startPoint, currentTargetCoords) / 1000;
         const total = d * (travelMode === 2 ? 2 : 1);
-        currentRouteCoords = [[startPoint[0], startPoint[1]], [currentTargetCoords.lat, currentTargetCoords.lng]];
+        
+        const coordsDit = [[startPoint[0], startPoint[1]], [currentTargetCoords.lat, currentTargetCoords.lng]];
+        if (connectionLine) connectionLine.setLatLngs(coordsDit);
+        else connectionLine = L.polyline(coordsDit, {color: '#007bff', weight: 4, opacity: 0.7}).addTo(map);
+
+        if (travelMode === 2) {
+            const coordsRetur = [[currentTargetCoords.lat, currentTargetCoords.lng], [startPoint[0], startPoint[1]]];
+            if (connectionLineReturn) connectionLineReturn.setLatLngs(coordsRetur);
+            else connectionLineReturn = L.polyline(coordsRetur, {color: '#FF9800', weight: 4, opacity: 0.7}).addTo(map);
+        } else if (connectionLineReturn) {
+            map.removeLayer(connectionLineReturn);
+            connectionLineReturn = null;
+        }
+
         els.distInfo.innerHTML = `<b>${total.toFixed(2)} km</b> (fågelvägen)`;
         els.startBtn.classList.remove('hidden');
     }
@@ -530,11 +568,13 @@
     function setTarget(latlng, shouldSave) {
         if (userCoords) fixedStartCoords = [...userCoords];
         
-        // Rensa alla waypoints
+        // RENSA ALLA WAYPOINTS OCH LINJER
         waypointsDit = []; 
         waypointsHem = []; 
         waypointMarkers.forEach(m => map.removeLayer(m)); 
         waypointMarkers = [];
+        if (connectionLine) { map.removeLayer(connectionLine); connectionLine = null; }
+        if (connectionLineReturn) { map.removeLayer(connectionLineReturn); connectionLineReturn = null; }
 
         currentTargetCoords = latlng;
         if (targetMarker) targetMarker.setLatLng(latlng);
