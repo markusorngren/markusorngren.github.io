@@ -608,7 +608,10 @@
         }
         let minD = Infinity;
         let idx = lastRouteIndex;
-        let searchLimit = hasReachedMidpoint ? currentRouteCoords.length : Math.floor(currentRouteCoords.length * 0.6); 
+        
+        // HÄR ÄR ÄNDRINGEN FÖR ATT TILLÅTA HELA RUTTEN PÅ ENKELRESOR
+        let searchLimit = (travelMode !== 2 || hasReachedMidpoint) ? currentRouteCoords.length : Math.floor(currentRouteCoords.length * 0.6); 
+
         for (let i = lastRouteIndex; i < searchLimit; i++) {
             const d = map.distance(userCoords, currentRouteCoords[i]);
             if (d < minD) { minD = d; idx = i; }
@@ -631,7 +634,10 @@
             } else { moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 2))); }
         } else {
             if (distToFinal < 40) { moveMouse(initialTotalKm - 1); setTimeout(finishGame, 500); } 
-            else { moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 2))); }
+            else { 
+                // HÄR ÄR ÄNDRINGEN FÖR JÄMNARE ÄTANDE PÅ SLUTET
+                moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 1))); 
+            }
         }
     }
 
