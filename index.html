@@ -183,6 +183,17 @@
         .step { font-size: 1.4rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; transition: all 0.5s ease; }
         
         @keyframes mouseWobble { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } }
+        
+        /* SEGERSDANS-ANIMATION FÖR VÄNDPUNKTEN */
+        @keyframes turnWiggle {
+            0% { transform: scale(1.1) rotate(0deg); }
+            25% { transform: scale(1.3) rotate(-20deg); }
+            50% { transform: scale(1.1) rotate(0deg); }
+            75% { transform: scale(1.3) rotate(20deg); }
+            100% { transform: scale(1.1) rotate(0deg); }
+        }
+        .turn-dance { animation: turnWiggle 0.6s infinite ease-in-out !important; }
+
         #the-mouse { position: absolute; font-size: 1.8rem; transition: all 0.8s ease-in-out; z-index: 100; margin-top: -12px; margin-left: -8px; pointer-events: none; animation: mouseWobble 1s infinite ease-in-out; }
         .eat-animation { transform: scale(0.6) !important; opacity: 0.3 !important; }
 
@@ -216,7 +227,6 @@
             100% { transform: translate(var(--dx), var(--dy)) rotate(720deg) scale(0.5); opacity: 0; }
         }
 
-        /* NY STIL FÖR WAYPOINT-VAL */
         #waypoint-menu {
             position: fixed; z-index: 10001; background: white; 
             border-radius: 15px; padding: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.3);
@@ -315,8 +325,6 @@
     let map, targetMarker, userMarker, connectionLine, connectionLineReturn, userCoords;
     let fixedStartCoords = null; 
     let currentTargetCoords = null;
-    
-    // NYA LISTOR FÖR WAYPOINTS
     let waypointsDit = []; 
     let waypointsHem = []; 
     let waypointMarkers = []; 
@@ -331,7 +339,12 @@
     let currentRouteCoords = []; 
     let ignoreClick = false; 
     let confettiInterval = null;
+    
     let maxStepsReached = 0;
+    let lastRouteIndex = 0; 
+    let hasReachedMidpoint = false; 
+    let midpointStepIndex = -1; 
+    let isCelebratingTurn = false; 
 
     let travelMode = 0; 
     const modes = [
@@ -399,12 +412,7 @@
             ignoreClick = true;
             setTimeout(() => { ignoreClick = false; }, 600);
             playClickSound();
-
-            if (travelMode === 2) {
-                showWaypointChoiceMenu(e);
-            } else {
-                addWaypoint(e.latlng, 'dit');
-            }
+            if (travelMode === 2) { showWaypointChoiceMenu(e); } else { addWaypoint(e.latlng, 'dit'); }
         });
 
         map.on('movestart', (e) => { if (!e.hard) isTracking = false; });
@@ -414,58 +422,31 @@
         window.addEventListener('resize', handleOrientationLayout);
     }
 
-    // NY FUNKTION: MENY FÖR ATT VÄLJA DIT ELLER HEM
     function showWaypointChoiceMenu(e) {
         const oldMenu = document.getElementById('waypoint-menu');
         if (oldMenu) oldMenu.remove();
-
         const menu = document.createElement('div');
         menu.id = 'waypoint-menu';
-        // Positionera menyn vid klicket (justerat för skärmkanter)
         menu.style.left = Math.min(window.innerWidth - 160, Math.max(10, e.containerPoint.x)) + "px";
         menu.style.top = Math.min(window.innerHeight - 120, Math.max(10, e.containerPoint.y)) + "px";
-
         const btnDit = document.createElement('button');
-        btnDit.className = 'wp-menu-btn';
-        btnDit.style.background = 'var(--blue)';
-        btnDit.innerText = 'På vägen dit';
+        btnDit.className = 'wp-menu-btn'; btnDit.style.background = 'var(--blue)'; btnDit.innerText = 'På vägen dit';
         btnDit.onclick = () => { addWaypoint(e.latlng, 'dit'); menu.remove(); };
-
         const btnHem = document.createElement('button');
-        btnHem.className = 'wp-menu-btn';
-        btnHem.style.background = 'var(--orange)';
-        btnHem.innerText = 'På vägen tillbaka';
+        btnHem.className = 'wp-menu-btn'; btnHem.style.background = 'var(--orange)'; btnHem.innerText = 'På vägen tillbaka';
         btnHem.onclick = () => { addWaypoint(e.latlng, 'hem'); menu.remove(); };
-
         const btnCancel = document.createElement('button');
-        btnCancel.innerText = 'Avbryt';
-        btnCancel.style.fontSize = '0.7rem';
-        btnCancel.style.background = 'none';
+        btnCancel.innerText = 'Avbryt'; btnCancel.style.fontSize = '0.7rem'; btnCancel.style.background = 'none';
         btnCancel.onclick = () => menu.remove();
-
-        menu.appendChild(btnDit);
-        menu.appendChild(btnHem);
-        menu.appendChild(btnCancel);
+        menu.appendChild(btnDit); menu.appendChild(btnHem); menu.appendChild(btnCancel);
         document.body.appendChild(menu);
-
-        // Stäng menyn om man klickar utanför
-        setTimeout(() => {
-            const close = () => { menu.remove(); document.removeEventListener('click', close); };
-            document.addEventListener('click', close);
-        }, 100);
+        setTimeout(() => { const close = () => { menu.remove(); document.removeEventListener('click', close); }; document.addEventListener('click', close); }, 100);
     }
 
     function addWaypoint(latlng, direction) {
-        if (direction === 'dit') {
-            waypointsDit.push(latlng);
-        } else {
-            waypointsHem.push(latlng);
-        }
-
+        if (direction === 'dit') { waypointsDit.push(latlng); } else { waypointsHem.push(latlng); }
         const color = direction === 'dit' ? "#2196F3" : "#FF9800";
-        const wpMarker = L.circleMarker(latlng, {
-            radius: 7, fillColor: color, color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8
-        }).addTo(map);
+        const wpMarker = L.circleMarker(latlng, { radius: 7, fillColor: color, color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
         waypointMarkers.push(wpMarker);
         updateMapLogic();
     }
@@ -486,22 +467,13 @@
         if (!userCoords || !currentTargetCoords) return;
         const startPoint = fixedStartCoords || userCoords;
         const mode = modes[travelMode];
-        
-        // BYGG RUTTEN RÄTT
         let pts = [`${startPoint[1]},${startPoint[0]}`];
-        
-        // 1. Lägg till waypoints på vägen dit
         waypointsDit.forEach(wp => pts.push(`${wp.lng},${wp.lat}`));
-        
-        // 2. Målet (Vändpunkten)
         pts.push(`${currentTargetCoords.lng},${currentTargetCoords.lat}`);
-        
-        // 3. Om tur och retur: Lägg till hem-waypoints och sen startpunkten igen
         if (travelMode === 2) {
             waypointsHem.forEach(wp => pts.push(`${wp.lng},${wp.lat}`));
             pts.push(`${startPoint[1]},${startPoint[0]}`);
         }
-
         const url = `https://router.project-osrm.org/route/v1/${mode.osrm}/${pts.join(';')}?overview=full&geometries=geojson`;
         try {
             const res = await fetch(url);
@@ -509,8 +481,6 @@
             if (data.code === 'Ok') {
                 const route = data.routes[0];
                 currentRouteCoords = route.geometry.coordinates.map(c => [c[1], c[0]]);
-                
-                // HITTA VÄNDPUNKTEN FÖR ATT DELA LINJEN
                 let splitIndex = currentRouteCoords.length;
                 if (travelMode === 2) {
                     let minD = Infinity;
@@ -519,23 +489,14 @@
                         if (d < minD) { minD = d; splitIndex = i; }
                     });
                 }
-
                 const coordsDit = currentRouteCoords.slice(0, splitIndex + 1);
                 const coordsRetur = currentRouteCoords.slice(splitIndex);
-
-                // RITA VÄGEN DIT (BLÅ)
                 if (connectionLine) connectionLine.setLatLngs(coordsDit);
                 else connectionLine = L.polyline(coordsDit, {color: '#007bff', weight: 4, opacity: 0.7}).addTo(map);
-
-                // RITA VÄGEN TILLBAKA (ORANGE) OM TUR OCH RETUR
                 if (travelMode === 2) {
                     if (connectionLineReturn) connectionLineReturn.setLatLngs(coordsRetur);
                     else connectionLineReturn = L.polyline(coordsRetur, {color: '#FF9800', weight: 4, opacity: 0.7}).addTo(map);
-                } else if (connectionLineReturn) {
-                    map.removeLayer(connectionLineReturn);
-                    connectionLineReturn = null;
-                }
-
+                } else if (connectionLineReturn) { map.removeLayer(connectionLineReturn); connectionLineReturn = null; }
                 const distKm = route.distance / 1000;
                 els.distInfo.innerHTML = `<b>${distKm.toFixed(2)} km</b> till ${currentTargetName}`;
                 els.startBtn.classList.remove('hidden');
@@ -547,41 +508,28 @@
         const startPoint = fixedStartCoords || userCoords;
         const d = map.distance(startPoint, currentTargetCoords) / 1000;
         const total = d * (travelMode === 2 ? 2 : 1);
-        
         const coordsDit = [[startPoint[0], startPoint[1]], [currentTargetCoords.lat, currentTargetCoords.lng]];
         if (connectionLine) connectionLine.setLatLngs(coordsDit);
         else connectionLine = L.polyline(coordsDit, {color: '#007bff', weight: 4, opacity: 0.7}).addTo(map);
-
         if (travelMode === 2) {
             const coordsRetur = [[currentTargetCoords.lat, currentTargetCoords.lng], [startPoint[0], startPoint[1]]];
             if (connectionLineReturn) connectionLineReturn.setLatLngs(coordsRetur);
             else connectionLineReturn = L.polyline(coordsRetur, {color: '#FF9800', weight: 4, opacity: 0.7}).addTo(map);
-        } else if (connectionLineReturn) {
-            map.removeLayer(connectionLineReturn);
-            connectionLineReturn = null;
-        }
-
+        } else if (connectionLineReturn) { map.removeLayer(connectionLineReturn); connectionLineReturn = null; }
         els.distInfo.innerHTML = `<b>${total.toFixed(2)} km</b> (fågelvägen)`;
         els.startBtn.classList.remove('hidden');
     }
 
     function setTarget(latlng, shouldSave) {
         if (userCoords) fixedStartCoords = [...userCoords];
-        
-        // RENSA ALLA WAYPOINTS OCH LINJER
-        waypointsDit = []; 
-        waypointsHem = []; 
-        waypointMarkers.forEach(m => map.removeLayer(m)); 
-        waypointMarkers = [];
+        waypointsDit = []; waypointsHem = []; waypointMarkers.forEach(m => map.removeLayer(m)); waypointMarkers = [];
         if (connectionLine) { map.removeLayer(connectionLine); connectionLine = null; }
         if (connectionLineReturn) { map.removeLayer(connectionLineReturn); connectionLineReturn = null; }
-
         currentTargetCoords = latlng;
         if (targetMarker) targetMarker.setLatLng(latlng);
         else targetMarker = L.marker(latlng).addTo(map);
         if (shouldSave) localStorage.setItem('mouse_last_target', JSON.stringify({coords: latlng, name: currentTargetName, timestamp: Date.now()}));
-        updateMapLogic();
-        updateLocateBtnText();
+        updateMapLogic(); updateLocateBtnText();
     }
 
     function zoomToUser() { if (userCoords) map.flyTo(userCoords, 18); }
@@ -593,9 +541,7 @@
     function updateLocateBtnText() { els.locateBtn.innerHTML = (!currentTargetCoords || isShowingUser) ? "🎯 HITTA MEJ" : `🏁 ${currentTargetName.toUpperCase()}`; }
     function toggleTravelMode() { travelMode = (travelMode + 1) % modes.length; els.modeBtn.innerText = modes[travelMode].icon; updateMapLogic(); }
     
-    async function requestWakeLock() {
-        try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
-    }
+    async function requestWakeLock() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} }
     function releaseWakeLock() { if (wakeLock !== null) wakeLock.release().then(() => { wakeLock = null; }); }
 
     function startVoiceSearch() {
@@ -614,46 +560,98 @@
         gameState = 'GAME';
         startCoords = [...userCoords];
         maxStepsReached = 0;
-
+        lastRouteIndex = 0;
+        hasReachedMidpoint = false;
+        midpointStepIndex = -1;
+        isCelebratingTurn = false;
         const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', '');
-        initialTotalKm = Math.max(1, Math.ceil(parseFloat(distStr) / modes[travelMode].factor));
+        const totalDistanceKm = parseFloat(distStr);
+        initialTotalKm = Math.max(1, Math.ceil(totalDistanceKm / modes[travelMode].factor));
         els.mapPage.classList.add('hidden');
         els.gamePage.classList.remove('hidden');
         els.shareBtn.classList.add('hidden');
         requestWakeLock();
         els.pathGrid.innerHTML = '<div id="the-mouse">🐭</div>';
+        if (travelMode === 2 && currentRouteCoords.length > 0) {
+            let distToTarget = 0;
+            let splitIndex = 0;
+            let minD = Infinity;
+            currentRouteCoords.forEach((c, i) => {
+                const d = L.latLng(c).distanceTo(currentTargetCoords);
+                if (d < minD) { minD = d; splitIndex = i; }
+            });
+            for (let i = 0; i < splitIndex; i++) {
+                distToTarget += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]);
+            }
+            midpointStepIndex = Math.floor((distToTarget / 1000) / modes[travelMode].factor);
+        }
         for (let i = 0; i < initialTotalKm; i++) {
             const step = document.createElement('div');
             step.className = 'step'; step.id = `step-${i}`;
-            step.innerHTML = (i === initialTotalKm - 1) ? '🧀' : '🍎';
+            if (i === initialTotalKm - 1) {
+                step.innerHTML = '🧀'; // Osten vid slutet
+            } else if (i === midpointStepIndex) {
+                step.innerHTML = '🧀'; // Osten vid vändpunkten
+            } else {
+                step.innerHTML = '🍎';
+            }
             els.pathGrid.appendChild(step);
         }
         setTimeout(() => moveMouse(0), 100);
     }
 
     function updateGameLogic() {
-        if (gameState !== 'GAME' || !currentRouteCoords.length) return;
-        let minD = Infinity, idx = 0;
-        currentRouteCoords.forEach((c, i) => { const d = map.distance(userCoords, c); if (d < minD) { minD = d; idx = i; } });
-        let traveled = 0;
-        for (let i = 0; i < idx; i++) traveled += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]);
-        
-        let currentSteps = Math.floor((traveled / 1000) / modes[travelMode].factor);
-        if (currentSteps > maxStepsReached) {
-            maxStepsReached = currentSteps;
+        if (gameState !== 'GAME' || !currentRouteCoords.length || isCelebratingTurn) return;
+        if (!hasReachedMidpoint && travelMode === 2) {
+            const distToTarget = map.distance(userCoords, currentTargetCoords);
+            if (distToTarget < 40) { triggerTurnAroundDance(); return; }
         }
-
+        let minD = Infinity;
+        let idx = lastRouteIndex;
+        let searchLimit = hasReachedMidpoint ? currentRouteCoords.length : Math.floor(currentRouteCoords.length * 0.6); 
+        for (let i = lastRouteIndex; i < searchLimit; i++) {
+            const d = map.distance(userCoords, currentRouteCoords[i]);
+            if (d < minD) { minD = d; idx = i; }
+        }
+        lastRouteIndex = idx;
+        let traveled = 0;
+        for (let i = 0; i < idx; i++) { traveled += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]); }
+        let currentSteps = Math.floor((traveled / 1000) / modes[travelMode].factor);
+        if (!hasReachedMidpoint && travelMode === 2 && currentSteps > midpointStepIndex) { currentSteps = midpointStepIndex; }
+        if (currentSteps > maxStepsReached) { maxStepsReached = currentSteps; }
         for (let i = 0; i < initialTotalKm - 1; i++) {
             const s = document.getElementById(`step-${i}`);
             if (s) i < maxStepsReached ? s.classList.add('eat-animation') : s.classList.remove('eat-animation');
         }
         const goal = (travelMode === 2) ? startCoords : currentTargetCoords;
-        
-        if (map.distance(userCoords, goal) < 40 && maxStepsReached > (initialTotalKm * 0.1)) {
-            moveMouse(initialTotalKm - 1); setTimeout(finishGame, 500);
+        const distToFinal = map.distance(userCoords, goal);
+        if (travelMode === 2) {
+            if (hasReachedMidpoint && distToFinal < 40 && maxStepsReached > (initialTotalKm * 0.8)) {
+                moveMouse(initialTotalKm - 1); setTimeout(finishGame, 500);
+            } else { moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 2))); }
         } else {
-            moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 2)));
+            if (distToFinal < 40) { moveMouse(initialTotalKm - 1); setTimeout(finishGame, 500); } 
+            else { moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 2))); }
         }
+    }
+
+    function triggerTurnAroundDance() {
+        if (isCelebratingTurn) return;
+        isCelebratingTurn = true;
+        moveMouse(midpointStepIndex);
+        const step = document.getElementById(`step-${midpointStepIndex}`);
+        if(step) step.classList.add('eat-animation');
+        const m = document.getElementById('the-mouse');
+        m.innerHTML = '🐭🧀';
+        m.classList.add('turn-dance');
+        playClickSound();
+        setTimeout(() => {
+            m.classList.remove('turn-dance');
+            m.innerHTML = '🐭';
+            hasReachedMidpoint = true; 
+            isCelebratingTurn = false; 
+            maxStepsReached = midpointStepIndex + 1;
+        }, 3000);
     }
 
     function moveMouse(index) {
@@ -684,7 +682,7 @@
         fixedStartCoords = null;
         clearInterval(confettiInterval);
         const m = document.getElementById('the-mouse');
-        m.classList.remove('victory');
+        m.classList.remove('victory'); m.classList.remove('turn-dance');
         m.innerHTML = '🐭';
         document.querySelectorAll('.confetti').forEach(c => c.remove());
         els.gamePage.classList.add('hidden'); 
@@ -701,8 +699,7 @@
             const c = document.createElement('div');
             c.className = 'confetti';
             c.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-            c.style.left = startX + 'px';
-            c.style.top = startY + 'px';
+            c.style.left = startX + 'px'; c.style.top = startY + 'px';
             const angle = Math.random() * Math.PI * 2;
             const dist = 60 + Math.random() * 200; 
             c.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
@@ -731,8 +728,7 @@
             const btn = document.getElementById(`btn-${i}`);
             const span = btn.querySelector('.scrolling-text');
             const textContent = loc ? loc.name : "SPARA " + (i + 1);
-            span.innerText = textContent;
-            span.classList.remove('animate-scroll');
+            span.innerText = textContent; span.classList.remove('animate-scroll');
             if (span.scrollWidth > btn.querySelector('.btn-text-container').offsetWidth) {
                 span.innerText = textContent + " \u00A0\u00A0\u00A0 " + textContent + " \u00A0\u00A0\u00A0 ";
                 span.classList.add('animate-scroll');
