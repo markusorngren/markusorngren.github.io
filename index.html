@@ -379,8 +379,48 @@
         actionContainer: document.querySelector('.action-container')
     };
 
+    // --- NY LOGIK FÖR INSTALLATIONS- OCH WEBBLÄSAR-CHECK ---
+    function checkInstallState() {
+        const ua = navigator.userAgent;
+        const isIos = /iphone|ipad|ipod/.test(ua.toLowerCase());
+        const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+        // Kollar efter in-app browsers som Messenger, Facebook, Instagram
+        const isInApp = /FBAN|FBAV|Instagram|Messenger/i.test(ua);
+
+        // 1. Hantera In-App browsers (Varna användaren)
+        if (isInApp) {
+            if (els.distInfo) {
+                els.distInfo.innerHTML = "⚠️ Öppna i Safari/Chrome för att spara appen!";
+                els.distInfo.style.color = "#d32f2f"; // Röd text
+            }
+            return; // Visa inte install-prompt om vi är i in-app
+        }
+
+        // 2. Hantera iOS (Visa installations-rutan om inte redan installerad)
+        if (isIos && !isStandalone) {
+            setTimeout(() => {
+                const iosPrompt = document.getElementById('ios-install-prompt');
+                if (iosPrompt) iosPrompt.classList.remove('hidden');
+            }, 3000); // Vänta 3 sek så den inte krockar med välkomsttexten
+        }
+    }
+
+    // 3. Hantera Android (Install prompt)
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        // Vi preventar inte default helt här för vi vill att Chrome ska visa sin "Lägg till på hemskärmen"-infobar
+        // Men vi sparar eventet ifall vi vill använda det senare.
+        console.log("Android install prompt detected");
+        deferredPrompt = e;
+        // Om du vill tvinga fram en egen knapp kan du göra det här, men standardbeteendet brukar vara bäst.
+    });
+
     function initMap() {
         if(sessionStorage.getItem('introSeen')) els.welcomeOverlay.classList.add('hidden');
+        
+        // Kör installationskollen
+        checkInstallState();
+
         map = L.map('map', { zoomControl: false, attributionControl: false }).setView([59.3, 14.1], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
