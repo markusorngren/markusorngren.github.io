@@ -184,7 +184,6 @@
         
         @keyframes mouseWobble { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } }
         
-        /* SEGERSDANS-ANIMATION FÖR VÄNDPUNKTEN */
         @keyframes turnWiggle {
             0% { transform: scale(1.1) rotate(0deg); }
             25% { transform: scale(1.3) rotate(-20deg); }
@@ -353,25 +352,6 @@
         { icon: '🚶↔️', factor: 0.1, osrm: 'foot' } 
     ];
 
-    // Hämta sparad session (3 timmar = 10800000 ms)
-    let sessionRaw = JSON.parse(localStorage.getItem('mouse_session'));
-    let lastTarget = null;
-
-    if (sessionRaw && (Date.now() - sessionRaw.timestamp < 10800000)) {
-        lastTarget = sessionRaw.target;
-        travelMode = sessionRaw.travelMode || 0;
-        waypointsDit = sessionRaw.waypointsDit || [];
-        waypointsHem = sessionRaw.waypointsHem || [];
-        setTimeout(() => { const mb = document.getElementById('mode-btn'); if (mb) mb.innerText = modes[travelMode].icon; }, 10);
-    } else {
-        // Rensar gammal data om den är äldre än 3 timmar
-        localStorage.removeItem('mouse_session'); 
-    }
-
-    let audioCtx;
-    let gameState = 'MAP';
-    let initialTotalKm = 0;
-
     const els = {
         distInfo: document.getElementById('dist-info'),
         startBtn: document.getElementById('start-btn'),
@@ -387,6 +367,23 @@
         modeBtn: document.getElementById('mode-btn'),
         actionContainer: document.querySelector('.action-container')
     };
+
+    // Hämta sparad session
+    let sessionRaw = JSON.parse(localStorage.getItem('mouse_session'));
+    let lastTarget = null;
+
+    if (sessionRaw && (Date.now() - sessionRaw.timestamp < 10800000)) {
+        lastTarget = sessionRaw.target;
+        travelMode = sessionRaw.travelMode || 0;
+        waypointsDit = sessionRaw.waypointsDit || [];
+        waypointsHem = sessionRaw.waypointsHem || [];
+        // Göm välkomstrutan om sessionen är giltig
+        els.welcomeOverlay.classList.add('hidden');
+    }
+
+    let audioCtx;
+    let gameState = 'MAP';
+    let initialTotalKm = 0;
 
     function checkInstallState() {
         const ua = navigator.userAgent;
@@ -410,15 +407,7 @@
         }
     }
 
-    let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', (e) => {
-        console.log("Android install prompt detected");
-        deferredPrompt = e;
-    });
-
     function initMap() {
-        if(sessionStorage.getItem('introSeen')) els.welcomeOverlay.classList.add('hidden');
-        
         checkInstallState();
 
         map = L.map('map', { zoomControl: false, attributionControl: false }).setView([59.3, 14.1], 5);
@@ -426,23 +415,23 @@
 
         if (lastTarget) {
             currentTargetName = lastTarget.name || "Mål";
-            setTarget(lastTarget.coords, false);
+            setTarget(lastTarget.coords, false, false);
             map.setView(lastTarget.coords, 14); 
             initialZoomPerformed = true;
+            
+            waypointsDit.forEach(wp => {
+                const m = L.circleMarker(wp, { radius: 7, fillColor: "#2196F3", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
+                m.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); removeWaypoint(m, wp); });
+                waypointMarkers.push(m);
+            });
+            waypointsHem.forEach(wp => {
+                const m = L.circleMarker(wp, { radius: 7, fillColor: "#FF9800", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
+                m.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); removeWaypoint(m, wp); });
+                waypointMarkers.push(m);
+            });
+            if (els.modeBtn) els.modeBtn.innerText = modes[travelMode].icon;
+            updateMapLogic();
         }
-
-        // Återskapa waypoint-markörer från sessionen
-        waypointsDit.forEach(wp => {
-            const m = L.circleMarker(wp, { radius: 7, fillColor: "#2196F3", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
-            m.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); removeWaypoint(m, wp); });
-            waypointMarkers.push(m);
-        });
-
-        waypointsHem.forEach(wp => {
-            const m = L.circleMarker(wp, { radius: 7, fillColor: "#FF9800", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
-            m.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); removeWaypoint(m, wp); });
-            waypointMarkers.push(m);
-        });
 
         if (navigator.geolocation) {
             navigator.geolocation.watchPosition(handlePositionUpdate, null, { 
@@ -457,7 +446,7 @@
             if(ignoreClick) return; 
             playClickSound(); 
             currentTargetName = "Markerad plats"; 
-            setTarget(e.latlng, true); 
+            setTarget(e.latlng, true, true);
         });
 
         map.on('contextmenu', e => {
@@ -475,29 +464,25 @@
         window.addEventListener('resize', handleOrientationLayout);
     }
 
-    // --- NYA FUNKTIONER FÖR ATT SPARA OCH TA BORT ---
     function saveSession() {
         const sessionData = {
-            target: currentTargetCoords ? { coords: currentTargetCoords, name: currentTargetName } : null,
+            target: currentTargetCoords ? { coords: {lat: currentTargetCoords.lat, lng: currentTargetCoords.lng}, name: currentTargetName } : null,
             travelMode: travelMode,
-            waypointsDit: waypointsDit,
-            waypointsHem: waypointsHem,
+            waypointsDit: waypointsDit.map(wp => ({lat: wp.lat, lng: wp.lng})),
+            waypointsHem: waypointsHem.map(wp => ({lat: wp.lat, lng: wp.lng})),
             timestamp: Date.now()
         };
         localStorage.setItem('mouse_session', JSON.stringify(sessionData));
     }
 
     function removeWaypoint(marker, latlng) {
-        playClickSound(); // Spelar upp klickljudet
-        
+        playClickSound();
         let index = waypointsDit.findIndex(wp => wp.lat === latlng.lat && wp.lng === latlng.lng);
-        if (index !== -1) {
-            waypointsDit.splice(index, 1);
-        } else {
+        if (index !== -1) { waypointsDit.splice(index, 1); } 
+        else {
             index = waypointsHem.findIndex(wp => wp.lat === latlng.lat && wp.lng === latlng.lng);
             if (index !== -1) waypointsHem.splice(index, 1);
         }
-
         map.removeLayer(marker);
         waypointMarkers = waypointMarkers.filter(m => m !== marker);
         updateMapLogic();
@@ -528,15 +513,11 @@
     function addWaypoint(latlng, direction) {
         if (direction === 'dit') { waypointsDit.push(latlng); } else { waypointsHem.push(latlng); }
         const color = direction === 'dit' ? "#2196F3" : "#FF9800";
-        
         const wpMarker = L.circleMarker(latlng, { radius: 7, fillColor: color, color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
-        
-        // Lyssna på långtryck/högerklick för att ta bort
         wpMarker.on('contextmenu', (e) => {
             L.DomEvent.stopPropagation(e);
             removeWaypoint(wpMarker, latlng);
         });
-
         waypointMarkers.push(wpMarker);
         updateMapLogic();
         saveSession();
@@ -611,21 +592,18 @@
         els.startBtn.classList.remove('hidden');
     }
 
-    function setTarget(latlng, shouldSave) {
+    function setTarget(latlng, shouldSave, clearWaypoints = true) {
         if (userCoords) fixedStartCoords = [...userCoords];
-        
-        // Rensa gamla waypoints när ett helt nytt mål sätts
-        waypointsDit = []; waypointsHem = []; 
-        waypointMarkers.forEach(m => map.removeLayer(m)); 
-        waypointMarkers = [];
-        
+        if (clearWaypoints) {
+            waypointsDit = []; waypointsHem = []; 
+            waypointMarkers.forEach(m => map.removeLayer(m)); 
+            waypointMarkers = [];
+        }
         if (connectionLine) { map.removeLayer(connectionLine); connectionLine = null; }
         if (connectionLineReturn) { map.removeLayer(connectionLineReturn); connectionLineReturn = null; }
-        
         currentTargetCoords = latlng;
         if (targetMarker) targetMarker.setLatLng(latlng);
         else targetMarker = L.marker(latlng).addTo(map);
-        
         if (shouldSave) saveSession();
         updateMapLogic(); updateLocateBtnText();
     }
@@ -637,14 +615,7 @@
         updateLocateBtnText();
     }
     function updateLocateBtnText() { els.locateBtn.innerHTML = (!currentTargetCoords || isShowingUser) ? "🎯 HITTA MEJ" : `🏁 ${currentTargetName.toUpperCase()}`; }
-    
-    function toggleTravelMode() { 
-        travelMode = (travelMode + 1) % modes.length; 
-        els.modeBtn.innerText = modes[travelMode].icon; 
-        updateMapLogic(); 
-        saveSession(); 
-    }
-    
+    function toggleTravelMode() { travelMode = (travelMode + 1) % modes.length; els.modeBtn.innerText = modes[travelMode].icon; updateMapLogic(); saveSession(); }
     async function requestWakeLock() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} }
     function releaseWakeLock() { if (wakeLock !== null) wakeLock.release().then(() => { wakeLock = null; }); }
 
@@ -692,13 +663,9 @@
         for (let i = 0; i < initialTotalKm; i++) {
             const step = document.createElement('div');
             step.className = 'step'; step.id = `step-${i}`;
-            if (i === initialTotalKm - 1) {
-                step.innerHTML = '🧀'; // Osten vid slutet
-            } else if (i === midpointStepIndex) {
-                step.innerHTML = '🧀'; // Osten vid vändpunkten
-            } else {
-                step.innerHTML = '🍎';
-            }
+            if (i === initialTotalKm - 1) { step.innerHTML = '🧀'; } 
+            else if (i === midpointStepIndex) { step.innerHTML = '🧀'; } 
+            else { step.innerHTML = '🍎'; }
             els.pathGrid.appendChild(step);
         }
         setTimeout(() => moveMouse(0), 100);
@@ -712,9 +679,7 @@
         }
         let minD = Infinity;
         let idx = lastRouteIndex;
-        
         let searchLimit = (travelMode !== 2 || hasReachedMidpoint) ? currentRouteCoords.length : Math.floor(currentRouteCoords.length * 0.6); 
-
         for (let i = lastRouteIndex; i < searchLimit; i++) {
             const d = map.distance(userCoords, currentRouteCoords[i]);
             if (d < minD) { minD = d; idx = i; }
@@ -737,9 +702,7 @@
             } else { moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 2))); }
         } else {
             if (distToFinal < 40) { moveMouse(initialTotalKm - 1); setTimeout(finishGame, 500); } 
-            else { 
-                moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 1))); 
-            }
+            else { moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 1))); }
         }
     }
 
@@ -750,15 +713,11 @@
         const step = document.getElementById(`step-${midpointStepIndex}`);
         if(step) step.classList.add('eat-animation');
         const m = document.getElementById('the-mouse');
-        m.innerHTML = '🐭🧀';
-        m.classList.add('turn-dance');
+        m.innerHTML = '🐭🧀'; m.classList.add('turn-dance');
         playClickSound();
         setTimeout(() => {
-            m.classList.remove('turn-dance');
-            m.innerHTML = '🐭';
-            hasReachedMidpoint = true; 
-            isCelebratingTurn = false; 
-            maxStepsReached = midpointStepIndex + 1;
+            m.classList.remove('turn-dance'); m.innerHTML = '🐭';
+            hasReachedMidpoint = true; isCelebratingTurn = false; maxStepsReached = midpointStepIndex + 1;
         }, 3000);
     }
 
@@ -767,8 +726,7 @@
         const s = document.getElementById(`step-${index}`);
         const container = els.pathGrid;
         if (s && container) { 
-            m.style.left = s.offsetLeft + "px"; 
-            m.style.top = s.offsetTop + "px"; 
+            m.style.left = s.offsetLeft + "px"; m.style.top = s.offsetTop + "px"; 
             let targetScroll = (s.offsetTop + (s.offsetHeight * 2.5)) - container.clientHeight;
             if (targetScroll > 0) container.scrollTo({ top: targetScroll, behavior: 'smooth' });
         }
@@ -786,17 +744,12 @@
     }
 
     function stopGame() { 
-        gameState = 'MAP'; 
-        fixedStartCoords = null;
-        clearInterval(confettiInterval);
+        gameState = 'MAP'; fixedStartCoords = null; clearInterval(confettiInterval);
         const m = document.getElementById('the-mouse');
-        m.classList.remove('victory'); m.classList.remove('turn-dance');
-        m.innerHTML = '🐭';
+        m.classList.remove('victory'); m.classList.remove('turn-dance'); m.innerHTML = '🐭';
         document.querySelectorAll('.confetti').forEach(c => c.remove());
-        els.gamePage.classList.add('hidden'); 
-        els.mapPage.classList.remove('hidden'); 
-        els.shareBtn.classList.remove('hidden');
-        releaseWakeLock();
+        els.gamePage.classList.add('hidden'); els.mapPage.classList.remove('hidden'); 
+        els.shareBtn.classList.remove('hidden'); releaseWakeLock();
     }
 
     function createConfettiBurst() {
@@ -826,7 +779,7 @@
         const d = await res.json();
         if (d.length > 0) {
             currentTargetName = d[0].display_name.split(',')[0];
-            setTarget({lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon)}, true);
+            setTarget({lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon)}, true, true);
             map.flyTo(currentTargetCoords, 18); els.searchContainer.classList.add('hidden');
         }
     }
@@ -845,8 +798,8 @@
         });
     }
 
-    function handleSlotClick(i) { const d = savedLocations[i]; if (d) { currentTargetName = d.name; setTarget(d.coords, true); map.flyTo(d.coords, 14); } }
-    function saveCurrentPos(i) { if (!currentTargetCoords) return; const l = prompt("Spara som:", currentTargetName); if (l) { savedLocations[i] = {coords: currentTargetCoords, name: l}; localStorage.setItem('mouse_favs', JSON.stringify(savedLocations)); updateButtonUI(); } }
+    function handleSlotClick(i) { const d = savedLocations[i]; if (d) { currentTargetName = d.name; setTarget(d.coords, true, true); map.flyTo(d.coords, 14); } }
+    function saveCurrentPos(i) { if (!currentTargetCoords) return; const l = prompt("Spara som:", currentTargetName); if (l) { savedLocations[i] = {coords: {lat: currentTargetCoords.lat, lng: currentTargetCoords.lng}, name: l}; localStorage.setItem('mouse_favs', JSON.stringify(savedLocations)); updateButtonUI(); } }
 
     function setupInteractions() {
         document.querySelectorAll('.slot-btn').forEach((b, i) => {
@@ -864,7 +817,12 @@
     }
 
     function playClickSound() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); const o = audioCtx.createOscillator(); o.type='triangle'; o.frequency.setValueAtTime(3000, audioCtx.currentTime); o.start(); o.stop(audioCtx.currentTime+0.1); }
-    function closeInstructions() { els.welcomeOverlay.classList.add('hidden'); sessionStorage.setItem('introSeen', 'true'); }
+    
+    function closeInstructions() { 
+        els.welcomeOverlay.classList.add('hidden'); 
+        saveSession(); // Detta sparar nuvarande tidpunkt så att rutan inte kommer tillbaka på 3 timmar
+    }
+
     function shareApp() { const d = {title:'Cheese Tracker', url:window.location.href}; if(navigator.share) navigator.share(d); }
     window.onload = initMap;
 </script>
