@@ -247,10 +247,10 @@
         <h2>Hej! 🐭</h2>
         <p>Hjälp musen att hitta osten!</p>
         <ul>
+            <li>🚗🚶↔️ <b>Välj färdsätt</b> bil eller promenad.</li>
             <li>📍 <b>Klicka på kartan eller sök</b> för att välja resmål.</li>
             <li>💡 <b>Högerklicka/Långtryck</b> för att lägga till via-punkter!</li>
             <li>💾 <b>Högerklicka/Långtryck</b> på en spara-knapp för att spara en favorit.</li>
-            <li>🚶↔️ <b>Välj färdsätt</b> bil eller promenad.</li>
             <li>🚀 Tryck på <b>STARTA</b> för att börja resan!</li>
         </ul>
         <button class="ok-btn" onclick="closeInstructions()">Okej! Jag förstår!</button>
@@ -353,10 +353,19 @@
         { icon: '🚶↔️', factor: 0.1, osrm: 'foot' } 
     ];
 
-    let lastTargetRaw = JSON.parse(localStorage.getItem('mouse_last_target'));
+    // Hämta sparad session (3 timmar = 10800000 ms)
+    let sessionRaw = JSON.parse(localStorage.getItem('mouse_session'));
     let lastTarget = null;
-    if (lastTargetRaw && (Date.now() - lastTargetRaw.timestamp < 10800000)) {
-        lastTarget = lastTargetRaw;
+
+    if (sessionRaw && (Date.now() - sessionRaw.timestamp < 10800000)) {
+        lastTarget = sessionRaw.target;
+        travelMode = sessionRaw.travelMode || 0;
+        waypointsDit = sessionRaw.waypointsDit || [];
+        waypointsHem = sessionRaw.waypointsHem || [];
+        setTimeout(() => { const mb = document.getElementById('mode-btn'); if (mb) mb.innerText = modes[travelMode].icon; }, 10);
+    } else {
+        // Rensar gammal data om den är äldre än 3 timmar
+        localStorage.removeItem('mouse_session'); 
     }
 
     let audioCtx;
@@ -379,46 +388,37 @@
         actionContainer: document.querySelector('.action-container')
     };
 
-    // --- NY LOGIK FÖR INSTALLATIONS- OCH WEBBLÄSAR-CHECK ---
     function checkInstallState() {
         const ua = navigator.userAgent;
         const isIos = /iphone|ipad|ipod/.test(ua.toLowerCase());
         const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
-        // Kollar efter in-app browsers som Messenger, Facebook, Instagram
         const isInApp = /FBAN|FBAV|Instagram|Messenger/i.test(ua);
 
-        // 1. Hantera In-App browsers (Varna användaren)
         if (isInApp) {
             if (els.distInfo) {
                 els.distInfo.innerHTML = "⚠️ Öppna i Safari/Chrome för att spara appen!";
-                els.distInfo.style.color = "#d32f2f"; // Röd text
+                els.distInfo.style.color = "#d32f2f"; 
             }
-            return; // Visa inte install-prompt om vi är i in-app
+            return; 
         }
 
-        // 2. Hantera iOS (Visa installations-rutan om inte redan installerad)
         if (isIos && !isStandalone) {
             setTimeout(() => {
                 const iosPrompt = document.getElementById('ios-install-prompt');
                 if (iosPrompt) iosPrompt.classList.remove('hidden');
-            }, 3000); // Vänta 3 sek så den inte krockar med välkomsttexten
+            }, 3000); 
         }
     }
 
-    // 3. Hantera Android (Install prompt)
     let deferredPrompt;
     window.addEventListener('beforeinstallprompt', (e) => {
-        // Vi preventar inte default helt här för vi vill att Chrome ska visa sin "Lägg till på hemskärmen"-infobar
-        // Men vi sparar eventet ifall vi vill använda det senare.
         console.log("Android install prompt detected");
         deferredPrompt = e;
-        // Om du vill tvinga fram en egen knapp kan du göra det här, men standardbeteendet brukar vara bäst.
     });
 
     function initMap() {
         if(sessionStorage.getItem('introSeen')) els.welcomeOverlay.classList.add('hidden');
         
-        // Kör installationskollen
         checkInstallState();
 
         map = L.map('map', { zoomControl: false, attributionControl: false }).setView([59.3, 14.1], 5);
@@ -430,6 +430,19 @@
             map.setView(lastTarget.coords, 14); 
             initialZoomPerformed = true;
         }
+
+        // Återskapa waypoint-markörer från sessionen
+        waypointsDit.forEach(wp => {
+            const m = L.circleMarker(wp, { radius: 7, fillColor: "#2196F3", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
+            m.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); removeWaypoint(m, wp); });
+            waypointMarkers.push(m);
+        });
+
+        waypointsHem.forEach(wp => {
+            const m = L.circleMarker(wp, { radius: 7, fillColor: "#FF9800", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
+            m.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); removeWaypoint(m, wp); });
+            waypointMarkers.push(m);
+        });
 
         if (navigator.geolocation) {
             navigator.geolocation.watchPosition(handlePositionUpdate, null, { 
@@ -462,6 +475,35 @@
         window.addEventListener('resize', handleOrientationLayout);
     }
 
+    // --- NYA FUNKTIONER FÖR ATT SPARA OCH TA BORT ---
+    function saveSession() {
+        const sessionData = {
+            target: currentTargetCoords ? { coords: currentTargetCoords, name: currentTargetName } : null,
+            travelMode: travelMode,
+            waypointsDit: waypointsDit,
+            waypointsHem: waypointsHem,
+            timestamp: Date.now()
+        };
+        localStorage.setItem('mouse_session', JSON.stringify(sessionData));
+    }
+
+    function removeWaypoint(marker, latlng) {
+        playClickSound(); // Spelar upp klickljudet
+        
+        let index = waypointsDit.findIndex(wp => wp.lat === latlng.lat && wp.lng === latlng.lng);
+        if (index !== -1) {
+            waypointsDit.splice(index, 1);
+        } else {
+            index = waypointsHem.findIndex(wp => wp.lat === latlng.lat && wp.lng === latlng.lng);
+            if (index !== -1) waypointsHem.splice(index, 1);
+        }
+
+        map.removeLayer(marker);
+        waypointMarkers = waypointMarkers.filter(m => m !== marker);
+        updateMapLogic();
+        saveSession();
+    }
+
     function showWaypointChoiceMenu(e) {
         const oldMenu = document.getElementById('waypoint-menu');
         if (oldMenu) oldMenu.remove();
@@ -486,9 +528,18 @@
     function addWaypoint(latlng, direction) {
         if (direction === 'dit') { waypointsDit.push(latlng); } else { waypointsHem.push(latlng); }
         const color = direction === 'dit' ? "#2196F3" : "#FF9800";
+        
         const wpMarker = L.circleMarker(latlng, { radius: 7, fillColor: color, color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
+        
+        // Lyssna på långtryck/högerklick för att ta bort
+        wpMarker.on('contextmenu', (e) => {
+            L.DomEvent.stopPropagation(e);
+            removeWaypoint(wpMarker, latlng);
+        });
+
         waypointMarkers.push(wpMarker);
         updateMapLogic();
+        saveSession();
     }
 
     function handlePositionUpdate(pos) {
@@ -562,13 +613,20 @@
 
     function setTarget(latlng, shouldSave) {
         if (userCoords) fixedStartCoords = [...userCoords];
-        waypointsDit = []; waypointsHem = []; waypointMarkers.forEach(m => map.removeLayer(m)); waypointMarkers = [];
+        
+        // Rensa gamla waypoints när ett helt nytt mål sätts
+        waypointsDit = []; waypointsHem = []; 
+        waypointMarkers.forEach(m => map.removeLayer(m)); 
+        waypointMarkers = [];
+        
         if (connectionLine) { map.removeLayer(connectionLine); connectionLine = null; }
         if (connectionLineReturn) { map.removeLayer(connectionLineReturn); connectionLineReturn = null; }
+        
         currentTargetCoords = latlng;
         if (targetMarker) targetMarker.setLatLng(latlng);
         else targetMarker = L.marker(latlng).addTo(map);
-        if (shouldSave) localStorage.setItem('mouse_last_target', JSON.stringify({coords: latlng, name: currentTargetName, timestamp: Date.now()}));
+        
+        if (shouldSave) saveSession();
         updateMapLogic(); updateLocateBtnText();
     }
 
@@ -579,7 +637,13 @@
         updateLocateBtnText();
     }
     function updateLocateBtnText() { els.locateBtn.innerHTML = (!currentTargetCoords || isShowingUser) ? "🎯 HITTA MEJ" : `🏁 ${currentTargetName.toUpperCase()}`; }
-    function toggleTravelMode() { travelMode = (travelMode + 1) % modes.length; els.modeBtn.innerText = modes[travelMode].icon; updateMapLogic(); }
+    
+    function toggleTravelMode() { 
+        travelMode = (travelMode + 1) % modes.length; 
+        els.modeBtn.innerText = modes[travelMode].icon; 
+        updateMapLogic(); 
+        saveSession(); 
+    }
     
     async function requestWakeLock() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} }
     function releaseWakeLock() { if (wakeLock !== null) wakeLock.release().then(() => { wakeLock = null; }); }
@@ -649,7 +713,6 @@
         let minD = Infinity;
         let idx = lastRouteIndex;
         
-        // HÄR ÄR ÄNDRINGEN FÖR ATT TILLÅTA HELA RUTTEN PÅ ENKELRESOR
         let searchLimit = (travelMode !== 2 || hasReachedMidpoint) ? currentRouteCoords.length : Math.floor(currentRouteCoords.length * 0.6); 
 
         for (let i = lastRouteIndex; i < searchLimit; i++) {
@@ -675,7 +738,6 @@
         } else {
             if (distToFinal < 40) { moveMouse(initialTotalKm - 1); setTimeout(finishGame, 500); } 
             else { 
-                // HÄR ÄR ÄNDRINGEN FÖR JÄMNARE ÄTANDE PÅ SLUTET
                 moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 1))); 
             }
         }
