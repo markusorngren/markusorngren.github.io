@@ -368,16 +368,14 @@
         actionContainer: document.querySelector('.action-container')
     };
 
-    // Hämta sparad session
     let sessionRaw = JSON.parse(localStorage.getItem('mouse_session'));
     let lastTarget = null;
 
     if (sessionRaw && (Date.now() - sessionRaw.timestamp < 10800000)) {
         lastTarget = sessionRaw.target;
         travelMode = sessionRaw.travelMode || 0;
-        waypointsDit = sessionRaw.waypointsDit || [];
-        waypointsHem = sessionRaw.waypointsHem || [];
-        // Göm välkomstrutan om sessionen är giltig
+        waypointsDit = (sessionRaw.waypointsDit || []).map(p => L.latLng(p.lat, p.lng));
+        waypointsHem = (sessionRaw.waypointsHem || []).map(p => L.latLng(p.lat, p.lng));
         els.welcomeOverlay.classList.add('hidden');
     }
 
@@ -798,8 +796,58 @@
         });
     }
 
-    function handleSlotClick(i) { const d = savedLocations[i]; if (d) { currentTargetName = d.name; setTarget(d.coords, true, true); map.flyTo(d.coords, 14); } }
-    function saveCurrentPos(i) { if (!currentTargetCoords) return; const l = prompt("Spara som:", currentTargetName); if (l) { savedLocations[i] = {coords: {lat: currentTargetCoords.lat, lng: currentTargetCoords.lng}, name: l}; localStorage.setItem('mouse_favs', JSON.stringify(savedLocations)); updateButtonUI(); } }
+    function handleSlotClick(i) { 
+        const d = savedLocations[i]; 
+        if (d) { 
+            currentTargetName = d.name; 
+            waypointsDit = []; 
+            waypointsHem = []; 
+            waypointMarkers.forEach(m => map.removeLayer(m)); 
+            waypointMarkers = [];
+
+            if (d.waypointsDit) {
+                d.waypointsDit.forEach(wp => {
+                    const latlng = L.latLng(wp.lat, wp.lng);
+                    waypointsDit.push(latlng);
+                    const m = L.circleMarker(latlng, { radius: 7, fillColor: "#2196F3", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
+                    m.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); removeWaypoint(m, latlng); });
+                    waypointMarkers.push(m);
+                });
+            }
+            if (d.waypointsHem) {
+                d.waypointsHem.forEach(wp => {
+                    const latlng = L.latLng(wp.lat, wp.lng);
+                    waypointsHem.push(latlng);
+                    const m = L.circleMarker(latlng, { radius: 7, fillColor: "#FF9800", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
+                    m.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); removeWaypoint(m, latlng); });
+                    waypointMarkers.push(m);
+                });
+            }
+
+            setTarget(d.coords, true, false); 
+            map.flyTo(d.coords, 14); 
+        } 
+    }
+
+    function saveCurrentPos(i) { 
+        if (!currentTargetCoords) return; 
+        const l = prompt("Spara som:", currentTargetName); 
+        if (l) { 
+            let includeWaypoints = false;
+            if (waypointsDit.length > 0 || waypointsHem.length > 0) {
+                includeWaypoints = confirm("Vill du spara med via-punkter?");
+            }
+
+            savedLocations[i] = {
+                coords: {lat: currentTargetCoords.lat, lng: currentTargetCoords.lng}, 
+                name: l,
+                waypointsDit: includeWaypoints ? waypointsDit.map(wp => ({lat: wp.lat, lng: wp.lng})) : [],
+                waypointsHem: includeWaypoints ? waypointsHem.map(wp => ({lat: wp.lat, lng: wp.lng})) : []
+            }; 
+            localStorage.setItem('mouse_favs', JSON.stringify(savedLocations)); 
+            updateButtonUI(); 
+        } 
+    }
 
     function setupInteractions() {
         document.querySelectorAll('.slot-btn').forEach((b, i) => {
@@ -820,7 +868,7 @@
     
     function closeInstructions() { 
         els.welcomeOverlay.classList.add('hidden'); 
-        saveSession(); // Detta sparar nuvarande tidpunkt så att rutan inte kommer tillbaka på 3 timmar
+        saveSession(); 
     }
 
     function shareApp() { const d = {title:'Cheese Tracker', url:window.location.href}; if(navigator.share) navigator.share(d); }
