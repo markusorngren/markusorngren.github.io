@@ -853,7 +853,7 @@
         document.querySelectorAll('.slot-btn').forEach((b, i) => {
             let lastTriggerTime = 0;
             const triggerSave = (e) => {
-                const now = Date.now(); if (now - lastTriggerTime < 3000) return; lastTriggerTime = now;
+                const now = Date.now(); if (now - lastTriggerTime < 7000) return; lastTriggerTime = now;
                 if (e && typeof e.preventDefault === 'function') { e.preventDefault(); e.stopPropagation(); }
                 saveCurrentPos(i);
             };
