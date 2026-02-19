@@ -376,6 +376,9 @@
         travelMode = sessionRaw.travelMode || 0;
         waypointsDit = (sessionRaw.waypointsDit || []).map(p => L.latLng(p.lat, p.lng));
         waypointsHem = (sessionRaw.waypointsHem || []).map(p => L.latLng(p.lat, p.lng));
+        if (sessionRaw.startCoords) {
+            fixedStartCoords = sessionRaw.startCoords;
+        }
         els.welcomeOverlay.classList.add('hidden');
     }
 
@@ -413,7 +416,7 @@
 
         if (lastTarget) {
             currentTargetName = lastTarget.name || "Mål";
-            setTarget(lastTarget.coords, false, false);
+            setTarget(lastTarget.coords, false, false, false);
             map.setView(lastTarget.coords, 14); 
             initialZoomPerformed = true;
             
@@ -444,7 +447,7 @@
             if(ignoreClick) return; 
             playClickSound(); 
             currentTargetName = "Markerad plats"; 
-            setTarget(e.latlng, true, true);
+            setTarget(e.latlng, true, true, true);
         });
 
         map.on('contextmenu', e => {
@@ -465,6 +468,7 @@
     function saveSession() {
         const sessionData = {
             target: currentTargetCoords ? { coords: {lat: currentTargetCoords.lat, lng: currentTargetCoords.lng}, name: currentTargetName } : null,
+            startCoords: fixedStartCoords,
             travelMode: travelMode,
             waypointsDit: waypointsDit.map(wp => ({lat: wp.lat, lng: wp.lng})),
             waypointsHem: waypointsHem.map(wp => ({lat: wp.lat, lng: wp.lng})),
@@ -509,6 +513,7 @@
     }
 
     function addWaypoint(latlng, direction) {
+        if (!fixedStartCoords && userCoords) fixedStartCoords = [...userCoords];
         if (direction === 'dit') { waypointsDit.push(latlng); } else { waypointsHem.push(latlng); }
         const color = direction === 'dit' ? "#2196F3" : "#FF9800";
         const wpMarker = L.circleMarker(latlng, { radius: 7, fillColor: color, color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
@@ -534,7 +539,7 @@
     }
 
     async function updateMapLogic() {
-        if (!userCoords || !currentTargetCoords) return;
+        if ((!userCoords && !fixedStartCoords) || !currentTargetCoords) return;
         const startPoint = fixedStartCoords || userCoords;
         const mode = modes[travelMode];
         let pts = [`${startPoint[1]},${startPoint[0]}`];
@@ -575,6 +580,7 @@
     }
 
     function fallbackDist() {
+        if (!fixedStartCoords && !userCoords) return;
         const startPoint = fixedStartCoords || userCoords;
         const d = map.distance(startPoint, currentTargetCoords) / 1000;
         const total = d * (travelMode === 2 ? 2 : 1);
@@ -590,8 +596,11 @@
         els.startBtn.classList.remove('hidden');
     }
 
-    function setTarget(latlng, shouldSave, clearWaypoints = true) {
-        if (userCoords) fixedStartCoords = [...userCoords];
+    function setTarget(latlng, shouldSave, clearWaypoints = true, updateStart = true) {
+        if (updateStart) {
+            if (userCoords) fixedStartCoords = [...userCoords];
+            else fixedStartCoords = null;
+        }
         if (clearWaypoints) {
             waypointsDit = []; waypointsHem = []; 
             waypointMarkers.forEach(m => map.removeLayer(m)); 
@@ -748,6 +757,7 @@
         document.querySelectorAll('.confetti').forEach(c => c.remove());
         els.gamePage.classList.add('hidden'); els.mapPage.classList.remove('hidden'); 
         els.shareBtn.classList.remove('hidden'); releaseWakeLock();
+        saveSession();
     }
 
     function createConfettiBurst() {
@@ -777,7 +787,7 @@
         const d = await res.json();
         if (d.length > 0) {
             currentTargetName = d[0].display_name.split(',')[0];
-            setTarget({lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon)}, true, true);
+            setTarget({lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon)}, true, true, true);
             map.flyTo(currentTargetCoords, 18); els.searchContainer.classList.add('hidden');
         }
     }
@@ -824,7 +834,7 @@
                 });
             }
 
-            setTarget(d.coords, true, false); 
+            setTarget(d.coords, true, false, true); 
             map.flyTo(d.coords, 14); 
         } 
     }
