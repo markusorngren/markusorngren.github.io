@@ -101,7 +101,6 @@
             #voice-btn { grid-column: 1 / span 2; order: 3; width: 100%; }
             #text-btn  { grid-column: 1 / span 2; order: 4; width: 100%; }
             #locate-btn { grid-column: 1 / span 2; order: 5; width: 100%; }
-            /* Här är ändringen för 10 kolumner i landscape */
             .apple-grid { grid-template-columns: repeat(10, 1fr) !important; max-width: 80% !important; padding-top: 30px !important; }
             #game-map { max-width: 80% !important; }
         }
@@ -298,7 +297,10 @@
 </div>
 
 <div id="game-page" class="hidden">
-    <button style="background:#ff4444; color:white; margin-top: 10px; border-radius: 20px; padding: 6px 15px; font-size: 0.75rem; z-index: 10000; position: relative;" onclick="stopGame()">AVBRYT</button>
+    <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: 10px; z-index: 10000; position: relative; width: 100%;">
+        <div id="game-distance-display" class="hidden" style="font-weight: bold; font-size: 0.9rem; background: rgba(255,255,255,0.9); padding: 5px 12px; border-radius: 20px; color: #333;"></div>
+        <button style="background:#ff4444; color:white; border-radius: 20px; padding: 6px 15px; font-size: 0.75rem;" onclick="stopGame()">AVBRYT</button>
+    </div>
     <div class="apple-grid" id="path"><div id="the-mouse">🐭</div></div>
     <div id="game-map" class="hidden"></div>
 </div>
@@ -496,9 +498,11 @@
 
     function toggleGameMap() {
         isGameMapVisible = !isGameMapVisible;
+        const distDisplay = document.getElementById('game-distance-display');
         if (isGameMapVisible) {
             els.pathGrid.classList.add('hidden');
             els.gameMapElement.classList.remove('hidden');
+            if (distDisplay) distDisplay.classList.remove('hidden');
             if (!gameMap) {
                 gameMap = L.map('game-map', { 
                     zoomControl: false, attributionControl: false,
@@ -513,6 +517,7 @@
         } else {
             els.gameMapElement.classList.add('hidden');
             els.pathGrid.classList.remove('hidden');
+            if (distDisplay) distDisplay.classList.add('hidden');
         }
     }
 
@@ -546,7 +551,6 @@
             }
         }
         
-        // Uppdatering: Alltid centrera på din aktuella GPS-position med en nice zoomnivå
         gameMap.setView(userCoords, 16);
     }
 
@@ -731,8 +735,12 @@
         hasReachedMidpoint = false;
         midpointStepIndex = -1;
         isCelebratingTurn = false;
+        
         isGameMapVisible = false;
         els.gameMapElement.classList.add('hidden');
+        const distDisplay = document.getElementById('game-distance-display');
+        if (distDisplay) distDisplay.classList.add('hidden');
+        
         els.pathGrid.classList.remove('hidden');
         const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', '');
         const totalDistanceKm = parseFloat(distStr);
@@ -780,6 +788,20 @@
             if (d < minD) { minD = d; idx = i; }
         }
         lastRouteIndex = idx;
+        
+        const goal = (travelMode === 2) ? startCoords : currentTargetCoords;
+        const distToFinal = map.distance(userCoords, goal);
+        
+        let remainingDist = distToFinal;
+        if (travelMode === 2 && !hasReachedMidpoint) {
+            remainingDist = map.distance(userCoords, currentTargetCoords) + map.distance(currentTargetCoords, startCoords);
+        }
+        
+        const distDisplay = document.getElementById('game-distance-display');
+        if (distDisplay) {
+            distDisplay.innerText = (remainingDist / 1000).toFixed(2) + ' km kvar';
+        }
+
         let traveled = 0;
         for (let i = 0; i < idx; i++) { traveled += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]); }
         let currentSteps = Math.floor((traveled / 1000) / modes[travelMode].factor);
@@ -789,8 +811,7 @@
             const s = document.getElementById(`step-${i}`);
             if (s) i < maxStepsReached ? s.classList.add('eat-animation') : s.classList.remove('eat-animation');
         }
-        const goal = (travelMode === 2) ? startCoords : currentTargetCoords;
-        const distToFinal = map.distance(userCoords, goal);
+        
         if (travelMode === 2) {
             if (hasReachedMidpoint && distToFinal < 40 && maxStepsReached > (initialTotalKm * 0.8)) {
                 moveMouse(initialTotalKm - 1); setTimeout(finishGame, 500);
@@ -843,6 +864,9 @@
         gameState = 'MAP'; fixedStartCoords = null; clearInterval(confettiInterval);
         isGameMapVisible = false;
         els.gameMapElement.classList.add('hidden');
+        const distDisplay = document.getElementById('game-distance-display');
+        if (distDisplay) distDisplay.classList.add('hidden');
+        
         els.pathGrid.classList.remove('hidden');
         const m = document.getElementById('the-mouse');
         m.classList.remove('victory'); m.classList.remove('turn-dance'); m.innerHTML = '🐭';
@@ -850,6 +874,13 @@
         els.gamePage.classList.add('hidden'); els.mapPage.classList.remove('hidden'); 
         els.shareBtn.classList.remove('hidden'); releaseWakeLock();
         saveSession();
+
+        // FIX: Tvinga kartan att uppdatera sin storlek när den blir synlig igen!
+        setTimeout(() => {
+            if (map) {
+                map.invalidateSize();
+            }
+        }, 50);
     }
 
     function createConfettiBurst() {
