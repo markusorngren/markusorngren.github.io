@@ -305,8 +305,6 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    // Din befintliga JavaScript-logik här...
-    // (Inklusive swipe-logik, OSRM-anrop och spel-mekanik)
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('sw.js').then(reg => {
@@ -520,16 +518,19 @@
 
     function updateGameMapView(forceCenter = false) {
         if (!isGameMapVisible || gameState !== 'GAME' || !gameMap || !userCoords) return;
+        
         if (!gameRouteLine && currentRouteCoords.length > 0) {
             gameRouteLine = L.polyline(currentRouteCoords, {color: '#007bff', weight: 4, opacity: 0.5}).addTo(gameMap);
         } else if (gameRouteLine) {
             gameRouteLine.setLatLngs(currentRouteCoords);
         }
+        
         if (!gameUserMarker) {
             gameUserMarker = L.circleMarker(userCoords, {radius: 7, fillColor: "#007bff", color: "#fff", weight: 2, fillOpacity: 1}).addTo(gameMap);
         } else {
             gameUserMarker.setLatLng(userCoords);
         }
+        
         let snapCoords = currentRouteCoords[lastRouteIndex];
         if (snapCoords) {
             if (!gameSnapMarker) {
@@ -544,13 +545,9 @@
                 gameDashedLine.setLatLngs(dashCoords);
             }
         }
-        if (forceCenter) {
-            if (snapCoords) {
-                gameMap.fitBounds(L.latLngBounds([userCoords, snapCoords]).pad(0.4), {maxZoom: 16});
-            } else {
-                gameMap.setView(userCoords, 16);
-            }
-        }
+        
+        // Uppdatering: Alltid centrera på din aktuella GPS-position med en nice zoomnivå
+        gameMap.setView(userCoords, 16);
     }
 
     function saveSession() {
