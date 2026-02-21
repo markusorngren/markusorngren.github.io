@@ -103,6 +103,19 @@
             #locate-btn { grid-column: 1 / span 2; order: 5; width: 100%; }
             .apple-grid { grid-template-columns: repeat(10, 1fr) !important; max-width: 80% !important; padding-top: 30px !important; }
             #game-map { max-width: 80% !important; }
+
+            /* Specifik layout för spel-kartan i landscape */
+            #game-page[data-map-visible="true"] {
+                flex-direction: row !important;
+                justify-content: center;
+                align-items: center;
+                gap: 20px;
+            }
+            #game-page[data-map-visible="true"] .game-controls-container {
+                flex-direction: column !important;
+                height: 80%;
+                justify-content: flex-start !important;
+            }
         }
 
         #map { flex: 1; width: 100%; min-height: 0; z-index: 1; }
@@ -183,11 +196,13 @@
             max-height: 70vh; overflow-y: auto;
         }
 
-        /* Kartvyn för äppelätarläget */
+        /* Kartvyn för äppelätarläget med ram */
         #game-map {
             display: block; width: 95%; max-width: 280px; margin-top: 10px; 
             height: 60vh; min-height: 350px; padding: 0; background: rgba(255,255,255,0.5); 
             border-radius: 15px; overflow: hidden; position: relative; z-index: 5;
+            border: 4px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            box-sizing: border-box;
         }
 
         .step { font-size: 1.4rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; transition: all 0.5s ease; }
@@ -245,6 +260,18 @@
             padding: 10px 15px; border-radius: 10px; font-size: 0.9rem;
             color: white; font-weight: bold; white-space: nowrap;
         }
+
+        /* Ny container för info och knapp vid mini-kartan */
+        .game-controls-container {
+            display: flex; justify-content: center; align-items: center; gap: 10px; 
+            margin-top: 10px; z-index: 10000; position: relative; width: 100%;
+        }
+        
+        #game-mouse-img {
+            font-size: 2rem;
+            margin-top: 5px;
+            animation: mouseWobble 2s infinite ease-in-out;
+        }
     </style>
 </head>
 <body>
@@ -298,9 +325,10 @@
 </div>
 
 <div id="game-page" class="hidden">
-    <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px; z-index: 10000; position: relative;">
-        <div id="game-dist-info" class="hidden" style="background: white; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2); color: #333;">🏁 Beräknar...</div>
-        <button style="background:#ff4444; color:white; border-radius: 20px; padding: 6px 15px; font-size: 0.75rem; border:none;" onclick="stopGame()">AVBRYT</button>
+    <div class="game-controls-container">
+        <div id="game-dist-info" class="hidden" style="background: white; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2); color: #333; order: 2;">🏁 Beräknar...</div>
+        <button style="background:#ff4444; color:white; border-radius: 20px; padding: 6px 15px; font-size: 0.75rem; border:none; order: 1;" onclick="stopGame()">AVBRYT</button>
+        <div id="game-mouse-img" class="hidden" style="order: 3;">🐭</div>
     </div>
     
     <div class="apple-grid" id="path"><div id="the-mouse">🐭</div></div>
@@ -387,7 +415,8 @@
         modeBtn: document.getElementById('mode-btn'),
         actionContainer: document.querySelector('.action-container'),
         gameMapElement: document.getElementById('game-map'),
-        gameDistInfo: document.getElementById('game-dist-info')
+        gameDistInfo: document.getElementById('game-dist-info'),
+        gameMouseImg: document.getElementById('game-mouse-img')
     };
 
     let sessionRaw = JSON.parse(localStorage.getItem('mouse_session'));
@@ -467,7 +496,9 @@
         if (isGameMapVisible) {
             els.pathGrid.classList.add('hidden'); 
             els.gameMapElement.classList.remove('hidden');
-            els.gameDistInfo.classList.remove('hidden'); // Visa avståndstexten!
+            els.gameDistInfo.classList.remove('hidden');
+            els.gameMouseImg.classList.remove('hidden');
+            els.gamePage.setAttribute('data-map-visible', 'true');
             
             if (!gameMap) {
                 gameMap = L.map('game-map', { 
@@ -480,7 +511,9 @@
         } else {
             els.gameMapElement.classList.add('hidden'); 
             els.pathGrid.classList.remove('hidden');
-            els.gameDistInfo.classList.add('hidden'); // Göm avståndstexten!
+            els.gameDistInfo.classList.add('hidden');
+            els.gameMouseImg.classList.add('hidden');
+            els.gamePage.removeAttribute('data-map-visible');
         }
     }
 
@@ -549,11 +582,8 @@
             else { moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 1))); }
         }
 
-        // --- Uppdatera kartan och avståndet ---
         if (isGameMapVisible) {
             updateGameMapView(true);
-            
-            // Beräkna hur långt det är kvar längs rutten
             let remainingDist = map.distance(userCoords, currentRouteCoords[idx]);
             for(let i = idx; i < currentRouteCoords.length - 1; i++) {
                 remainingDist += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]);
@@ -698,6 +728,7 @@
         if (!currentTargetCoords || !userCoords) return;
         gameState = 'GAME'; startCoords = [...userCoords]; maxStepsReached = 0; lastRouteIndex = 0; hasReachedMidpoint = false; midpointStepIndex = -1; isCelebratingTurn = false;
         isGameMapVisible = false; els.gameMapElement.classList.add('hidden'); els.pathGrid.classList.remove('hidden'); els.gameDistInfo.classList.add('hidden');
+        els.gameMouseImg.classList.add('hidden'); els.gamePage.removeAttribute('data-map-visible');
         const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', '');
         const totalDistanceKm = parseFloat(distStr);
         initialTotalKm = Math.max(1, Math.ceil(totalDistanceKm / modes[travelMode].factor));
@@ -747,6 +778,7 @@
     function stopGame() { 
         gameState = 'MAP'; fixedStartCoords = null; clearInterval(confettiInterval);
         isGameMapVisible = false; els.gameMapElement.classList.add('hidden'); els.pathGrid.classList.remove('hidden'); els.gameDistInfo.classList.add('hidden');
+        els.gameMouseImg.classList.add('hidden'); els.gamePage.removeAttribute('data-map-visible');
         const m = document.getElementById('the-mouse'); m.classList.remove('victory'); m.classList.remove('turn-dance'); m.innerHTML = '🐭';
         document.querySelectorAll('.confetti').forEach(c => c.remove());
         els.gamePage.classList.add('hidden'); els.mapPage.classList.remove('hidden'); els.shareBtn.classList.remove('hidden'); releaseWakeLock(); saveSession();
