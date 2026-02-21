@@ -101,6 +101,7 @@
             #voice-btn { grid-column: 1 / span 2; order: 3; width: 100%; }
             #text-btn  { grid-column: 1 / span 2; order: 4; width: 100%; }
             #locate-btn { grid-column: 1 / span 2; order: 5; width: 100%; }
+            /* Här är ändringen för 10 kolumner i landscape */
             .apple-grid { grid-template-columns: repeat(10, 1fr) !important; max-width: 80% !important; padding-top: 30px !important; }
             #game-map { max-width: 80% !important; }
         }
@@ -183,7 +184,6 @@
             max-height: 70vh; overflow-y: auto;
         }
 
-        /* Ny styling för spelets kartvy (samma inramning som apple-grid) */
         #game-map {
             display: block; width: 95%; max-width: 280px; margin-top: 10px; 
             height: 60vh; min-height: 350px; padding: 0; background: rgba(255,255,255,0.5); 
@@ -305,6 +305,8 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+    // Din befintliga JavaScript-logik här...
+    // (Inklusive swipe-logik, OSRM-anrop och spel-mekanik)
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('sw.js').then(reg => {
@@ -356,7 +358,6 @@
     let midpointStepIndex = -1; 
     let isCelebratingTurn = false; 
 
-    // Nya variabler för Game Map Swipe Feature
     let gameMap = null;
     let gameRouteLine = null, gameUserMarker = null, gameSnapMarker = null, gameDashedLine = null;
     let isGameMapVisible = false;
@@ -428,7 +429,6 @@
 
     function initMap() {
         checkInstallState();
-
         map = L.map('map', { zoomControl: false, attributionControl: false }).setView([59.3, 14.1], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
@@ -481,15 +481,13 @@
         updateButtonUI();
         handleOrientationLayout();
         window.addEventListener('resize', handleOrientationLayout);
-        setupSwipeListener(); // Initierar swipe
+        setupSwipeListener(); 
     }
 
-    // --- NY SWIPE-LOGIK START ---
     function setupSwipeListener() {
         els.gamePage.addEventListener('touchstart', e => {
             swipeStartX = e.changedTouches[0].screenX;
         }, {passive: true});
-
         els.gamePage.addEventListener('touchend', e => {
             let swipeEndX = e.changedTouches[0].screenX;
             if (gameState === 'GAME' && Math.abs(swipeEndX - swipeStartX) > 60) {
@@ -503,17 +501,13 @@
         if (isGameMapVisible) {
             els.pathGrid.classList.add('hidden');
             els.gameMapElement.classList.remove('hidden');
-            
             if (!gameMap) {
-                // Vi stänger av interaktionen så att det alltid går att swipa tillbaka utan problem
                 gameMap = L.map('game-map', { 
                     zoomControl: false, attributionControl: false,
                     dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false
                 }).setView(userCoords || [59.3, 14.1], 15);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(gameMap);
             }
-            
-            // Timeout låter DOMen rita ut rutan först innan kartstorleken beräknas
             setTimeout(() => {
                 gameMap.invalidateSize();
                 updateGameMapView(true);
@@ -526,22 +520,16 @@
 
     function updateGameMapView(forceCenter = false) {
         if (!isGameMapVisible || gameState !== 'GAME' || !gameMap || !userCoords) return;
-
-        // Rita rutt
         if (!gameRouteLine && currentRouteCoords.length > 0) {
             gameRouteLine = L.polyline(currentRouteCoords, {color: '#007bff', weight: 4, opacity: 0.5}).addTo(gameMap);
         } else if (gameRouteLine) {
             gameRouteLine.setLatLngs(currentRouteCoords);
         }
-
-        // Rita användarens position
         if (!gameUserMarker) {
             gameUserMarker = L.circleMarker(userCoords, {radius: 7, fillColor: "#007bff", color: "#fff", weight: 2, fillOpacity: 1}).addTo(gameMap);
         } else {
             gameUserMarker.setLatLng(userCoords);
         }
-
-        // Rita ut vald punkt (snap/point) på rutten och sträckad linje
         let snapCoords = currentRouteCoords[lastRouteIndex];
         if (snapCoords) {
             if (!gameSnapMarker) {
@@ -549,7 +537,6 @@
             } else {
                 gameSnapMarker.setLatLng(snapCoords);
             }
-
             let dashCoords = [userCoords, snapCoords];
             if (!gameDashedLine) {
                 gameDashedLine = L.polyline(dashCoords, {color: '#ff4444', weight: 3, dashArray: '8, 8'}).addTo(gameMap);
@@ -557,8 +544,6 @@
                 gameDashedLine.setLatLngs(dashCoords);
             }
         }
-
-        // Auto-centrera kartan snyggt
         if (forceCenter) {
             if (snapCoords) {
                 gameMap.fitBounds(L.latLngBounds([userCoords, snapCoords]).pad(0.4), {maxZoom: 16});
@@ -567,7 +552,6 @@
             }
         }
     }
-    // --- NY SWIPE-LOGIK SLUT ---
 
     function saveSession() {
         const sessionData = {
@@ -750,12 +734,9 @@
         hasReachedMidpoint = false;
         midpointStepIndex = -1;
         isCelebratingTurn = false;
-        
-        // Nollställ eventuell kartvy
         isGameMapVisible = false;
         els.gameMapElement.classList.add('hidden');
         els.pathGrid.classList.remove('hidden');
-
         const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', '');
         const totalDistanceKm = parseFloat(distStr);
         initialTotalKm = Math.max(1, Math.ceil(totalDistanceKm / modes[travelMode].factor));
@@ -821,11 +802,7 @@
             if (distToFinal < 40) { moveMouse(initialTotalKm - 1); setTimeout(finishGame, 500); } 
             else { moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 1))); }
         }
-
-        // Uppdatera kartan om man swipat fram den
-        if (isGameMapVisible) {
-            updateGameMapView(false); // Updatera utan att tvinga ny panorering hela tiden
-        }
+        if (isGameMapVisible) { updateGameMapView(false); }
     }
 
     function triggerTurnAroundDance() {
@@ -867,12 +844,9 @@
 
     function stopGame() { 
         gameState = 'MAP'; fixedStartCoords = null; clearInterval(confettiInterval);
-        
-        // Nollställ game map state
         isGameMapVisible = false;
         els.gameMapElement.classList.add('hidden');
         els.pathGrid.classList.remove('hidden');
-
         const m = document.getElementById('the-mouse');
         m.classList.remove('victory'); m.classList.remove('turn-dance'); m.innerHTML = '🐭';
         document.querySelectorAll('.confetti').forEach(c => c.remove());
@@ -935,11 +909,9 @@
         const d = savedLocations[i]; 
         if (d) { 
             currentTargetName = d.name; 
-            waypointsDit = []; 
-            waypointsHem = []; 
+            waypointsDit = []; waypointsHem = []; 
             waypointMarkers.forEach(m => map.removeLayer(m)); 
             waypointMarkers = [];
-
             if (d.waypointsDit) {
                 d.waypointsDit.forEach(wp => {
                     const latlng = L.latLng(wp.lat, wp.lng);
@@ -958,7 +930,6 @@
                     waypointMarkers.push(m);
                 });
             }
-
             setTarget(d.coords, true, false, true); 
             map.flyTo(d.coords, 14); 
         } 
@@ -972,7 +943,6 @@
             if (waypointsDit.length > 0 || waypointsHem.length > 0) {
                 includeWaypoints = confirm("Vill du spara med via-punkter?");
             }
-
             savedLocations[i] = {
                 coords: {lat: currentTargetCoords.lat, lng: currentTargetCoords.lng}, 
                 name: l,
@@ -1000,12 +970,7 @@
     }
 
     function playClickSound() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); const o = audioCtx.createOscillator(); o.type='triangle'; o.frequency.setValueAtTime(3000, audioCtx.currentTime); o.start(); o.stop(audioCtx.currentTime+0.1); }
-    
-    function closeInstructions() { 
-        els.welcomeOverlay.classList.add('hidden'); 
-        saveSession(); 
-    }
-
+    function closeInstructions() { els.welcomeOverlay.classList.add('hidden'); saveSession(); }
     function shareApp() { const d = {title:'Cheese Tracker', url:window.location.href}; if(navigator.share) navigator.share(d); }
     window.onload = initMap;
 </script>
