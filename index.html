@@ -432,7 +432,6 @@
         map = L.map('map', { zoomControl: false, attributionControl: false }).setView([59.3, 14.1], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        // -- TILLÄGG: Transparent RENSA-knapp i nedre högra hörnet --
         const clearControl = L.control({position: 'bottomright'});
         clearControl.onAdd = function () {
             const btn = L.DomUtil.create('button', '');
@@ -446,18 +445,54 @@
             btn.style.color = '#333';
             btn.style.backdropFilter = 'blur(4px)';
             btn.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)';
-            btn.style.marginBottom = '15px'; // Litet avstånd från botten
+            btn.style.marginBottom = '15px'; 
             btn.onclick = function(e) {
                 L.DomEvent.stopPropagation(e);
                 clearMapData();
             };
-            L.DomEvent.disableClickPropagation(btn); // Förhindrar att kartan klickas samtidigt
+            L.DomEvent.disableClickPropagation(btn); 
             return btn;
         };
         clearControl.addTo(map);
-        // -- SLUT TILLÄGG --
 
-        if (lastTarget) {
+        // KONTROLLERA OM DET FINNS EN DELAD RUTT I URL:EN
+        const urlParams = new URLSearchParams(window.location.search);
+        const routeData = urlParams.get('r');
+        if (routeData) {
+            try {
+                const data = JSON.parse(atob(routeData));
+                travelMode = data.m || 0;
+                currentTargetName = data.n || "Delad rutt";
+                currentTargetCoords = L.latLng(data.t[0], data.t[1]);
+                waypointsDit = (data.wd || []).map(p => L.latLng(p[0], p[1]));
+                waypointsHem = (data.wh || []).map(p => L.latLng(p[0], p[1]));
+                
+                // Rensa URL:en så att den inte laddas om varje gång
+                window.history.replaceState({}, document.title, window.location.pathname);
+                els.welcomeOverlay.classList.add('hidden');
+            } catch (e) {
+                console.error("Kunde inte läsa delad rutt", e);
+            }
+        }
+
+        if (currentTargetCoords) {
+            setTarget(currentTargetCoords, false, false, false);
+            map.setView(currentTargetCoords, 14); 
+            initialZoomPerformed = true;
+            
+            waypointsDit.forEach(wp => {
+                const m = L.circleMarker(wp, { radius: 7, fillColor: "#2196F3", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
+                m.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); removeWaypoint(m, wp); });
+                waypointMarkers.push(m);
+            });
+            waypointsHem.forEach(wp => {
+                const m = L.circleMarker(wp, { radius: 7, fillColor: "#FF9800", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
+                m.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); removeWaypoint(m, wp); });
+                waypointMarkers.push(m);
+            });
+            if (els.modeBtn) els.modeBtn.innerText = modes[travelMode].icon;
+            updateMapLogic();
+        } else if (lastTarget) {
             currentTargetName = lastTarget.name || "Mål";
             setTarget(lastTarget.coords, false, false, false);
             map.setView(lastTarget.coords, 14); 
@@ -525,7 +560,6 @@
         setupSwipeListener(); 
     }
 
-    // -- TILLÄGG: Funktion för att rensa kartan --
     function clearMapData() {
         playClickSound();
         
@@ -555,7 +589,6 @@
         updateLocateBtnText();
         saveSession();
     }
-    // -- SLUT TILLÄGG --
 
     function setupSwipeListener() {
         els.gamePage.addEventListener('touchstart', e => {
@@ -734,8 +767,13 @@
                     if (connectionLineReturn) connectionLineReturn.setLatLngs(coordsRetur);
                     else connectionLineReturn = L.polyline(coordsRetur, {color: '#FF9800', weight: 4, opacity: 0.7}).addTo(map);
                 } else if (connectionLineReturn) { map.removeLayer(connectionLineReturn); connectionLineReturn = null; }
+                
                 const distKm = route.distance / 1000;
-                els.distInfo.innerHTML = `<b>${distKm.toFixed(2)} km</b> till ${currentTargetName}`;
+                if (travelMode === 2) {
+                    els.distInfo.innerHTML = `<b>${distKm.toFixed(2)} km</b> till ${currentTargetName} och tillbaka`;
+                } else {
+                    els.distInfo.innerHTML = `<b>${distKm.toFixed(2)} km</b> till ${currentTargetName}`;
+                }
                 els.startBtn.classList.remove('hidden');
             } else { fallbackDist(); }
         } catch (e) { fallbackDist(); }
@@ -754,7 +792,12 @@
             if (connectionLineReturn) connectionLineReturn.setLatLngs(coordsRetur);
             else connectionLineReturn = L.polyline(coordsRetur, {color: '#FF9800', weight: 4, opacity: 0.7}).addTo(map);
         } else if (connectionLineReturn) { map.removeLayer(connectionLineReturn); connectionLineReturn = null; }
-        els.distInfo.innerHTML = `<b>${total.toFixed(2)} km</b> (fågelvägen)`;
+        
+        if (travelMode === 2) {
+            els.distInfo.innerHTML = `<b>${total.toFixed(2)} km</b> till målet och tillbaka (fågelvägen)`;
+        } else {
+            els.distInfo.innerHTML = `<b>${total.toFixed(2)} km</b> (fågelvägen)`;
+        }
         els.startBtn.classList.remove('hidden');
     }
 
@@ -855,7 +898,6 @@
             if (distToTarget < 40) { triggerTurnAroundDance(); return; }
         }
 
-        // 1. Hitta närmaste punkt på rutten
         let minD = Infinity;
         let idx = lastRouteIndex;
         let searchLimit = (travelMode !== 2 || hasReachedMidpoint) ? currentRouteCoords.length : Math.floor(currentRouteCoords.length * 0.6); 
@@ -865,37 +907,31 @@
         }
         lastRouteIndex = idx;
         
-        // 2. Beräkna tillryggalagd sträcka längs ruttens linjer (traveledDist)
         let traveledDist = 0;
         for (let i = 0; i < lastRouteIndex; i++) {
             traveledDist += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]);
         }
 
-        // 3. Beräkna totala rutt-längden för synkronisering
         let totalRouteDist = 0;
         for (let i = 0; i < currentRouteCoords.length - 1; i++) {
             totalRouteDist += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]);
         }
         
-        // 4. Kilometer kvar = Total minus Traveled (synkar perfekt!)
         let remainingDist = totalRouteDist - traveledDist;
         const distDisplay = document.getElementById('game-distance-display');
         if (distDisplay) {
             distDisplay.innerText = (remainingDist / 1000).toFixed(2) + ' km kvar';
         }
 
-        // 5. Beräkna steg (repor) baserat på samma traveledDist
         let currentSteps = Math.floor((traveledDist / 1000) / modes[travelMode].factor);
         if (!hasReachedMidpoint && travelMode === 2 && currentSteps > midpointStepIndex) { currentSteps = midpointStepIndex; }
         if (currentSteps > maxStepsReached) { maxStepsReached = currentSteps; }
         
-        // Uppdatera ätna äpplen
         for (let i = 0; i < initialTotalKm - 1; i++) {
             const s = document.getElementById(`step-${i}`);
             if (s) i < maxStepsReached ? s.classList.add('eat-animation') : s.classList.remove('eat-animation');
         }
         
-        // Slutlogik (Mål)
         const goal = (travelMode === 2) ? startCoords : currentTargetCoords;
         const distToFinal = map.distance(userCoords, goal);
 
@@ -1086,7 +1122,36 @@
 
     function playClickSound() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); const o = audioCtx.createOscillator(); o.type='triangle'; o.frequency.setValueAtTime(3000, audioCtx.currentTime); o.start(); o.stop(audioCtx.currentTime+0.1); }
     function closeInstructions() { els.welcomeOverlay.classList.add('hidden'); saveSession(); }
-    function shareApp() { const d = {title:'Cheese Tracker', url:window.location.href}; if(navigator.share) navigator.share(d); }
+    
+    function shareApp() { 
+        let shareUrl = window.location.origin + window.location.pathname;
+        let title = 'Mouse & Cheese Tracker';
+        let text = 'Häng med på äventyr med musen!';
+
+        // OM EN RUTT ÄR AKTIV, SKAPA EN DELNINGS-LÄNK
+        if (currentTargetCoords) {
+            const data = {
+                t: [currentTargetCoords.lat, currentTargetCoords.lng],
+                m: travelMode,
+                wd: waypointsDit.map(w => [w.lat, w.lng]),
+                wh: waypointsHem.map(w => [w.lat, w.lng]),
+                n: currentTargetName
+            };
+            // Packa ner datan till en Base64-sträng för URL:en
+            const encoded = btoa(JSON.stringify(data));
+            shareUrl += '?r=' + encoded;
+            text = `Följ min rutt till ${currentTargetName}! 🐭🧀`;
+        }
+
+        const d = {title: title, text: text, url: shareUrl}; 
+        if(navigator.share) {
+            navigator.share(d).catch(e => console.log("Delning avbruten"));
+        } else {
+            // Fallback om webbläsaren inte stödjer dela-api:et
+            prompt("Kopiera länken för att dela rutt:", shareUrl);
+        }
+    }
+
     window.onload = initMap;
 </script>
 </body>
