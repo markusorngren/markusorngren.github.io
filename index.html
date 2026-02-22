@@ -410,6 +410,7 @@
         const isIos = /iphone|ipad|ipod/.test(ua.toLowerCase());
         const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
         const isInApp = /FBAN|FBAV|Instagram|Messenger/i.test(ua);
+        const urlParams = new URLSearchParams(window.location.search);
 
         if (isInApp) {
             if (els.distInfo) {
@@ -424,6 +425,15 @@
                 const iosPrompt = document.getElementById('ios-install-prompt');
                 if (iosPrompt) iosPrompt.classList.remove('hidden');
             }, 3000); 
+        }
+
+        // Kollar om vi körs i webbläsaren men har en rutt
+        if (!isStandalone && urlParams.has('r')) {
+            const hint = document.createElement('div');
+            hint.style = "position:fixed; top:0; left:0; right:0; background:var(--orange); color:white; padding:10px; text-align:center; z-index:100000; font-weight:bold;";
+            hint.innerHTML = "För bäst upplevelse: Öppna rutten i din installerade Cheese Tracker-app! 🐭";
+            document.body.prepend(hint);
+            setTimeout(() => hint.remove(), 6000);
         }
     }
 

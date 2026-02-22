@@ -3,7 +3,12 @@
   "short_name": "CheeseTracker",
   "description": "Hjälp musen hitta osten i Kristinehamn och bortom!",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
   "background_color": "#fdf6e3",
   "theme_color": "#4CAF50",
   "orientation": "any",
