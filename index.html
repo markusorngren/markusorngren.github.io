@@ -248,9 +248,9 @@
         /* Ny stil för swipa-tipset */
         #swipe-hint {
             position: absolute;
-            top: 60px;
-            left: 50%;
-            transform: translateX(-50%);
+            top: 50%; /* Flyttar ner till mitten */
+            left: 50%; /* Flyttar till mitten från vänster */
+            transform: translate(-50%, -50%); /* Justerar så att MITTEN av rutan hamnar i mitten */
             background: rgba(0, 0, 0, 0.75);
             color: white;
             padding: 10px 20px;
