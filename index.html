@@ -244,6 +244,29 @@
             padding: 10px 15px; border-radius: 10px; font-size: 0.9rem;
             color: white; font-weight: bold; white-space: nowrap;
         }
+
+        /* Ny stil för swipa-tipset */
+        #swipe-hint {
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.75);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            z-index: 10005;
+            pointer-events: none;
+            white-space: nowrap;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        #swipe-hint.show-hint {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -256,8 +279,8 @@
         <p>Hjälp musen att hitta osten!</p>
         <ul>
             <li>🚗🚶↔️ <b>Välj färdsätt</b> bil eller promenad.</li>
-            <li>📍 <b>Klicka på kartan eller sök</b> för att välja resmål.</li>
-            <li>💡 <b>Högerklicka/Långtryck</b> för att lägga till via-punkter!</li>
+            <li>📍 <b>Klicka på kartan, sök eller favorit</b> för att välja resmål.</li>
+            <li>💡 <b>Högerklicka/Långtryck</b> för att lägga till eller ta bort via-punkter!</li>
             <li>💾 <b>Högerklicka/Långtryck</b> på en spara-knapp för att spara en favorit.</li>
             <li>🚀 Tryck på <b>STARTA</b> för att börja resan!</li>
         </ul>
@@ -289,14 +312,15 @@
         </div>
         <div class="action-container">
             <button id="start-btn" class="action-btn hidden" onclick="startGame()">STARTA 🧀</button>
-            <button id="voice-btn" class="action-btn" onclick="startVoiceSearch()">🎤 RÖST</button>
-            <button id="text-btn" class="action-btn" onclick="toggleSearchUI()">🔍 SÖK</button> 
+            <button id="voice-btn" class="action-btn" onclick="startVoiceSearch()">🎤 RÖST SÖK</button>
+            <button id="text-btn" class="action-btn" onclick="toggleSearchUI()">✎TEXT SÖK</button> 
             <button id="locate-btn" class="action-btn" onclick="toggleView()">🎯 HITTA MEJ</button>
         </div>
     </div>
 </div>
 
 <div id="game-page" class="hidden">
+    <div id="swipe-hint" class="hidden">👈 Swipa för karta 👉</div>
     <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: 10px; z-index: 10000; position: relative; width: 100%;">
         <div id="game-distance-display" class="hidden" style="font-weight: bold; font-size: 0.9rem; background: rgba(255,255,255,0.9); padding: 5px 12px; border-radius: 20px; color: #333;"></div>
         <button style="background:#ff4444; color:white; border-radius: 20px; padding: 6px 15px; font-size: 0.75rem;" onclick="stopGame()">AVBRYT</button>
@@ -357,6 +381,7 @@
     let hasReachedMidpoint = false; 
     let midpointStepIndex = -1; 
     let isCelebratingTurn = false; 
+    let swipeHintShown = false; 
 
     let gameMap = null;
     let gameRouteLine = null, gameUserMarker = null, gameSnapMarker = null, gameDashedLine = null;
@@ -395,6 +420,7 @@
         travelMode = sessionRaw.travelMode || 0;
         waypointsDit = (sessionRaw.waypointsDit || []).map(p => L.latLng(p.lat, p.lng));
         waypointsHem = (sessionRaw.waypointsHem || []).map(p => L.latLng(p.lat, p.lng));
+        swipeHintShown = sessionRaw.swipeHintShown || false;
         if (sessionRaw.startCoords) {
             fixedStartCoords = sessionRaw.startCoords;
         }
@@ -667,7 +693,8 @@
             travelMode: travelMode,
             waypointsDit: waypointsDit.map(wp => ({lat: wp.lat, lng: wp.lng})),
             waypointsHem: waypointsHem.map(wp => ({lat: wp.lat, lng: wp.lng})),
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            swipeHintShown: swipeHintShown
         };
         localStorage.setItem('mouse_session', JSON.stringify(sessionData));
     }
@@ -866,6 +893,22 @@
         els.shareBtn.classList.add('hidden');
         requestWakeLock();
         els.pathGrid.innerHTML = '<div id="the-mouse">🐭</div>';
+
+        // SWIPE-HINT LOGIKEN
+        if (!swipeHintShown) {
+            const hint = document.getElementById('swipe-hint');
+            if (hint) {
+                hint.classList.remove('hidden');
+                setTimeout(() => hint.classList.add('show-hint'), 50); // Mjuk inflygning
+                setTimeout(() => {
+                    hint.classList.remove('show-hint');
+                    setTimeout(() => hint.classList.add('hidden'), 500); // Göm helt efter animation
+                }, 4000); // Visas i 4 sekunder
+            }
+            swipeHintShown = true;
+            saveSession();
+        }
+
         if (travelMode === 2 && currentRouteCoords.length > 0) {
             let distToTarget = 0;
             let splitIndex = 0;

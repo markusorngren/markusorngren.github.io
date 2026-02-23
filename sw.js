@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mouse-tracker-v65'; // Uppdaterad version för att tvinga fram update
+const CACHE_NAME = 'mouse-tracker-v66'; // Uppdaterad version för att tvinga fram update
 const MAP_CACHE = 'mouse-map-tiles-v1'; // Ny cache för kartplattor
 const ASSETS = [
   './',
