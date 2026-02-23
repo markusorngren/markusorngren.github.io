@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mouse-tracker-v66'; // Bumpad version för uppdatering
+const CACHE_NAME = 'mouse-tracker-v67'; // Bumpad version för uppdatering
 const MAP_CACHE = 'mouse-map-tiles-v1';
 const ASSETS = [
   './',
@@ -64,3 +64,4 @@ self.addEventListener('message', (event) => {
   }
 
 });
+
