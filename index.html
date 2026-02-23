@@ -2,12 +2,16 @@
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Markus Mouse & Cheese Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="Hjälp musen att hitta osten! En rolig PWA för att spåra rutter och promenader.">
+    <title>Marcus Mouse & Cheese Tracker</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4CAF50">
     <link rel="apple-touch-icon" href="icon.png">
+    
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://tile.openstreetmap.org">
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -30,6 +34,7 @@
             flex-direction: column;
             user-select: none;
             -webkit-user-select: none;
+            touch-action: manipulation; /* Ersätter user-scalable=no för A11y */
         }
 
         #version-tag {
@@ -158,7 +163,7 @@
         #text-search-input { flex: 1; padding: 8px 15px; border-radius: 20px; border: 2px solid #ddd; font-size: 16px; outline: none; }
         #go-btn { background: #17a2b8; color: white; border-radius: 50%; width: 40px; height: 40px; font-size: 1.2rem; }
 
-        .action-btn { flex: 1; padding: 8px 5px; border-radius: 40px; font-size: 0.75rem; box-shadow: 0 4px 0 rgba(0,0,0,0.15); min-height: 42px; }
+        .action-btn { flex: 1; padding: 8px 5px; border-radius: 40px; font-size: 0.75rem; box-shadow: 0 4px 0 rgba(0,0,0,0.15); min-height: 48px; }
         #locate-btn { background: #007bff; color: white; text-transform: uppercase; }
         #text-btn { background: #17a2b8; color: white; } 
         #voice-btn { background: #444; color: white; }
@@ -245,12 +250,11 @@
             color: white; font-weight: bold; white-space: nowrap;
         }
 
-        /* Ny stil för swipa-tipset */
         #swipe-hint {
             position: absolute;
-            top: 50%; /* Flyttar ner till mitten */
-            left: 50%; /* Flyttar till mitten från vänster */
-            transform: translate(-50%, -50%); /* Justerar så att MITTEN av rutan hamnar i mitten */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             background: rgba(0, 0, 0, 0.75);
             color: white;
             padding: 10px 20px;
@@ -264,14 +268,12 @@
             opacity: 0;
             transition: opacity 0.5s ease;
         }
-        #swipe-hint.show-hint {
-            opacity: 1;
-        }
+        #swipe-hint.show-hint { opacity: 1; }
     </style>
 </head>
 <body>
 <div id="version-tag">V...</div>
-<button id="share-btn" onclick="shareApp()">🔗</button>
+<button id="share-btn" aria-label="Dela appen" onclick="shareApp()">🔗</button>
 
 <div id="welcome-overlay">
     <div class="welcome-content">
@@ -291,7 +293,7 @@
 <div id="ios-install-prompt" class="hidden">
     <div class="ios-header"><span>🐭 Cheese Tracker</span></div>
     <div class="ios-instructions">Installera appen för att få fullskärm och snabb åtkomst!</div>
-    <div class="ios-footer">Tryck på <img src="https://developer.apple.com/library/archive/documentation/NetworkingInternet/Conceptual/SafariVisualGuide/Art/Action_2x.png" width="20" style="margin: 0 3px;"> och välj <b>"Lägg till på hemskärmen"</b>.</div>
+    <div class="ios-footer">Tryck på <img src="https://developer.apple.com/library/archive/documentation/NetworkingInternet/Conceptual/SafariVisualGuide/Art/Action_2x.png" width="20" height="20" alt="Dela-ikon" style="margin: 0 3px;"> och välj <b>"Lägg till på hemskärmen"</b>.</div>
     <button class="close-ios-btn" onclick="this.parentElement.classList.add('hidden')">Kanske senare</button>
 </div>
 
@@ -300,20 +302,20 @@
     <div class="panel">
         <div id="dist-info">Söker din GPS... 📍</div>
         <div class="save-btn-container">
-            <button id="btn-0" class="slot-btn" onclick="handleSlotClick(0)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
-            <button id="btn-1" class="slot-btn" onclick="handleSlotClick(1)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
-            <button id="btn-2" class="slot-btn" onclick="handleSlotClick(2)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
-            <button id="btn-3" class="slot-btn" onclick="handleSlotClick(3)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
-            <button id="mode-btn" class="mode-btn" onclick="toggleTravelMode()">🚗</button>
+            <button id="btn-0" class="slot-btn" aria-label="Sparad plats 1" onclick="handleSlotClick(0)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
+            <button id="btn-1" class="slot-btn" aria-label="Sparad plats 2" onclick="handleSlotClick(1)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
+            <button id="btn-2" class="slot-btn" aria-label="Sparad plats 3" onclick="handleSlotClick(2)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
+            <button id="btn-3" class="slot-btn" aria-label="Sparad plats 4" onclick="handleSlotClick(3)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
+            <button id="mode-btn" class="mode-btn" aria-label="Byt färdsätt" onclick="toggleTravelMode()">🚗</button>
         </div>
         <div id="search-container" class="hidden">
-            <input type="text" id="text-search-input" placeholder="Vart ska vi?">
-            <button id="go-btn" onclick="executeTextSearch()">➔</button>
+            <input type="text" id="text-search-input" aria-label="Sök plats" placeholder="Vart ska vi?">
+            <button id="go-btn" aria-label="Sök" onclick="executeTextSearch()">➔</button>
         </div>
         <div class="action-container">
             <button id="start-btn" class="action-btn hidden" onclick="startGame()">STARTA 🧀</button>
             <button id="voice-btn" class="action-btn" onclick="startVoiceSearch()">🎤 RÖST SÖK</button>
-            <button id="text-btn" class="action-btn" onclick="toggleSearchUI()">✎TEXT SÖK</button> 
+            <button id="text-btn" class="action-btn" onclick="toggleSearchUI()">✎ TEXT SÖK</button> 
             <button id="locate-btn" class="action-btn" onclick="toggleView()">🎯 HITTA MEJ</button>
         </div>
     </div>
@@ -329,7 +331,7 @@
     <div id="game-map" class="hidden"></div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
@@ -462,6 +464,7 @@
         clearControl.onAdd = function () {
             const btn = L.DomUtil.create('button', '');
             btn.innerHTML = 'RENSA';
+            btn.setAttribute('aria-label', 'Rensa rutt');
             btn.style.background = 'rgba(255, 255, 255, 0.6)';
             btn.style.border = '2px solid rgba(0,0,0,0.1)';
             btn.style.padding = '8px 12px';
@@ -481,7 +484,6 @@
         };
         clearControl.addTo(map);
 
-        // KONTROLLERA OM DET FINNS EN DELAD RUTT I URL:EN
         const urlParams = new URLSearchParams(window.location.search);
         const routeData = urlParams.get('r');
         if (routeData) {
@@ -493,7 +495,6 @@
                 waypointsDit = (data.wd || []).map(p => L.latLng(p[0], p[1]));
                 waypointsHem = (data.wh || []).map(p => L.latLng(p[0], p[1]));
                 
-                // Rensa URL:en så att den inte laddas om varje gång
                 window.history.replaceState({}, document.title, window.location.pathname);
                 els.welcomeOverlay.classList.add('hidden');
             } catch (e) {
@@ -894,16 +895,15 @@
         requestWakeLock();
         els.pathGrid.innerHTML = '<div id="the-mouse">🐭</div>';
 
-        // SWIPE-HINT LOGIKEN
         if (!swipeHintShown) {
             const hint = document.getElementById('swipe-hint');
             if (hint) {
                 hint.classList.remove('hidden');
-                setTimeout(() => hint.classList.add('show-hint'), 50); // Mjuk inflygning
+                setTimeout(() => hint.classList.add('show-hint'), 50);
                 setTimeout(() => {
                     hint.classList.remove('show-hint');
-                    setTimeout(() => hint.classList.add('hidden'), 500); // Göm helt efter animation
-                }, 4000); // Visas i 4 sekunder
+                    setTimeout(() => hint.classList.add('hidden'), 500);
+                }, 4000);
             }
             swipeHintShown = true;
             saveSession();
@@ -930,6 +930,7 @@
             else { step.innerHTML = '🍎'; }
             els.pathGrid.appendChild(step);
         }
+        
         setTimeout(() => moveMouse(0), 100);
     }
 
@@ -1168,10 +1169,9 @@
     
     function shareApp() { 
         let shareUrl = window.location.origin + window.location.pathname;
-        let title = 'Mouse & Cheese Tracker';
+        let title = 'Marcus Mouse & Cheese Tracker';
         let text = 'Häng med på äventyr med musen!';
 
-        // OM EN RUTT ÄR AKTIV, SKAPA EN DELNINGS-LÄNK
         if (currentTargetCoords) {
             const data = {
                 t: [currentTargetCoords.lat, currentTargetCoords.lng],
@@ -1180,7 +1180,6 @@
                 wh: waypointsHem.map(w => [w.lat, w.lng]),
                 n: currentTargetName
             };
-            // Packa ner datan till en Base64-sträng för URL:en
             const encoded = btoa(JSON.stringify(data));
             shareUrl += '?r=' + encoded;
             text = `Följ min rutt till ${currentTargetName}! 🐭🧀`;
@@ -1190,12 +1189,13 @@
         if(navigator.share) {
             navigator.share(d).catch(e => console.log("Delning avbruten"));
         } else {
-            // Fallback om webbläsaren inte stödjer dela-api:et
             prompt("Kopiera länken för att dela rutt:", shareUrl);
         }
     }
 
-    window.onload = initMap;
+    // Eftersom scriptet använder defer, kommer DOM redan vara inläst när koden körs, 
+    // men window.onload funkar fortfarande som en säker trigger.
+    window.addEventListener('load', initMap);
 </script>
 </body>
 </html>
