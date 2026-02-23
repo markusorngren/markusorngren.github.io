@@ -34,7 +34,7 @@
             flex-direction: column;
             user-select: none;
             -webkit-user-select: none;
-            touch-action: manipulation; /* Ersätter user-scalable=no för A11y */
+            touch-action: manipulation;
         }
 
         #version-tag {
@@ -589,30 +589,23 @@
 
     function clearMapData() {
         playClickSound();
-        
         currentTargetCoords = null;
         currentTargetName = "MÅLET";
-        
         if (targetMarker) { map.removeLayer(targetMarker); targetMarker = null; }
         if (connectionLine) { map.removeLayer(connectionLine); connectionLine = null; }
         if (connectionLineReturn) { map.removeLayer(connectionLineReturn); connectionLineReturn = null; }
-        
         waypointsDit = []; 
         waypointsHem = []; 
         waypointMarkers.forEach(m => map.removeLayer(m)); 
         waypointMarkers = [];
-        
         fixedStartCoords = null;
-        
         els.distInfo.innerHTML = "Vart ska vi åka? 🐭";
         els.startBtn.classList.add('hidden');
-        
         if (userCoords) {
             zoomToUser();
             isShowingUser = false;
             isTracking = true;
         }
-        
         updateLocateBtnText();
         saveSession();
     }
@@ -656,19 +649,16 @@
 
     function updateGameMapView(forceCenter = false) {
         if (!isGameMapVisible || gameState !== 'GAME' || !gameMap || !userCoords) return;
-        
         if (!gameRouteLine && currentRouteCoords.length > 0) {
             gameRouteLine = L.polyline(currentRouteCoords, {color: '#007bff', weight: 4, opacity: 0.5}).addTo(gameMap);
         } else if (gameRouteLine) {
             gameRouteLine.setLatLngs(currentRouteCoords);
         }
-        
         if (!gameUserMarker) {
             gameUserMarker = L.circleMarker(userCoords, {radius: 7, fillColor: "#007bff", color: "#fff", weight: 2, fillOpacity: 1}).addTo(gameMap);
         } else {
             gameUserMarker.setLatLng(userCoords);
         }
-        
         let snapCoords = currentRouteCoords[lastRouteIndex];
         if (snapCoords) {
             if (!gameSnapMarker) {
@@ -683,7 +673,6 @@
                 gameDashedLine.setLatLngs(dashCoords);
             }
         }
-        
         gameMap.setView(userCoords, 16);
     }
 
@@ -756,7 +745,14 @@
             userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, fillOpacity: 0.8}).addTo(map);
         } else userMarker.setLatLng(userCoords);
         if (isTracking && gameState === 'MAP') map.panTo(userCoords);
-        if (!initialZoomPerformed) { zoomToUser(); initialZoomPerformed = true; isTracking = true; }
+        
+        if (!initialZoomPerformed) { 
+            // NU UTAN ANIMATION: setView istället för zoomToUser
+            map.setView(userCoords, 18); 
+            initialZoomPerformed = true; 
+            isTracking = true; 
+        }
+        
         if (gameState === 'MAP') { if (!fixedStartCoords) updateMapLogic(); }
         else if (gameState === 'GAME') updateGameLogic();
     }
@@ -879,12 +875,10 @@
         hasReachedMidpoint = false;
         midpointStepIndex = -1;
         isCelebratingTurn = false;
-        
         isGameMapVisible = false;
         els.gameMapElement.classList.add('hidden');
         const distDisplay = document.getElementById('game-distance-display');
         if (distDisplay) distDisplay.classList.add('hidden');
-        
         els.pathGrid.classList.remove('hidden');
         const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', '');
         const totalDistanceKm = parseFloat(distStr);
@@ -930,18 +924,15 @@
             else { step.innerHTML = '🍎'; }
             els.pathGrid.appendChild(step);
         }
-        
         setTimeout(() => moveMouse(0), 100);
     }
 
     function updateGameLogic() {
         if (gameState !== 'GAME' || !currentRouteCoords.length || isCelebratingTurn) return;
-        
         if (!hasReachedMidpoint && travelMode === 2) {
             const distToTarget = map.distance(userCoords, currentTargetCoords);
             if (distToTarget < 40) { triggerTurnAroundDance(); return; }
         }
-
         let minD = Infinity;
         let idx = lastRouteIndex;
         let searchLimit = (travelMode !== 2 || hasReachedMidpoint) ? currentRouteCoords.length : Math.floor(currentRouteCoords.length * 0.6); 
@@ -950,35 +941,28 @@
             if (d < minD) { minD = d; idx = i; }
         }
         lastRouteIndex = idx;
-        
         let traveledDist = 0;
         for (let i = 0; i < lastRouteIndex; i++) {
             traveledDist += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]);
         }
-
         let totalRouteDist = 0;
         for (let i = 0; i < currentRouteCoords.length - 1; i++) {
             totalRouteDist += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]);
         }
-        
         let remainingDist = totalRouteDist - traveledDist;
         const distDisplay = document.getElementById('game-distance-display');
         if (distDisplay) {
             distDisplay.innerText = (remainingDist / 1000).toFixed(2) + ' km kvar';
         }
-
         let currentSteps = Math.floor((traveledDist / 1000) / modes[travelMode].factor);
         if (!hasReachedMidpoint && travelMode === 2 && currentSteps > midpointStepIndex) { currentSteps = midpointStepIndex; }
         if (currentSteps > maxStepsReached) { maxStepsReached = currentSteps; }
-        
         for (let i = 0; i < initialTotalKm - 1; i++) {
             const s = document.getElementById(`step-${i}`);
             if (s) i < maxStepsReached ? s.classList.add('eat-animation') : s.classList.remove('eat-animation');
         }
-        
         const goal = (travelMode === 2) ? startCoords : currentTargetCoords;
         const distToFinal = map.distance(userCoords, goal);
-
         if (travelMode === 2) {
             if (hasReachedMidpoint && distToFinal < 40 && maxStepsReached > (initialTotalKm * 0.8)) {
                 moveMouse(initialTotalKm - 1); setTimeout(finishGame, 500);
@@ -987,7 +971,6 @@
             if (distToFinal < 40) { moveMouse(initialTotalKm - 1); setTimeout(finishGame, 500); } 
             else { moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 1))); }
         }
-        
         if (isGameMapVisible) { updateGameMapView(false); }
     }
 
@@ -1034,7 +1017,6 @@
         els.gameMapElement.classList.add('hidden');
         const distDisplay = document.getElementById('game-distance-display');
         if (distDisplay) distDisplay.classList.add('hidden');
-        
         els.pathGrid.classList.remove('hidden');
         const m = document.getElementById('the-mouse');
         m.classList.remove('victory'); m.classList.remove('turn-dance'); m.innerHTML = '🐭';
@@ -1042,12 +1024,7 @@
         els.gamePage.classList.add('hidden'); els.mapPage.classList.remove('hidden'); 
         els.shareBtn.classList.remove('hidden'); releaseWakeLock();
         saveSession();
-
-        setTimeout(() => {
-            if (map) {
-                map.invalidateSize();
-            }
-        }, 50);
+        setTimeout(() => { if (map) map.invalidateSize(); }, 50);
     }
 
     function createConfettiBurst() {
@@ -1171,7 +1148,6 @@
         let shareUrl = window.location.origin + window.location.pathname;
         let title = 'Marcus Mouse & Cheese Tracker';
         let text = 'Häng med på äventyr med musen!';
-
         if (currentTargetCoords) {
             const data = {
                 t: [currentTargetCoords.lat, currentTargetCoords.lng],
@@ -1184,7 +1160,6 @@
             shareUrl += '?r=' + encoded;
             text = `Följ min rutt till ${currentTargetName}! 🐭🧀`;
         }
-
         const d = {title: title, text: text, url: shareUrl}; 
         if(navigator.share) {
             navigator.share(d).catch(e => console.log("Delning avbruten"));
@@ -1192,9 +1167,6 @@
             prompt("Kopiera länken för att dela rutt:", shareUrl);
         }
     }
-
-    // Eftersom scriptet använder defer, kommer DOM redan vara inläst när koden körs, 
-    // men window.onload funkar fortfarande som en säker trigger.
     window.addEventListener('load', initMap);
 </script>
 </body>
