@@ -2,69 +2,1201 @@
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Markus Mouse & Cheese Tracker</title>
-    
-    <meta name="description" content="Hjälp musen hitta osten i Kristinehamn med denna tracker!">
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4CAF50">
     <link rel="apple-touch-icon" href="icon.png">
     
-    <link rel="preconnect" href="https://a.tile.openstreetmap.org">
-    <link rel="preconnect" href="https://unpkg.com">
-
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="style.css">
-    
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-    <script src="script.js" defer></script>
+    <style>
+        :root {
+            --app-height: 100svh;
+            --primary: #4CAF50;
+            --blue: #2196F3;
+            --orange: #FF9800;
+        }
+
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            margin: 0; 
+            background: #fdf6e3; 
+            overflow: hidden; 
+            height: var(--app-height); 
+            width: 100vw; 
+            position: fixed; 
+            display: flex;
+            flex-direction: column;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #version-tag {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 10000;
+            background: rgba(255, 255, 255, 0.4);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.65rem;
+            font-family: monospace;
+            pointer-events: none;
+            color: rgba(0, 0, 0, 0.5);
+            font-weight: bold;
+        }
+
+        #ios-install-prompt {
+            position: fixed;
+            bottom: calc(20px + env(safe-area-inset-bottom));
+            left: 15px;
+            right: 15px;
+            background: white;
+            padding: 18px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            z-index: 100000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            border: 3px solid var(--primary);
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .ios-header { display: flex; align-items: center; gap: 10px; font-weight: bold; color: var(--primary); font-size: 1.1rem; }
+        .ios-instructions { font-size: 0.95rem; text-align: center; color: #444; line-height: 1.4; }
+        .ios-footer { display: flex; align-items: center; justify-content: center; gap: 8px; background: #f9f9f9; padding: 8px 15px; border-radius: 12px; width: 100%; box-sizing: border-box; }
+        .close-ios-btn { background: none; border: none; color: #999; text-decoration: underline; font-size: 0.8rem; margin-top: 5px; }
+        
+        #map-page, #game-page { height: var(--app-height); width: 100vw; display: flex; flex-direction: column; overflow: hidden; }
+
+        .action-container { display: flex; justify-content: center; gap: 8px; width: 100%; max-width: 400px; margin: 0 auto; }
+
+        #locate-btn { order: 1; }
+        #text-btn   { order: 2; }
+        #voice-btn  { order: 3; }
+        #start-btn  { order: 4; }
+
+        @media (orientation: landscape) {
+            #map-page { flex-direction: row; }
+            .panel { 
+                width: 300px; height: 100%; border-radius: 0 !important; 
+                box-shadow: -4px 0 15px rgba(0,0,0,0.1) !important;
+                display: flex; flex-direction: column; justify-content: flex-start;
+                padding: env(safe-area-inset-top) 15px calc(20px + env(safe-area-inset-bottom)) 15px !important;
+                box-sizing: border-box; gap: 10px;
+            }
+            .save-btn-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 5px; }
+            #mode-btn { display: flex !important; }
+            .action-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; flex: none; margin-top: 10px; }
+            #mode-btn { grid-column: 1; order: 1; width: 100%; height: 50px; }
+            #start-btn { grid-column: 2; order: 2; width: 100%; height: 50px; display: flex !important; }
+            #voice-btn { grid-column: 1 / span 2; order: 3; width: 100%; }
+            #text-btn  { grid-column: 1 / span 2; order: 4; width: 100%; }
+            #locate-btn { grid-column: 1 / span 2; order: 5; width: 100%; }
+            .apple-grid { grid-template-columns: repeat(10, 1fr) !important; max-width: 80% !important; padding-top: 30px !important; }
+            #game-map { max-width: 80% !important; }
+        }
+
+        #map { flex: 1; width: 100%; min-height: 0; z-index: 1; }
+        .hidden { display: none !important; }
+        
+        #welcome-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 99999; display: flex;
+            align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;
+        }
+        .welcome-content {
+            background: white; padding: 25px; border-radius: 25px;
+            max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .welcome-content h2 { margin-top: 0; color: var(--orange); }
+        .welcome-content ul { text-align: left; margin: 20px 0; line-height: 1.6; }
+        .ok-btn {
+            background: var(--primary); color: white; padding: 12px 30px;
+            border-radius: 30px; font-size: 1.1rem; width: 100%; border: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .panel { 
+            padding: 10px 10px calc(15px + env(safe-area-inset-bottom)); 
+            background: white; text-align: center; box-shadow: 0 -4px 15px rgba(0,0,0,0.1); 
+            z-index: 1000; border-radius: 20px 20px 0 0; flex-shrink: 0; 
+        }
+        
+        button { cursor: pointer; font-weight: bold; transition: all 0.2s; border: none; color: #000; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+        button:active { transform: scale(0.95); }
+
+        .save-btn-container { display: flex; justify-content: center; gap: 10px; margin-bottom: 8px; padding: 2px; align-items: center; }
+        .slot-btn { 
+            width: 50px; height: 50px; box-shadow: 0 3px 6px rgba(0,0,0,0.2); 
+            display: flex; align-items: center; justify-content: center; padding: 0 2px; flex-shrink: 0;
+            opacity: 0.8; border: 2px solid transparent;
+            -webkit-touch-callout: none;
+        }
+        .slot-btn.filled { opacity: 1; border: 2px solid rgba(0,0,0,0.3); box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+
+        .mode-btn { width: 50px; height: 50px; border-radius: 12px; background: #f0f0f0; font-size: 1.2rem; border: 2px solid #ddd; box-shadow: 0 3px 6px rgba(0,0,0,0.1); flex-shrink: 0; }
+        .btn-text-container { width: 90%; overflow: hidden; white-space: nowrap; position: relative; mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent); }
+        .scrolling-text { display: inline-block; font-size: 0.55rem; text-transform: uppercase; pointer-events: none; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); padding: 0 5px; white-space: nowrap; }
+        .animate-scroll { animation: marquee 6s linear infinite; }
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50.5%); } }
+
+        #btn-0 { border-radius: 50%; background: var(--primary); } 
+        #btn-1 { border-radius: 8px; background: var(--blue); } 
+        #btn-2 { background: var(--orange); width: 55px; height: 55px; clip-path: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0% 50%); } 
+        #btn-3 { width: 55px; height: 50px; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); padding-top: 10px; background: #9C27B0; } 
+
+        #search-container { display: flex; gap: 5px; margin-bottom: 10px; transition: all 0.3s ease; }
+        #text-search-input { flex: 1; padding: 8px 15px; border-radius: 20px; border: 2px solid #ddd; font-size: 16px; outline: none; }
+        #go-btn { background: #17a2b8; color: white; border-radius: 50%; width: 40px; height: 40px; font-size: 1.2rem; }
+
+        .action-btn { flex: 1; padding: 8px 5px; border-radius: 40px; font-size: 0.75rem; box-shadow: 0 4px 0 rgba(0,0,0,0.15); min-height: 42px; }
+        #locate-btn { background: #007bff; color: white; text-transform: uppercase; }
+        #text-btn { background: #17a2b8; color: white; } 
+        #voice-btn { background: #444; color: white; }
+        #voice-btn.listening { background: #ff4444; animation: pulse 1.5s infinite; }
+        #start-btn { background: #ffcc00; color: #000; }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(255, 68, 68, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 68, 68, 0); }
+        }
+
+        #dist-info { margin-bottom: 8px; font-weight: bold; font-size: 0.95rem; color: #000; min-height: 1.2em; }
+        #share-btn { position: fixed; top: 15px; left: 15px; z-index: 10000; background: white; border-radius: 50%; width: 45px; height: 45px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-size: 1.2rem; }
+        
+        #game-page { align-items: center; padding: 5px; position: relative; }
+        
+        .apple-grid { 
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; width: 95%; 
+            max-width: 280px; margin-top: 10px; padding: 25px 10px 10px 10px; 
+            background: rgba(255,255,255,0.5); border-radius: 15px; position: relative; 
+            max-height: 70vh; overflow-y: auto;
+        }
+
+        #game-map {
+            display: block; width: 95%; max-width: 280px; margin-top: 10px; 
+            height: 60vh; min-height: 350px; padding: 0; background: rgba(255,255,255,0.5); 
+            border-radius: 15px; overflow: hidden; position: relative; z-index: 5;
+        }
+
+        .step { font-size: 1.4rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; transition: all 0.5s ease; }
+        
+        @keyframes mouseWobble { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } }
+        
+        @keyframes turnWiggle {
+            0% { transform: scale(1.1) rotate(0deg); }
+            25% { transform: scale(1.3) rotate(-20deg); }
+            50% { transform: scale(1.1) rotate(0deg); }
+            75% { transform: scale(1.3) rotate(20deg); }
+            100% { transform: scale(1.1) rotate(0deg); }
+        }
+        .turn-dance { animation: turnWiggle 0.6s infinite ease-in-out !important; }
+
+        #the-mouse { position: absolute; font-size: 1.8rem; transition: all 0.8s ease-in-out; z-index: 100; margin-top: -12px; margin-left: -8px; pointer-events: none; animation: mouseWobble 1s infinite ease-in-out; }
+        .eat-animation { transform: scale(0.6) !important; opacity: 0.3 !important; }
+
+        @keyframes victoryWiggle {
+            0% { transform: scale(1.2) rotate(0deg); }
+            25% { transform: scale(1.5) rotate(-15deg); }
+            50% { transform: scale(1.2) rotate(0deg); }
+            75% { transform: scale(1.5) rotate(15deg); }
+            100% { transform: scale(1.2) rotate(0deg); }
+        }
+        
+        #the-mouse.victory { 
+            position: fixed; top: 0 !important; left: 0 !important; z-index: 9999; 
+            font-size: 6rem; animation: victoryWiggle 0.8s infinite ease-in-out; 
+            margin: 0; background: rgba(253, 246, 227, 0.95); width: 100vw; height: 100svh; 
+            display: flex; align-items: center; justify-content: center; 
+        }
+
+        .confetti {
+            position: fixed; 
+            width: 10px; 
+            height: 10px;
+            z-index: 10000; 
+            pointer-events: none;
+            border-radius: 50%;
+            animation: pop 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+        @keyframes pop {
+            0% { transform: translate(0, 0) scale(0); opacity: 0; }
+            10% { opacity: 1; transform: translate(0, 0) scale(1); }
+            100% { transform: translate(var(--dx), var(--dy)) rotate(720deg) scale(0.5); opacity: 0; }
+        }
+
+        #waypoint-menu {
+            position: fixed; z-index: 10001; background: white; 
+            border-radius: 15px; padding: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            display: flex; flex-direction: column; gap: 8px; border: 2px solid var(--orange);
+        }
+        .wp-menu-btn {
+            padding: 10px 15px; border-radius: 10px; font-size: 0.9rem;
+            color: white; font-weight: bold; white-space: nowrap;
+        }
+
+        /* Ny stil för swipa-tipset */
+        #swipe-hint {
+            position: absolute;
+            top: 50%; /* Flyttar ner till mitten */
+            left: 50%; /* Flyttar till mitten från vänster */
+            transform: translate(-50%, -50%); /* Justerar så att MITTEN av rutan hamnar i mitten */
+            background: rgba(0, 0, 0, 0.75);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            z-index: 10005;
+            pointer-events: none;
+            white-space: nowrap;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        #swipe-hint.show-hint {
+            opacity: 1;
+        }
+    </style>
 </head>
 <body>
+<div id="version-tag">V...</div>
+<button id="share-btn" onclick="shareApp()">🔗</button>
 
-    <div id="version-tag">V68</div>
+<div id="welcome-overlay">
+    <div class="welcome-content">
+        <h2>Hej! 🐭</h2>
+        <p>Hjälp musen att hitta osten!</p>
+        <ul>
+            <li>🚗🚶↔️ <b>Välj färdsätt</b></li>
+            <li>📍 <b>Välj resmål</b> Klicka på kartan eller sök</li>
+            <li>💡 <b>Via-punkter</b> långtryck för att lägga till eller ta bort</li>
+            <li>💾 <b>Spara favoriter</b> långtryck på en spara-knapp</li>
+            <li>🚀 <b>STARTA</b></li>
+        </ul>
+        <button class="ok-btn" onclick="closeInstructions()">Okej! Jag förstår!</button>
+    </div>
+</div>
 
-    <div id="welcome-overlay" class="overlay">
-        <div class="welcome-card">
-            <div style="font-size: 50px; margin-bottom: 10px;">🐭🧀</div>
-            <h2>Välkommen, Marcus!</h2>
-            <p>Dags att hitta osten i Kristinehamn. Spara dina favoritställen och se hur långt bort de är.</p>
-            <button class="menu-btn" onclick="closeInstructions()" style="background: var(--primary); color:white; width: 100%;">Let's go!</button>
+<div id="ios-install-prompt" class="hidden">
+    <div class="ios-header"><span>🐭 Cheese Tracker</span></div>
+    <div class="ios-instructions">Installera appen för att få fullskärm och snabb åtkomst!</div>
+    <div class="ios-footer">Tryck på <img src="https://developer.apple.com/library/archive/documentation/NetworkingInternet/Conceptual/SafariVisualGuide/Art/Action_2x.png" width="20" style="margin: 0 3px;"> och välj <b>"Lägg till på hemskärmen"</b>.</div>
+    <button class="close-ios-btn" onclick="this.parentElement.classList.add('hidden')">Kanske senare</button>
+</div>
+
+<div id="map-page">
+    <div id="map"></div>
+    <div class="panel">
+        <div id="dist-info">Söker din GPS... 📍</div>
+        <div class="save-btn-container">
+            <button id="btn-0" class="slot-btn" onclick="handleSlotClick(0)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
+            <button id="btn-1" class="slot-btn" onclick="handleSlotClick(1)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
+            <button id="btn-2" class="slot-btn" onclick="handleSlotClick(2)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
+            <button id="btn-3" class="slot-btn" onclick="handleSlotClick(3)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
+            <button id="mode-btn" class="mode-btn" onclick="toggleTravelMode()">🚗</button>
+        </div>
+        <div id="search-container" class="hidden">
+            <input type="text" id="text-search-input" placeholder="Vart ska vi?">
+            <button id="go-btn" onclick="executeTextSearch()">➔</button>
+        </div>
+        <div class="action-container">
+            <button id="start-btn" class="action-btn hidden" onclick="startGame()">STARTA 🧀</button>
+            <button id="voice-btn" class="action-btn" onclick="startVoiceSearch()">🎤 RÖST SÖK</button>
+            <button id="text-btn" class="action-btn" onclick="toggleSearchUI()">✎TEXT SÖK</button> 
+            <button id="locate-btn" class="action-btn" onclick="toggleView()">🎯 HITTA MEJ</button>
         </div>
     </div>
+</div>
 
-    <div id="map-page">
-        <div id="map"></div>
+<div id="game-page" class="hidden">
+    <div id="swipe-hint" class="hidden">👈 Swipa för karta 👉</div>
+    <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: 10px; z-index: 10000; position: relative; width: 100%;">
+        <div id="game-distance-display" class="hidden" style="font-weight: bold; font-size: 0.9rem; background: rgba(255,255,255,0.9); padding: 5px 12px; border-radius: 20px; color: #333;"></div>
+        <button style="background:#ff4444; color:white; border-radius: 20px; padding: 6px 15px; font-size: 0.75rem;" onclick="stopGame()">AVBRYT</button>
+    </div>
+    <div class="apple-grid" id="path"><div id="the-mouse">🐭</div></div>
+    <div id="game-map" class="hidden"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js').then(reg => {
+                const askVersion = (worker) => {
+                    if (!worker) return;
+                    const msgChan = new MessageChannel();
+                    msgChan.port1.onmessage = (event) => {
+                        if (event.data && event.data.version) {
+                            document.getElementById('version-tag').innerText = event.data.version.toUpperCase();
+                        }
+                    };
+                    worker.postMessage({ type: 'GET_VERSION' }, [msgChan.port2]);
+                };
+                if (reg.active) askVersion(reg.active);
+                reg.addEventListener('updatefound', () => {
+                    const newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'activated') askVersion(newWorker);
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            window.location.reload();
+                        }
+                    });
+                });
+            });
+        });
+    }
+
+    let map, targetMarker, userMarker, connectionLine, connectionLineReturn, userCoords;
+    let fixedStartCoords = null; 
+    let currentTargetCoords = null;
+    let waypointsDit = []; 
+    let waypointsHem = []; 
+    let waypointMarkers = []; 
+
+    let startCoords = null;
+    let currentTargetName = "MÅLET";
+    let initialZoomPerformed = false; 
+    let isShowingUser = true; 
+    let isTracking = false; 
+    let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
+    let wakeLock = null;
+    let currentRouteCoords = []; 
+    let ignoreClick = false; 
+    let confettiInterval = null;
+    
+    let maxStepsReached = 0;
+    let lastRouteIndex = 0; 
+    let hasReachedMidpoint = false; 
+    let midpointStepIndex = -1; 
+    let isCelebratingTurn = false; 
+    let swipeHintShown = false; 
+
+    let gameMap = null;
+    let gameRouteLine = null, gameUserMarker = null, gameSnapMarker = null, gameDashedLine = null;
+    let isGameMapVisible = false;
+    let swipeStartX = 0;
+
+    let travelMode = 0; 
+    const modes = [
+        { icon: '🚗', factor: 1.0, osrm: 'car' },
+        { icon: '🚶', factor: 0.1, osrm: 'foot' },
+        { icon: '🚶↔️', factor: 0.1, osrm: 'foot' } 
+    ];
+
+    const els = {
+        distInfo: document.getElementById('dist-info'),
+        startBtn: document.getElementById('start-btn'),
+        mapPage: document.getElementById('map-page'),
+        gamePage: document.getElementById('game-page'),
+        pathGrid: document.getElementById('path'),
+        locateBtn: document.getElementById('locate-btn'),
+        searchContainer: document.getElementById('search-container'),
+        searchInput: document.getElementById('text-search-input'),
+        voiceBtn: document.getElementById('voice-btn'),
+        welcomeOverlay: document.getElementById('welcome-overlay'),
+        shareBtn: document.getElementById('share-btn'),
+        modeBtn: document.getElementById('mode-btn'),
+        actionContainer: document.querySelector('.action-container'),
+        gameMapElement: document.getElementById('game-map')
+    };
+
+    let sessionRaw = JSON.parse(localStorage.getItem('mouse_session'));
+    let lastTarget = null;
+
+    if (sessionRaw && (Date.now() - sessionRaw.timestamp < 10800000)) {
+        lastTarget = sessionRaw.target;
+        travelMode = sessionRaw.travelMode || 0;
+        waypointsDit = (sessionRaw.waypointsDit || []).map(p => L.latLng(p.lat, p.lng));
+        waypointsHem = (sessionRaw.waypointsHem || []).map(p => L.latLng(p.lat, p.lng));
+        swipeHintShown = sessionRaw.swipeHintShown || false;
+        if (sessionRaw.startCoords) {
+            fixedStartCoords = sessionRaw.startCoords;
+        }
+        els.welcomeOverlay.classList.add('hidden');
+    }
+
+    let audioCtx;
+    let gameState = 'MAP';
+    let initialTotalKm = 0;
+
+    function checkInstallState() {
+        const ua = navigator.userAgent;
+        const isIos = /iphone|ipad|ipod/.test(ua.toLowerCase());
+        const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+        const isInApp = /FBAN|FBAV|Instagram|Messenger/i.test(ua);
+
+        if (isInApp) {
+            if (els.distInfo) {
+                els.distInfo.innerHTML = "⚠️ Öppna i Safari/Chrome för att spara appen!";
+                els.distInfo.style.color = "#d32f2f"; 
+            }
+            return; 
+        }
+
+        if (isIos && !isStandalone) {
+            setTimeout(() => {
+                const iosPrompt = document.getElementById('ios-install-prompt');
+                if (iosPrompt) iosPrompt.classList.remove('hidden');
+            }, 3000); 
+        }
+    }
+
+    function initMap() {
+        checkInstallState();
+        map = L.map('map', { zoomControl: false, attributionControl: false }).setView([59.3, 14.1], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        const clearControl = L.control({position: 'bottomright'});
+        clearControl.onAdd = function () {
+            const btn = L.DomUtil.create('button', '');
+            btn.innerHTML = 'RENSA';
+            btn.style.background = 'rgba(255, 255, 255, 0.6)';
+            btn.style.border = '2px solid rgba(0,0,0,0.1)';
+            btn.style.padding = '8px 12px';
+            btn.style.borderRadius = '10px';
+            btn.style.cursor = 'pointer';
+            btn.style.fontWeight = 'bold';
+            btn.style.color = '#333';
+            btn.style.backdropFilter = 'blur(4px)';
+            btn.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)';
+            btn.style.marginBottom = '15px'; 
+            btn.onclick = function(e) {
+                L.DomEvent.stopPropagation(e);
+                clearMapData();
+            };
+            L.DomEvent.disableClickPropagation(btn); 
+            return btn;
+        };
+        clearControl.addTo(map);
+
+        // KONTROLLERA OM DET FINNS EN DELAD RUTT I URL:EN
+        const urlParams = new URLSearchParams(window.location.search);
+        const routeData = urlParams.get('r');
+        if (routeData) {
+            try {
+                const data = JSON.parse(atob(routeData));
+                travelMode = data.m || 0;
+                currentTargetName = data.n || "Delad rutt";
+                currentTargetCoords = L.latLng(data.t[0], data.t[1]);
+                waypointsDit = (data.wd || []).map(p => L.latLng(p[0], p[1]));
+                waypointsHem = (data.wh || []).map(p => L.latLng(p[0], p[1]));
+                
+                // Rensa URL:en så att den inte laddas om varje gång
+                window.history.replaceState({}, document.title, window.location.pathname);
+                els.welcomeOverlay.classList.add('hidden');
+            } catch (e) {
+                console.error("Kunde inte läsa delad rutt", e);
+            }
+        }
+
+        if (currentTargetCoords) {
+            setTarget(currentTargetCoords, false, false, false);
+            map.setView(currentTargetCoords, 14); 
+            initialZoomPerformed = true;
+            
+            waypointsDit.forEach(wp => {
+                const m = L.circleMarker(wp, { radius: 7, fillColor: "#2196F3", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
+                m.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); removeWaypoint(m, wp); });
+                waypointMarkers.push(m);
+            });
+            waypointsHem.forEach(wp => {
+                const m = L.circleMarker(wp, { radius: 7, fillColor: "#FF9800", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
+                m.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); removeWaypoint(m, wp); });
+                waypointMarkers.push(m);
+            });
+            if (els.modeBtn) els.modeBtn.innerText = modes[travelMode].icon;
+            updateMapLogic();
+        } else if (lastTarget) {
+            currentTargetName = lastTarget.name || "Mål";
+            setTarget(lastTarget.coords, false, false, false);
+            map.setView(lastTarget.coords, 14); 
+            initialZoomPerformed = true;
+            
+            waypointsDit.forEach(wp => {
+                const m = L.circleMarker(wp, { radius: 7, fillColor: "#2196F3", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
+                m.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); removeWaypoint(m, wp); });
+                waypointMarkers.push(m);
+            });
+            waypointsHem.forEach(wp => {
+                const m = L.circleMarker(wp, { radius: 7, fillColor: "#FF9800", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
+                m.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); removeWaypoint(m, wp); });
+                waypointMarkers.push(m);
+            });
+            if (els.modeBtn) els.modeBtn.innerText = modes[travelMode].icon;
+            updateMapLogic();
+        }
+
+        if (navigator.geolocation) {
+            navigator.geolocation.watchPosition(handlePositionUpdate, null, { 
+                enableHighAccuracy: true, 
+                maximumAge: 5000, 
+                timeout: 10000 
+            });
+        }
+
+        map.on('click', async e => { 
+            if(gameState !== 'MAP') return;
+            if(ignoreClick) return; 
+            playClickSound(); 
+            
+            currentTargetName = "Söker adress..."; 
+            setTarget(e.latlng, true, true, true);
+
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${e.latlng.lat}&lon=${e.latlng.lng}`);
+                const d = await res.json();
+                if (d && d.display_name) {
+                    const parts = d.display_name.split(',');
+                    currentTargetName = parts[0].trim();
+                    updateMapLogic(); 
+                    updateLocateBtnText(); 
+                    saveSession();
+                }
+            } catch (err) {
+                currentTargetName = "Markerad plats";
+                updateMapLogic();
+            }
+        });
+
+        map.on('contextmenu', e => {
+            if(gameState !== 'MAP' || !currentTargetCoords) return;
+            ignoreClick = true;
+            setTimeout(() => { ignoreClick = false; }, 600);
+            playClickSound();
+            if (travelMode === 2) { showWaypointChoiceMenu(e); } else { addWaypoint(e.latlng, 'dit'); }
+        });
+
+        map.on('movestart', (e) => { if (!e.hard) isTracking = false; });
+        setupInteractions();
+        updateButtonUI();
+        handleOrientationLayout();
+        window.addEventListener('resize', handleOrientationLayout);
+        setupSwipeListener(); 
+    }
+
+    function clearMapData() {
+        playClickSound();
         
-        <div class="panel">
-            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                <input type="text" id="text-search-input" placeholder="Sök plats eller adress...">
-            </div>
+        currentTargetCoords = null;
+        currentTargetName = "MÅLET";
+        
+        if (targetMarker) { map.removeLayer(targetMarker); targetMarker = null; }
+        if (connectionLine) { map.removeLayer(connectionLine); connectionLine = null; }
+        if (connectionLineReturn) { map.removeLayer(connectionLineReturn); connectionLineReturn = null; }
+        
+        waypointsDit = []; 
+        waypointsHem = []; 
+        waypointMarkers.forEach(m => map.removeLayer(m)); 
+        waypointMarkers = [];
+        
+        fixedStartCoords = null;
+        
+        els.distInfo.innerHTML = "Vart ska vi åka? 🐭";
+        els.startBtn.classList.add('hidden');
+        
+        if (userCoords) {
+            zoomToUser();
+            isShowingUser = false;
+            isTracking = true;
+        }
+        
+        updateLocateBtnText();
+        saveSession();
+    }
 
-            <div id="dist-info">
-                Sök eller välj en sparad ost-plats
-            </div>
+    function setupSwipeListener() {
+        els.gamePage.addEventListener('touchstart', e => {
+            swipeStartX = e.changedTouches[0].screenX;
+        }, {passive: true});
+        els.gamePage.addEventListener('touchend', e => {
+            let swipeEndX = e.changedTouches[0].screenX;
+            if (gameState === 'GAME' && Math.abs(swipeEndX - swipeStartX) > 60) {
+                toggleGameMap();
+            }
+        }, {passive: true});
+    }
 
-            <div class="save-btn-container">
-                <button id="btn-0" class="slot-btn" onclick="handleSlotClick(0)">Slot 1</button>
-                <button id="btn-1" class="slot-btn" onclick="handleSlotClick(1)">Slot 2</button>
-                <button id="btn-2" class="slot-btn" onclick="handleSlotClick(2)">Slot 3</button>
-                <button id="btn-3" class="slot-btn" onclick="handleSlotClick(3)">Slot 4</button>
-            </div>
+    function toggleGameMap() {
+        isGameMapVisible = !isGameMapVisible;
+        const distDisplay = document.getElementById('game-distance-display');
+        if (isGameMapVisible) {
+            els.pathGrid.classList.add('hidden');
+            els.gameMapElement.classList.remove('hidden');
+            if (distDisplay) distDisplay.classList.remove('hidden');
+            if (!gameMap) {
+                gameMap = L.map('game-map', { 
+                    zoomControl: false, attributionControl: false,
+                    dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false
+                }).setView(userCoords || [59.3, 14.1], 15);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(gameMap);
+            }
+            setTimeout(() => {
+                gameMap.invalidateSize();
+                updateGameMapView(true);
+            }, 50);
+        } else {
+            els.gameMapElement.classList.add('hidden');
+            els.pathGrid.classList.remove('hidden');
+            if (distDisplay) distDisplay.classList.add('hidden');
+        }
+    }
 
-            <div class="nav-controls">
-                <button class="nav-btn" onclick="toggleTravelMode()" title="Byt färdsätt">
-                    <span id="mode-icon">🚗</span>
-                </button>
-                <button class="nav-btn share-btn" onclick="shareApp()" title="Dela appen">
-                    📤
-                </button>
-                <button class="nav-btn" onclick="locateMe()" style="background: var(--blue); color: white;" title="Hitta mig">
-                    📍
-                </button>
-            </div>
-        </div>
-    </div>
+    function updateGameMapView(forceCenter = false) {
+        if (!isGameMapVisible || gameState !== 'GAME' || !gameMap || !userCoords) return;
+        
+        if (!gameRouteLine && currentRouteCoords.length > 0) {
+            gameRouteLine = L.polyline(currentRouteCoords, {color: '#007bff', weight: 4, opacity: 0.5}).addTo(gameMap);
+        } else if (gameRouteLine) {
+            gameRouteLine.setLatLngs(currentRouteCoords);
+        }
+        
+        if (!gameUserMarker) {
+            gameUserMarker = L.circleMarker(userCoords, {radius: 7, fillColor: "#007bff", color: "#fff", weight: 2, fillOpacity: 1}).addTo(gameMap);
+        } else {
+            gameUserMarker.setLatLng(userCoords);
+        }
+        
+        let snapCoords = currentRouteCoords[lastRouteIndex];
+        if (snapCoords) {
+            if (!gameSnapMarker) {
+                gameSnapMarker = L.circleMarker(snapCoords, {radius: 5, fillColor: "#FF9800", color: "#fff", weight: 2, fillOpacity: 1}).addTo(gameMap);
+            } else {
+                gameSnapMarker.setLatLng(snapCoords);
+            }
+            let dashCoords = [userCoords, snapCoords];
+            if (!gameDashedLine) {
+                gameDashedLine = L.polyline(dashCoords, {color: '#ff4444', weight: 3, dashArray: '8, 8'}).addTo(gameMap);
+            } else {
+                gameDashedLine.setLatLngs(dashCoords);
+            }
+        }
+        
+        gameMap.setView(userCoords, 16);
+    }
 
+    function saveSession() {
+        const sessionData = {
+            target: currentTargetCoords ? { coords: {lat: currentTargetCoords.lat, lng: currentTargetCoords.lng}, name: currentTargetName } : null,
+            startCoords: fixedStartCoords,
+            travelMode: travelMode,
+            waypointsDit: waypointsDit.map(wp => ({lat: wp.lat, lng: wp.lng})),
+            waypointsHem: waypointsHem.map(wp => ({lat: wp.lat, lng: wp.lng})),
+            timestamp: Date.now(),
+            swipeHintShown: swipeHintShown
+        };
+        localStorage.setItem('mouse_session', JSON.stringify(sessionData));
+    }
+
+    function removeWaypoint(marker, latlng) {
+        playClickSound();
+        let index = waypointsDit.findIndex(wp => wp.lat === latlng.lat && wp.lng === latlng.lng);
+        if (index !== -1) { waypointsDit.splice(index, 1); } 
+        else {
+            index = waypointsHem.findIndex(wp => wp.lat === latlng.lat && wp.lng === latlng.lng);
+            if (index !== -1) waypointsHem.splice(index, 1);
+        }
+        map.removeLayer(marker);
+        waypointMarkers = waypointMarkers.filter(m => m !== marker);
+        updateMapLogic();
+        saveSession();
+    }
+
+    function showWaypointChoiceMenu(e) {
+        const oldMenu = document.getElementById('waypoint-menu');
+        if (oldMenu) oldMenu.remove();
+        const menu = document.createElement('div');
+        menu.id = 'waypoint-menu';
+        menu.style.left = Math.min(window.innerWidth - 160, Math.max(10, e.containerPoint.x)) + "px";
+        menu.style.top = Math.min(window.innerHeight - 120, Math.max(10, e.containerPoint.y)) + "px";
+        const btnDit = document.createElement('button');
+        btnDit.className = 'wp-menu-btn'; btnDit.style.background = 'var(--blue)'; btnDit.innerText = 'På vägen dit';
+        btnDit.onclick = () => { addWaypoint(e.latlng, 'dit'); menu.remove(); };
+        const btnHem = document.createElement('button');
+        btnHem.className = 'wp-menu-btn'; btnHem.style.background = 'var(--orange)'; btnHem.innerText = 'På vägen tillbaka';
+        btnHem.onclick = () => { addWaypoint(e.latlng, 'hem'); menu.remove(); };
+        const btnCancel = document.createElement('button');
+        btnCancel.innerText = 'Avbryt'; btnCancel.style.fontSize = '0.7rem'; btnCancel.style.background = 'none';
+        btnCancel.onclick = () => menu.remove();
+        menu.appendChild(btnDit); menu.appendChild(btnHem); menu.appendChild(btnCancel);
+        document.body.appendChild(menu);
+        setTimeout(() => { const close = () => { menu.remove(); document.removeEventListener('click', close); }; document.addEventListener('click', close); }, 100);
+    }
+
+    function addWaypoint(latlng, direction) {
+        if (!fixedStartCoords && userCoords) fixedStartCoords = [...userCoords];
+        if (direction === 'dit') { waypointsDit.push(latlng); } else { waypointsHem.push(latlng); }
+        const color = direction === 'dit' ? "#2196F3" : "#FF9800";
+        const wpMarker = L.circleMarker(latlng, { radius: 7, fillColor: color, color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
+        wpMarker.on('contextmenu', (e) => {
+            L.DomEvent.stopPropagation(e);
+            removeWaypoint(wpMarker, latlng);
+        });
+        waypointMarkers.push(wpMarker);
+        updateMapLogic();
+        saveSession();
+    }
+
+    function handlePositionUpdate(pos) {
+        userCoords = [pos.coords.latitude, pos.coords.longitude];
+        if (!currentTargetCoords) els.distInfo.innerHTML = "Vart ska vi åka? 🐭";
+        if (!userMarker) {
+            userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, fillOpacity: 0.8}).addTo(map);
+        } else userMarker.setLatLng(userCoords);
+        if (isTracking && gameState === 'MAP') map.panTo(userCoords);
+        if (!initialZoomPerformed) { zoomToUser(); initialZoomPerformed = true; isTracking = true; }
+        if (gameState === 'MAP') { if (!fixedStartCoords) updateMapLogic(); }
+        else if (gameState === 'GAME') updateGameLogic();
+    }
+
+    async function updateMapLogic() {
+        if ((!userCoords && !fixedStartCoords) || !currentTargetCoords) return;
+        const startPoint = fixedStartCoords || userCoords;
+        const mode = modes[travelMode];
+        let pts = [`${startPoint[1]},${startPoint[0]}`];
+        waypointsDit.forEach(wp => pts.push(`${wp.lng},${wp.lat}`));
+        pts.push(`${currentTargetCoords.lng},${currentTargetCoords.lat}`);
+        if (travelMode === 2) {
+            waypointsHem.forEach(wp => pts.push(`${wp.lng},${wp.lat}`));
+            pts.push(`${startPoint[1]},${startPoint[0]}`);
+        }
+        const url = `https://router.project-osrm.org/route/v1/${mode.osrm}/${pts.join(';')}?overview=full&geometries=geojson`;
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            if (data.code === 'Ok') {
+                const route = data.routes[0];
+                currentRouteCoords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+                let splitIndex = currentRouteCoords.length;
+                if (travelMode === 2) {
+                    let minD = Infinity;
+                    currentRouteCoords.forEach((c, i) => {
+                        const d = L.latLng(c).distanceTo(currentTargetCoords);
+                        if (d < minD) { minD = d; splitIndex = i; }
+                    });
+                }
+                const coordsDit = currentRouteCoords.slice(0, splitIndex + 1);
+                const coordsRetur = currentRouteCoords.slice(splitIndex);
+                if (connectionLine) connectionLine.setLatLngs(coordsDit);
+                else connectionLine = L.polyline(coordsDit, {color: '#007bff', weight: 4, opacity: 0.7}).addTo(map);
+                if (travelMode === 2) {
+                    if (connectionLineReturn) connectionLineReturn.setLatLngs(coordsRetur);
+                    else connectionLineReturn = L.polyline(coordsRetur, {color: '#FF9800', weight: 4, opacity: 0.7}).addTo(map);
+                } else if (connectionLineReturn) { map.removeLayer(connectionLineReturn); connectionLineReturn = null; }
+                
+                const distKm = route.distance / 1000;
+                if (travelMode === 2) {
+                    els.distInfo.innerHTML = `<b>${distKm.toFixed(2)} km</b> till ${currentTargetName} och tillbaka`;
+                } else {
+                    els.distInfo.innerHTML = `<b>${distKm.toFixed(2)} km</b> till ${currentTargetName}`;
+                }
+                els.startBtn.classList.remove('hidden');
+            } else { fallbackDist(); }
+        } catch (e) { fallbackDist(); }
+    }
+
+    function fallbackDist() {
+        if (!fixedStartCoords && !userCoords) return;
+        const startPoint = fixedStartCoords || userCoords;
+        const d = map.distance(startPoint, currentTargetCoords) / 1000;
+        const total = d * (travelMode === 2 ? 2 : 1);
+        const coordsDit = [[startPoint[0], startPoint[1]], [currentTargetCoords.lat, currentTargetCoords.lng]];
+        if (connectionLine) connectionLine.setLatLngs(coordsDit);
+        else connectionLine = L.polyline(coordsDit, {color: '#007bff', weight: 4, opacity: 0.7}).addTo(map);
+        if (travelMode === 2) {
+            const coordsRetur = [[currentTargetCoords.lat, currentTargetCoords.lng], [startPoint[0], startPoint[1]]];
+            if (connectionLineReturn) connectionLineReturn.setLatLngs(coordsRetur);
+            else connectionLineReturn = L.polyline(coordsRetur, {color: '#FF9800', weight: 4, opacity: 0.7}).addTo(map);
+        } else if (connectionLineReturn) { map.removeLayer(connectionLineReturn); connectionLineReturn = null; }
+        
+        if (travelMode === 2) {
+            els.distInfo.innerHTML = `<b>${total.toFixed(2)} km</b> till målet och tillbaka (fågelvägen)`;
+        } else {
+            els.distInfo.innerHTML = `<b>${total.toFixed(2)} km</b> (fågelvägen)`;
+        }
+        els.startBtn.classList.remove('hidden');
+    }
+
+    function setTarget(latlng, shouldSave, clearWaypoints = true, updateStart = true) {
+        if (updateStart) {
+            if (userCoords) fixedStartCoords = [...userCoords];
+            else fixedStartCoords = null;
+        }
+        if (clearWaypoints) {
+            waypointsDit = []; waypointsHem = []; 
+            waypointMarkers.forEach(m => map.removeLayer(m)); 
+            waypointMarkers = [];
+        }
+        if (connectionLine) { map.removeLayer(connectionLine); connectionLine = null; }
+        if (connectionLineReturn) { map.removeLayer(connectionLineReturn); connectionLineReturn = null; }
+        currentTargetCoords = latlng;
+        if (targetMarker) targetMarker.setLatLng(latlng);
+        else targetMarker = L.marker(latlng).addTo(map);
+        if (shouldSave) saveSession();
+        updateMapLogic(); updateLocateBtnText();
+    }
+
+    function zoomToUser() { if (userCoords) map.flyTo(userCoords, 18); }
+    function toggleView() { 
+        if (!currentTargetCoords || isShowingUser) { zoomToUser(); isShowingUser = false; isTracking = true; }
+        else { map.flyTo(currentTargetCoords, 18); isShowingUser = true; isTracking = false; }
+        updateLocateBtnText();
+    }
+    function updateLocateBtnText() { els.locateBtn.innerHTML = (!currentTargetCoords || isShowingUser) ? "🎯 HITTA MEJ" : `🏁 ${currentTargetName.toUpperCase()}`; }
+    function toggleTravelMode() { travelMode = (travelMode + 1) % modes.length; els.modeBtn.innerText = modes[travelMode].icon; updateMapLogic(); saveSession(); }
+    async function requestWakeLock() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} }
+    function releaseWakeLock() { if (wakeLock !== null) wakeLock.release().then(() => { wakeLock = null; }); }
+
+    function startVoiceSearch() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) { alert("Tyvärr stöder inte din webbläsare röstsök."); return; }
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'sv-SE';
+        recognition.onstart = () => { els.voiceBtn.classList.add('listening'); els.voiceBtn.innerText = "LYSSNAR..."; };
+        recognition.onresult = (event) => { els.searchInput.value = event.results[0][0].transcript; els.searchContainer.classList.remove('hidden'); executeTextSearch(); };
+        recognition.onend = () => { els.voiceBtn.classList.remove('listening'); els.voiceBtn.innerText = "🎤 RÖST"; };
+        recognition.start();
+    }
+
+    function startGame() {
+        if (!currentTargetCoords || !userCoords) return;
+        gameState = 'GAME';
+        startCoords = [...userCoords];
+        maxStepsReached = 0;
+        lastRouteIndex = 0;
+        hasReachedMidpoint = false;
+        midpointStepIndex = -1;
+        isCelebratingTurn = false;
+        
+        isGameMapVisible = false;
+        els.gameMapElement.classList.add('hidden');
+        const distDisplay = document.getElementById('game-distance-display');
+        if (distDisplay) distDisplay.classList.add('hidden');
+        
+        els.pathGrid.classList.remove('hidden');
+        const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', '');
+        const totalDistanceKm = parseFloat(distStr);
+        initialTotalKm = Math.max(1, Math.ceil(totalDistanceKm / modes[travelMode].factor));
+        els.mapPage.classList.add('hidden');
+        els.gamePage.classList.remove('hidden');
+        els.shareBtn.classList.add('hidden');
+        requestWakeLock();
+        els.pathGrid.innerHTML = '<div id="the-mouse">🐭</div>';
+
+        // SWIPE-HINT LOGIKEN
+        if (!swipeHintShown) {
+            const hint = document.getElementById('swipe-hint');
+            if (hint) {
+                hint.classList.remove('hidden');
+                setTimeout(() => hint.classList.add('show-hint'), 50); // Mjuk inflygning
+                setTimeout(() => {
+                    hint.classList.remove('show-hint');
+                    setTimeout(() => hint.classList.add('hidden'), 500); // Göm helt efter animation
+                }, 4000); // Visas i 4 sekunder
+            }
+            swipeHintShown = true;
+            saveSession();
+        }
+
+        if (travelMode === 2 && currentRouteCoords.length > 0) {
+            let distToTarget = 0;
+            let splitIndex = 0;
+            let minD = Infinity;
+            currentRouteCoords.forEach((c, i) => {
+                const d = L.latLng(c).distanceTo(currentTargetCoords);
+                if (d < minD) { minD = d; splitIndex = i; }
+            });
+            for (let i = 0; i < splitIndex; i++) {
+                distToTarget += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]);
+            }
+            midpointStepIndex = Math.floor((distToTarget / 1000) / modes[travelMode].factor);
+        }
+        for (let i = 0; i < initialTotalKm; i++) {
+            const step = document.createElement('div');
+            step.className = 'step'; step.id = `step-${i}`;
+            if (i === initialTotalKm - 1) { step.innerHTML = '🧀'; } 
+            else if (i === midpointStepIndex) { step.innerHTML = '🧀'; } 
+            else { step.innerHTML = '🍎'; }
+            els.pathGrid.appendChild(step);
+        }
+        setTimeout(() => moveMouse(0), 100);
+    }
+
+    function updateGameLogic() {
+        if (gameState !== 'GAME' || !currentRouteCoords.length || isCelebratingTurn) return;
+        
+        if (!hasReachedMidpoint && travelMode === 2) {
+            const distToTarget = map.distance(userCoords, currentTargetCoords);
+            if (distToTarget < 40) { triggerTurnAroundDance(); return; }
+        }
+
+        let minD = Infinity;
+        let idx = lastRouteIndex;
+        let searchLimit = (travelMode !== 2 || hasReachedMidpoint) ? currentRouteCoords.length : Math.floor(currentRouteCoords.length * 0.6); 
+        for (let i = lastRouteIndex; i < searchLimit; i++) {
+            const d = map.distance(userCoords, currentRouteCoords[i]);
+            if (d < minD) { minD = d; idx = i; }
+        }
+        lastRouteIndex = idx;
+        
+        let traveledDist = 0;
+        for (let i = 0; i < lastRouteIndex; i++) {
+            traveledDist += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]);
+        }
+
+        let totalRouteDist = 0;
+        for (let i = 0; i < currentRouteCoords.length - 1; i++) {
+            totalRouteDist += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]);
+        }
+        
+        let remainingDist = totalRouteDist - traveledDist;
+        const distDisplay = document.getElementById('game-distance-display');
+        if (distDisplay) {
+            distDisplay.innerText = (remainingDist / 1000).toFixed(2) + ' km kvar';
+        }
+
+        let currentSteps = Math.floor((traveledDist / 1000) / modes[travelMode].factor);
+        if (!hasReachedMidpoint && travelMode === 2 && currentSteps > midpointStepIndex) { currentSteps = midpointStepIndex; }
+        if (currentSteps > maxStepsReached) { maxStepsReached = currentSteps; }
+        
+        for (let i = 0; i < initialTotalKm - 1; i++) {
+            const s = document.getElementById(`step-${i}`);
+            if (s) i < maxStepsReached ? s.classList.add('eat-animation') : s.classList.remove('eat-animation');
+        }
+        
+        const goal = (travelMode === 2) ? startCoords : currentTargetCoords;
+        const distToFinal = map.distance(userCoords, goal);
+
+        if (travelMode === 2) {
+            if (hasReachedMidpoint && distToFinal < 40 && maxStepsReached > (initialTotalKm * 0.8)) {
+                moveMouse(initialTotalKm - 1); setTimeout(finishGame, 500);
+            } else { moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 2))); }
+        } else {
+            if (distToFinal < 40) { moveMouse(initialTotalKm - 1); setTimeout(finishGame, 500); } 
+            else { moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 1))); }
+        }
+        
+        if (isGameMapVisible) { updateGameMapView(false); }
+    }
+
+    function triggerTurnAroundDance() {
+        if (isCelebratingTurn) return;
+        isCelebratingTurn = true;
+        moveMouse(midpointStepIndex);
+        const step = document.getElementById(`step-${midpointStepIndex}`);
+        if(step) step.classList.add('eat-animation');
+        const m = document.getElementById('the-mouse');
+        m.innerHTML = '🐭🧀'; m.classList.add('turn-dance');
+        playClickSound();
+        setTimeout(() => {
+            m.classList.remove('turn-dance'); m.innerHTML = '🐭';
+            hasReachedMidpoint = true; isCelebratingTurn = false; maxStepsReached = midpointStepIndex + 1;
+        }, 3000);
+    }
+
+    function moveMouse(index) {
+        const m = document.getElementById('the-mouse');
+        const s = document.getElementById(`step-${index}`);
+        const container = els.pathGrid;
+        if (s && container) { 
+            m.style.left = s.offsetLeft + "px"; m.style.top = s.offsetTop + "px"; 
+            let targetScroll = (s.offsetTop + (s.offsetHeight * 2.5)) - container.clientHeight;
+            if (targetScroll > 0) container.scrollTo({ top: targetScroll, behavior: 'smooth' });
+        }
+    }
+
+    function finishGame() {
+        if (gameState === 'FINISHED') return;
+        gameState = 'FINISHED';
+        const m = document.getElementById('the-mouse');
+        m.innerHTML = '🐭🧀'; m.classList.add('victory');
+        createConfettiBurst(); 
+        confettiInterval = setInterval(createConfettiBurst, 800); 
+        els.shareBtn.classList.remove('hidden');
+        releaseWakeLock();
+    }
+
+    function stopGame() { 
+        gameState = 'MAP'; fixedStartCoords = null; clearInterval(confettiInterval);
+        isGameMapVisible = false;
+        els.gameMapElement.classList.add('hidden');
+        const distDisplay = document.getElementById('game-distance-display');
+        if (distDisplay) distDisplay.classList.add('hidden');
+        
+        els.pathGrid.classList.remove('hidden');
+        const m = document.getElementById('the-mouse');
+        m.classList.remove('victory'); m.classList.remove('turn-dance'); m.innerHTML = '🐭';
+        document.querySelectorAll('.confetti').forEach(c => c.remove());
+        els.gamePage.classList.add('hidden'); els.mapPage.classList.remove('hidden'); 
+        els.shareBtn.classList.remove('hidden'); releaseWakeLock();
+        saveSession();
+
+        setTimeout(() => {
+            if (map) {
+                map.invalidateSize();
+            }
+        }, 50);
+    }
+
+    function createConfettiBurst() {
+        const startX = Math.random() * window.innerWidth;
+        const startY = Math.random() * window.innerHeight;
+        const colors = ['#ff0000', '#ffa500', '#ffff00', '#00ff00', '#0000ff', '#800080', '#ffc0cb'];
+        for(let i=0; i<40; i++) {
+            const c = document.createElement('div');
+            c.className = 'confetti';
+            c.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            c.style.left = startX + 'px'; c.style.top = startY + 'px';
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 60 + Math.random() * 200; 
+            c.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+            c.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+            document.body.appendChild(c);
+            setTimeout(() => c.remove(), 1200);
+        }
+    }
+
+    function handleOrientationLayout() { if (window.innerHeight < window.innerWidth) { els.actionContainer.prepend(els.modeBtn); } else { document.querySelector('.save-btn-container').appendChild(els.modeBtn); } }
+    function toggleSearchUI() { els.searchContainer.classList.toggle('hidden'); if (!els.searchContainer.classList.contains('hidden')) els.searchInput.focus(); }
+    
+    async function executeTextSearch() {
+        const q = els.searchInput.value; if (!q) return;
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`);
+            const d = await res.json();
+            if (d.length > 0) {
+                currentTargetName = d[0].display_name.split(',')[0];
+                setTarget({lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon)}, true, true, true);
+                map.flyTo(currentTargetCoords, 18); els.searchContainer.classList.add('hidden');
+            }
+        } catch (e) {
+            alert("Sökningen fungerar tyvärr inte när du är offline. Använd kartan eller sparade platser istället!");
+        }
+    }
+
+    function updateButtonUI() {
+        savedLocations.forEach((loc, i) => {
+            const btn = document.getElementById(`btn-${i}`);
+            const span = btn.querySelector('.scrolling-text');
+            const textContent = loc ? loc.name : "SPARA " + (i + 1);
+            span.innerText = textContent; span.classList.remove('animate-scroll');
+            if (span.scrollWidth > btn.querySelector('.btn-text-container').offsetWidth) {
+                span.innerText = textContent + " \u00A0\u00A0\u00A0 " + textContent + " \u00A0\u00A0\u00A0 ";
+                span.classList.add('animate-scroll');
+            }
+            loc ? btn.classList.add('filled') : btn.classList.remove('filled');
+        });
+    }
+
+    function handleSlotClick(i) { 
+        const d = savedLocations[i]; 
+        if (d) { 
+            currentTargetName = d.name; 
+            waypointsDit = []; waypointsHem = []; 
+            waypointMarkers.forEach(m => map.removeLayer(m)); 
+            waypointMarkers = [];
+            if (d.waypointsDit) {
+                d.waypointsDit.forEach(wp => {
+                    const latlng = L.latLng(wp.lat, wp.lng);
+                    waypointsDit.push(latlng);
+                    const m = L.circleMarker(latlng, { radius: 7, fillColor: "#2196F3", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
+                    m.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); removeWaypoint(m, latlng); });
+                    waypointMarkers.push(m);
+                });
+            }
+            if (d.waypointsHem) {
+                d.waypointsHem.forEach(wp => {
+                    const latlng = L.latLng(wp.lat, wp.lng);
+                    waypointsHem.push(latlng);
+                    const m = L.circleMarker(latlng, { radius: 7, fillColor: "#FF9800", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
+                    m.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); removeWaypoint(m, latlng); });
+                    waypointMarkers.push(m);
+                });
+            }
+            setTarget(d.coords, true, false, true); 
+            map.flyTo(d.coords, 14); 
+        } 
+    }
+
+    function saveCurrentPos(i) { 
+        if (!currentTargetCoords) return; 
+        const l = prompt("Spara som:", currentTargetName); 
+        if (l) { 
+            let includeWaypoints = false;
+            if (waypointsDit.length > 0 || waypointsHem.length > 0) {
+                includeWaypoints = confirm("Vill du spara med via-punkter?");
+            }
+            savedLocations[i] = {
+                coords: {lat: currentTargetCoords.lat, lng: currentTargetCoords.lng}, 
+                name: l,
+                waypointsDit: includeWaypoints ? waypointsDit.map(wp => ({lat: wp.lat, lng: wp.lng})) : [],
+                waypointsHem: includeWaypoints ? waypointsHem.map(wp => ({lat: wp.lat, lng: wp.lng})) : []
+            }; 
+            localStorage.setItem('mouse_favs', JSON.stringify(savedLocations)); 
+            updateButtonUI(); 
+        } 
+    }
+
+    function setupInteractions() {
+        document.querySelectorAll('.slot-btn').forEach((b, i) => {
+            let lastTriggerTime = 0;
+            const triggerSave = (e) => {
+                const now = Date.now(); if (now - lastTriggerTime < 7000) return; lastTriggerTime = now;
+                if (e && typeof e.preventDefault === 'function') { e.preventDefault(); e.stopPropagation(); }
+                saveCurrentPos(i);
+            };
+            b.oncontextmenu = (e) => { triggerSave(e); return false; };
+            let pressTimer;
+            b.addEventListener('touchstart', (e) => { pressTimer = setTimeout(() => triggerSave(e), 600); }, {passive: true});
+            b.addEventListener('touchend', () => clearTimeout(pressTimer));
+        });
+    }
+
+    function playClickSound() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); const o = audioCtx.createOscillator(); o.type='triangle'; o.frequency.setValueAtTime(3000, audioCtx.currentTime); o.start(); o.stop(audioCtx.currentTime+0.1); }
+    function closeInstructions() { els.welcomeOverlay.classList.add('hidden'); saveSession(); }
+    
+    function shareApp() { 
+        let shareUrl = window.location.origin + window.location.pathname;
+        let title = 'Mouse & Cheese Tracker';
+        let text = 'Häng med på äventyr med musen!';
+
+        // OM EN RUTT ÄR AKTIV, SKAPA EN DELNINGS-LÄNK
+        if (currentTargetCoords) {
+            const data = {
+                t: [currentTargetCoords.lat, currentTargetCoords.lng],
+                m: travelMode,
+                wd: waypointsDit.map(w => [w.lat, w.lng]),
+                wh: waypointsHem.map(w => [w.lat, w.lng]),
+                n: currentTargetName
+            };
+            // Packa ner datan till en Base64-sträng för URL:en
+            const encoded = btoa(JSON.stringify(data));
+            shareUrl += '?r=' + encoded;
+            text = `Följ min rutt till ${currentTargetName}! 🐭🧀`;
+        }
+
+        const d = {title: title, text: text, url: shareUrl}; 
+        if(navigator.share) {
+            navigator.share(d).catch(e => console.log("Delning avbruten"));
+        } else {
+            // Fallback om webbläsaren inte stödjer dela-api:et
+            prompt("Kopiera länken för att dela rutt:", shareUrl);
+        }
+    }
+
+    window.onload = initMap;
+</script>
 </body>
+
 </html>
