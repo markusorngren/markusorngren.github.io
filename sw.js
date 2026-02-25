@@ -1,15 +1,17 @@
-const CACHE_NAME = 'mouse-tracker-v67'; // Uppdaterad version för att tvinga fram update
-const MAP_CACHE = 'mouse-map-tiles-v1'; // Ny cache för kartplattor
+const CACHE_NAME = 'mouse-tracker-v68'; 
+const MAP_CACHE = 'mouse-map-tiles-v1';
+
 const ASSETS = [
   './',
   './index.html',
+  './style.css',   // Ny
+  './script.js',  // Ny
   './manifest.json',
   './icon.png',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
 ];
 
-// Installation - Cachear alla grundfiler
 self.addEventListener('install', (e) => {
   self.skipWaiting();
   e.waitUntil(
@@ -17,7 +19,6 @@ self.addEventListener('install', (e) => {
   );
 });
 
-// Aktivering - Rensar gamla cachar
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) => {
@@ -28,11 +29,9 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// Fetch - Hanterar offline-läge och dynamisk cachning
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
 
-  // Cachning av kartplattor: spara plattorna dynamiskt när vi besöker dem
   if (url.hostname.includes('tile.openstreetmap.org')) {
     e.respondWith(
       caches.match(e.request).then(cachedResponse => {
@@ -42,31 +41,13 @@ self.addEventListener('fetch', (e) => {
             cache.put(e.request, networkResponse.clone());
             return networkResponse;
           });
-        }).catch(() => {
-          // Returnera ingenting om vi är offline och plattan inte finns sparad
-          return new Response('', { status: 408, statusText: 'Request Timeout' });
-        });
+        }).catch(() => new Response('', { status: 408 }));
       })
     );
     return;
   }
 
-  // För appens filer (HTML, CSS, JS)
   e.respondWith(
-    caches.match(e.request).then(res => {
-      if (res) return res;
-      return fetch(e.request).catch((err) => {
-        console.warn("Offline-läge aktivt, nätverksanrop misslyckades:", err);
-      });
-    })
+    caches.match(e.request).then(res => res || fetch(e.request))
   );
-});
-
-// Lyssnar på meddelanden från index.html för att visa versionen i appen
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'GET_VERSION') {
-    const versionNumber = CACHE_NAME.split('-').pop(); 
-    event.ports[0].postMessage({ version: versionNumber });
-  }
-
 });
