@@ -270,7 +270,7 @@ function clearMapData() {
     
     fixedStartCoords = null;
     
-    els.distInfo.innerHTML = "Vart ska vi åka? 🐭";
+    els.distInfo.innerHTML = "Vart ska vi? 🐭";
     els.startBtn.classList.add('hidden');
     
     if (userCoords) {
@@ -861,5 +861,6 @@ function shareApp() {
         prompt("Kopiera länken för att dela rutt:", shareUrl);
     }
 }
+
 
 window.onload = initMap;
