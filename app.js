@@ -132,6 +132,19 @@ function checkInstallState() {
     }
 }
 
+// Skapar inställningarna för lokalt kryptolås (tillåter klienten att prata direkt med Pusher)
+function getPusherAuthorizer() {
+    return (channel, options) => {
+        return {
+            authorize: (socketId, callback) => {
+                const stringToSign = socketId + ':' + channel.name;
+                const signature = CryptoJS.HmacSHA256(stringToSign, pusherSecret).toString(CryptoJS.enc.Hex);
+                callback(false, { auth: pusherKey + ':' + signature });
+            }
+        };
+    };
+}
+
 function initMap() {
     checkInstallState();
     map = L.map('map', { zoomControl: false, attributionControl: false }).setView([59.3, 14.1], 5);
@@ -174,10 +187,13 @@ function initMap() {
         if (cancelBtn) cancelBtn.classList.add('hidden');
         els.distInfo.innerHTML = "🔴 Laddar live-rutt...";
 
-        // Initiera Pusher för mottagare
-        pusher = new Pusher(pusherKey, { cluster: pusherCluster });
-        liveChannel = pusher.subscribe(`live-${liveSessionId}`);
-        liveChannel.bind('update', handleLiveUpdate);
+        // Initiera Pusher direkt som klient för mottagare
+        pusher = new Pusher(pusherKey, { 
+            cluster: pusherCluster,
+            authorizer: getPusherAuthorizer()
+        });
+        liveChannel = pusher.subscribe(`private-live-${liveSessionId}`);
+        liveChannel.bind('client-update', handleLiveUpdate);
 
         window.history.replaceState({}, document.title, window.location.pathname);
     } else {
@@ -281,47 +297,32 @@ function setupSavedWaypoints() {
 }
 
 // ---------------- LIVESÄNDNINGS LOGIK ----------------
-async function pushLiveEvent(eventName, data) {
-    if (!isLiveSharing || !liveSessionId) return;
-    const channelName = `live-${liveSessionId}`;
-    const bodyObj = { name: eventName, channel: channelName, data: JSON.stringify(data) };
-    const bodyStr = JSON.stringify(bodyObj);
-    const md5 = CryptoJS.MD5(bodyStr).toString();
-    const timestamp = Math.floor(Date.now() / 1000);
-    const path = `/apps/${pusherAppId}/events`;
-    
-    let queryString = `auth_key=${pusherKey}&auth_timestamp=${timestamp}&auth_version=1.0&body_md5=${md5}`;
-    const stringToSign = `POST\n${path}\n${queryString}`;
-    const signature = CryptoJS.HmacSHA256(stringToSign, pusherSecret).toString();
-    queryString += `&auth_signature=${signature}`;
-
-    try {
-        await fetch(`https://api-${pusherCluster}.pusher.com${path}?${queryString}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: bodyStr
-        });
-    } catch (e) {
-        console.error("Pusher error", e);
-    }
-}
-
 function broadcastLiveState() {
-    if (!isLiveSharing || !liveSessionId) return;
-    pushLiveEvent('update', {
+    if (!isLiveSharing || !liveSessionId || !liveChannel) return;
+    
+    const distDisplay = document.getElementById('game-distance-display');
+    liveChannel.trigger('client-update', {
         userCoords: userCoords,
         targetCoords: currentTargetCoords ? {lat: currentTargetCoords.lat, lng: currentTargetCoords.lng} : null,
         targetName: currentTargetName,
         travelMode: travelMode,
         waypointsDit: waypointsDit.map(w => ({lat: w.lat, lng: w.lng})),
         waypointsHem: waypointsHem.map(w => ({lat: w.lat, lng: w.lng})),
-        gameState: gameState
+        gameState: gameState,
+        initialTotalKm: initialTotalKm,
+        midpointStepIndex: midpointStepIndex,
+        maxStepsReached: maxStepsReached,
+        lastRouteIndex: lastRouteIndex,
+        distRemainingStr: distDisplay ? distDisplay.innerText : ""
     });
 }
 
-function handleLiveUpdate(dataStr) {
-    let parsed;
-    try { parsed = JSON.parse(dataStr); } catch(e) { return; }
+function handleLiveUpdate(parsed) {
+    if (!parsed) return;
+
+    // Synka viktiga variabler först
+    if (parsed.initialTotalKm) initialTotalKm = parsed.initialTotalKm;
+    if (parsed.midpointStepIndex !== undefined) midpointStepIndex = parsed.midpointStepIndex;
 
     // Kolla om målet har ändrats
     if (parsed.targetCoords && (!currentTargetCoords || currentTargetCoords.lat !== parsed.targetCoords.lat || currentTargetCoords.lng !== parsed.targetCoords.lng)) {
@@ -333,7 +334,7 @@ function handleLiveUpdate(dataStr) {
         els.distInfo.innerHTML = `🔴 Du följer resan till ${currentTargetName}...`;
     }
 
-    // Uppdatera positionen
+    // Uppdatera sändarens position på mottagarens skärm
     if (parsed.userCoords) {
         userCoords = parsed.userCoords;
         if (!userMarker) {
@@ -352,11 +353,25 @@ function handleLiveUpdate(dataStr) {
         stopGame();
     }
 
-    // Uppdatera gränssnittet
-    if (gameState === 'GAME') {
-        updateGameLogic();
-    } else if (gameState === 'MAP') {
-        updateMapLogic();
+    // Uppdatera spelet direkt i realtid utan att mottagaren behöver räkna om kartan
+    if (gameState === 'GAME' && parsed.maxStepsReached !== undefined) {
+        maxStepsReached = parsed.maxStepsReached;
+        if (parsed.lastRouteIndex !== undefined) lastRouteIndex = parsed.lastRouteIndex;
+        
+        for (let i = 0; i < initialTotalKm - 1; i++) {
+            const s = document.getElementById(`step-${i}`);
+            if (s) i < maxStepsReached ? s.classList.add('eat-animation') : s.classList.remove('eat-animation');
+        }
+        moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 1)));
+        
+        const distDisplay = document.getElementById('game-distance-display');
+        if (distDisplay && parsed.distRemainingStr) {
+            distDisplay.innerText = parsed.distRemainingStr;
+        }
+        
+        if (isGameMapVisible) {
+            updateGameMapView(false);
+        }
     }
 }
 // ----------------------------------------------------
@@ -656,9 +671,12 @@ function startVoiceSearch() {
 }
 
 function startGame() {
-    if (!currentTargetCoords || !userCoords) return;
+    if (!currentTargetCoords) return;
+    if (!isLiveReceiver && !userCoords) return; 
+
     gameState = 'GAME';
-    if (!isLiveReceiver) startCoords = [...userCoords];
+    if (!isLiveReceiver) startCoords = [...(userCoords || [0,0])];
+    
     maxStepsReached = 0;
     lastRouteIndex = 0;
     hasReachedMidpoint = false;
@@ -672,29 +690,20 @@ function startGame() {
     
     els.pathGrid.classList.remove('hidden');
     
-    // Vi läser distansen - om vi är mottagare räknar vi ut det direkt
-    let totalDistanceKm = 0;
-    if (isLiveReceiver) {
-        if (currentRouteCoords.length > 0) {
-            for (let i = 0; i < currentRouteCoords.length - 1; i++) {
-                totalDistanceKm += (map.distance(currentRouteCoords[i], currentRouteCoords[i+1]) / 1000);
-            }
-        } else {
-            totalDistanceKm = (map.distance(fixedStartCoords || userCoords, currentTargetCoords) / 1000) * (travelMode === 2 ? 2 : 1);
-        }
-    } else {
+    if (!isLiveReceiver) {
         const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', '');
-        totalDistanceKm = parseFloat(distStr);
+        const totalDistanceKm = parseFloat(distStr) || 1;
+        initialTotalKm = Math.max(1, Math.ceil(totalDistanceKm / modes[travelMode].factor));
     }
     
-    initialTotalKm = Math.max(1, Math.ceil(totalDistanceKm / modes[travelMode].factor));
     els.mapPage.classList.add('hidden');
     els.gamePage.classList.remove('hidden');
-    els.shareBtn.classList.add('hidden');
+    if(!isLiveReceiver) els.shareBtn.classList.add('hidden');
+    
     requestWakeLock();
     els.pathGrid.innerHTML = '<div id="the-mouse">🐭</div>';
 
-    if (!swipeHintShown) {
+    if (!swipeHintShown && !isLiveReceiver) {
         const hint = document.getElementById('swipe-hint');
         if (hint) {
             hint.classList.remove('hidden');
@@ -704,13 +713,11 @@ function startGame() {
                 setTimeout(() => hint.classList.add('hidden'), 500); 
             }, 4000); 
         }
-        if(!isLiveReceiver) {
-            swipeHintShown = true;
-            saveSession();
-        }
+        swipeHintShown = true;
+        saveSession();
     }
 
-    if (travelMode === 2 && currentRouteCoords.length > 0) {
+    if (!isLiveReceiver && travelMode === 2 && currentRouteCoords.length > 0) {
         let distToTarget = 0;
         let splitIndex = 0;
         let minD = Infinity;
@@ -723,6 +730,7 @@ function startGame() {
         }
         midpointStepIndex = Math.floor((distToTarget / 1000) / modes[travelMode].factor);
     }
+    
     for (let i = 0; i < initialTotalKm; i++) {
         const step = document.createElement('div');
         step.className = 'step'; step.id = `step-${i}`;
@@ -731,12 +739,13 @@ function startGame() {
         else { step.innerHTML = '🍎'; }
         els.pathGrid.appendChild(step);
     }
-    setTimeout(() => moveMouse(0), 100);
-    broadcastLiveState();
+    
+    setTimeout(() => moveMouse(isLiveReceiver ? maxStepsReached : 0), 100);
+    if(!isLiveReceiver) broadcastLiveState();
 }
 
 function updateGameLogic() {
-    if (gameState !== 'GAME' || !currentRouteCoords.length || isCelebratingTurn) return;
+    if (gameState !== 'GAME' || !currentRouteCoords.length || isCelebratingTurn || isLiveReceiver) return;
     
     if (!hasReachedMidpoint && travelMode === 2) {
         const distToTarget = map.distance(userCoords, currentTargetCoords);
@@ -1060,7 +1069,27 @@ function shareNormal() {
 
 function startLiveSharing() {
     if (!liveSessionId) liveSessionId = Math.random().toString(36).substr(2, 9);
-    isLiveSharing = true;
+    
+    // Initiera Pusher lokalt så att sändaren själv pratar direkt via WebSockets
+    if (!pusher) {
+        pusher = new Pusher(pusherKey, {
+            cluster: pusherCluster,
+            authorizer: getPusherAuthorizer()
+        });
+    }
+
+    liveChannel = pusher.subscribe(`private-live-${liveSessionId}`);
+    liveChannel.bind('pusher:subscription_succeeded', () => {
+        isLiveSharing = true;
+        broadcastLiveState();
+        
+        // Tvinga uppdatering av datan till åskådare var 3:e sekund
+        if(!liveBroadcastInterval) {
+            liveBroadcastInterval = setInterval(() => {
+                if (isLiveSharing) broadcastLiveState();
+            }, 3000); 
+        }
+    });
 
     let shareUrl = window.location.origin + window.location.pathname + '?live=' + liveSessionId;
 
@@ -1069,15 +1098,6 @@ function startLiveSharing() {
         navigator.share(d).catch(e => console.log("Delning avbruten"));
     } else {
         prompt("Kopiera länken för att dela live-rutt:", shareUrl);
-    }
-
-    broadcastLiveState();
-    
-    // Säkerställ att musen alltid är uppdaterad live för mottagarna
-    if(!liveBroadcastInterval) {
-        liveBroadcastInterval = setInterval(() => {
-            if (isLiveSharing) broadcastLiveState();
-        }, 3000); // Tvingad synk var 3e sekund
     }
 }
 
