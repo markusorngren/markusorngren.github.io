@@ -305,6 +305,7 @@ function broadcastLiveState() {
     const distDisplay = document.getElementById('game-distance-display');
     liveChannel.trigger('client-update', {
         userCoords: userCoords,
+        startCoords: fixedStartCoords, // VIKTIGT: Skicka startpunkten så mottagaren kan rita linjen!
         targetCoords: currentTargetCoords ? {lat: currentTargetCoords.lat, lng: currentTargetCoords.lng} : null,
         targetName: currentTargetName,
         travelMode: travelMode,
@@ -322,11 +323,25 @@ function broadcastLiveState() {
 function handleLiveUpdate(parsed) {
     if (!parsed) return;
 
-    // Synka viktiga variabler först
+    // 1. Uppdatera startpunkt och viktiga variabler
     if (parsed.initialTotalKm) initialTotalKm = parsed.initialTotalKm;
     if (parsed.midpointStepIndex !== undefined) midpointStepIndex = parsed.midpointStepIndex;
+    if (parsed.startCoords) fixedStartCoords = parsed.startCoords; // Synka startpunkten
 
-    // Kolla om målet har ändrats
+    // 2. Uppdatera sändarens position på mottagarens skärm
+    if (parsed.userCoords) {
+        userCoords = parsed.userCoords;
+        if (!userMarker) {
+            userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, fillOpacity: 0.8}).addTo(map);
+        } else userMarker.setLatLng(userCoords);
+        
+        if (gameState === 'MAP') {
+            map.panTo(userCoords);
+            if (!initialZoomPerformed) { map.flyTo(userCoords, 18); initialZoomPerformed = true; }
+        }
+    }
+
+    // 3. Kolla om målet har ändrats
     if (parsed.targetCoords && (!currentTargetCoords || currentTargetCoords.lat !== parsed.targetCoords.lat || currentTargetCoords.lng !== parsed.targetCoords.lng)) {
         currentTargetName = parsed.targetName;
         travelMode = parsed.travelMode;
@@ -334,19 +349,13 @@ function handleLiveUpdate(parsed) {
         waypointsHem = parsed.waypointsHem.map(w => L.latLng(w.lat, w.lng));
         setTarget(L.latLng(parsed.targetCoords.lat, parsed.targetCoords.lng), false, true, false);
         els.distInfo.innerHTML = `🔴 Du följer resan till ${currentTargetName}...`;
+    } 
+    // Om målet inte ändrades men vi saknar linjen, tvinga fram en uppdatering (nu när vi har startCoords)
+    else if (gameState === 'MAP' && !connectionLine && currentTargetCoords && userCoords) {
+        updateMapLogic();
     }
 
-    // Uppdatera sändarens position på mottagarens skärm
-    if (parsed.userCoords) {
-        userCoords = parsed.userCoords;
-        if (!userMarker) {
-            userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, fillOpacity: 0.8}).addTo(map);
-        } else userMarker.setLatLng(userCoords);
-        if (gameState === 'MAP') map.panTo(userCoords);
-        if (!initialZoomPerformed) { map.flyTo(userCoords, 18); initialZoomPerformed = true; }
-    }
-
-    // Kontrollera om spelstatusen har ändrats
+    // 4. Kontrollera om spelstatusen har ändrats
     if (parsed.gameState === 'GAME' && gameState !== 'GAME') {
         startGame(); 
     } else if (parsed.gameState === 'FINISHED' && gameState !== 'FINISHED') {
@@ -355,7 +364,7 @@ function handleLiveUpdate(parsed) {
         stopGame();
     }
 
-    // Uppdatera spelet direkt i realtid utan att mottagaren behöver räkna om kartan
+    // 5. Uppdatera spelet direkt i realtid
     if (gameState === 'GAME' && parsed.maxStepsReached !== undefined) {
         maxStepsReached = parsed.maxStepsReached;
         if (parsed.lastRouteIndex !== undefined) lastRouteIndex = parsed.lastRouteIndex;
@@ -546,6 +555,8 @@ function addWaypoint(latlng, direction) {
 }
 
 function handlePositionUpdate(pos) {
+    if (isLiveReceiver) return; // VIKTIGT: Blockera mottagarens GPS så den inte stör sändarens position!
+    
     userCoords = [pos.coords.latitude, pos.coords.longitude];
     if (!currentTargetCoords && !isLiveReceiver) els.distInfo.innerHTML = "Vart ska vi åka? 🐭";
     if (!userMarker) {
