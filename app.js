@@ -25,6 +25,18 @@ if ('serviceWorker' in navigator) {
     });
 }
 
+// Pusher Config
+const pusherAppId = "2121505";
+const pusherKey = "57555a0b571c5d9c6f9b";
+const pusherSecret = "553a46ceea1b0e804297";
+const pusherCluster = "eu";
+let pusher = null;
+let liveChannel = null;
+let isLiveSharing = false;
+let isLiveReceiver = false;
+let liveSessionId = null;
+let liveBroadcastInterval = null;
+
 let map, targetMarker, userMarker, connectionLine, connectionLineReturn, userCoords;
 let fixedStartCoords = null; 
 let currentTargetCoords = null;
@@ -140,6 +152,7 @@ function initMap() {
         btn.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)';
         btn.style.marginBottom = '15px'; 
         btn.onclick = function(e) {
+            if(isLiveReceiver) return;
             L.DomEvent.stopPropagation(e);
             clearMapData();
         };
@@ -148,74 +161,69 @@ function initMap() {
     };
     clearControl.addTo(map);
 
-    // KONTROLLERA OM DET FINNS EN DELAD RUTT I URL:EN
     const urlParams = new URLSearchParams(window.location.search);
-    const routeData = urlParams.get('r');
-    if (routeData) {
-        try {
-            const data = JSON.parse(atob(routeData));
-            travelMode = data.m || 0;
-            currentTargetName = data.n || "Delad rutt";
-            currentTargetCoords = L.latLng(data.t[0], data.t[1]);
-            waypointsDit = (data.wd || []).map(p => L.latLng(p[0], p[1]));
-            waypointsHem = (data.wh || []).map(p => L.latLng(p[0], p[1]));
-            
-            // Rensa URL:en så att den inte laddas om varje gång
-            window.history.replaceState({}, document.title, window.location.pathname);
-            els.welcomeOverlay.classList.add('hidden');
-        } catch (e) {
-            console.error("Kunde inte läsa delad rutt", e);
+    
+    // KONTROLLERA OM DET FINNS EN LIVE SESSION I URL:EN
+    const liveId = urlParams.get('live');
+    if (liveId) {
+        isLiveReceiver = true;
+        liveSessionId = liveId;
+        els.welcomeOverlay.classList.add('hidden');
+        els.actionContainer.classList.add('hidden');
+        const cancelBtn = document.getElementById('cancel-game-btn');
+        if (cancelBtn) cancelBtn.classList.add('hidden');
+        els.distInfo.innerHTML = "🔴 Laddar live-rutt...";
+
+        // Initiera Pusher för mottagare
+        pusher = new Pusher(pusherKey, { cluster: pusherCluster });
+        liveChannel = pusher.subscribe(`live-${liveSessionId}`);
+        liveChannel.bind('update', handleLiveUpdate);
+
+        window.history.replaceState({}, document.title, window.location.pathname);
+    } else {
+        // VANLIG START
+        const routeData = urlParams.get('r');
+        if (routeData) {
+            try {
+                const data = JSON.parse(atob(routeData));
+                travelMode = data.m || 0;
+                currentTargetName = data.n || "Delad rutt";
+                currentTargetCoords = L.latLng(data.t[0], data.t[1]);
+                waypointsDit = (data.wd || []).map(p => L.latLng(p[0], p[1]));
+                waypointsHem = (data.wh || []).map(p => L.latLng(p[0], p[1]));
+                window.history.replaceState({}, document.title, window.location.pathname);
+                els.welcomeOverlay.classList.add('hidden');
+            } catch (e) {
+                console.error("Kunde inte läsa delad rutt", e);
+            }
+        }
+
+        if (currentTargetCoords) {
+            setTarget(currentTargetCoords, false, false, false);
+            map.setView(currentTargetCoords, 14); 
+            initialZoomPerformed = true;
+            setupSavedWaypoints();
+        } else if (lastTarget) {
+            currentTargetName = lastTarget.name || "Mål";
+            setTarget(lastTarget.coords, false, false, false);
+            map.setView(lastTarget.coords, 14); 
+            initialZoomPerformed = true;
+            setupSavedWaypoints();
+        }
+
+        if (navigator.geolocation) {
+            navigator.geolocation.watchPosition(handlePositionUpdate, null, { 
+                enableHighAccuracy: true, 
+                maximumAge: 5000, 
+                timeout: 10000 
+            });
         }
     }
 
-    if (currentTargetCoords) {
-        setTarget(currentTargetCoords, false, false, false);
-        map.setView(currentTargetCoords, 14); 
-        initialZoomPerformed = true;
-        
-        waypointsDit.forEach(wp => {
-            const m = L.circleMarker(wp, { radius: 7, fillColor: "#2196F3", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
-            m.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); removeWaypoint(m, wp); });
-            waypointMarkers.push(m);
-        });
-        waypointsHem.forEach(wp => {
-            const m = L.circleMarker(wp, { radius: 7, fillColor: "#FF9800", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
-            m.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); removeWaypoint(m, wp); });
-            waypointMarkers.push(m);
-        });
-        if (els.modeBtn) els.modeBtn.innerText = modes[travelMode].icon;
-        updateMapLogic();
-    } else if (lastTarget) {
-        currentTargetName = lastTarget.name || "Mål";
-        setTarget(lastTarget.coords, false, false, false);
-        map.setView(lastTarget.coords, 14); 
-        initialZoomPerformed = true;
-        
-        waypointsDit.forEach(wp => {
-            const m = L.circleMarker(wp, { radius: 7, fillColor: "#2196F3", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
-            m.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); removeWaypoint(m, wp); });
-            waypointMarkers.push(m);
-        });
-        waypointsHem.forEach(wp => {
-            const m = L.circleMarker(wp, { radius: 7, fillColor: "#FF9800", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
-            m.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); removeWaypoint(m, wp); });
-            waypointMarkers.push(m);
-        });
-        if (els.modeBtn) els.modeBtn.innerText = modes[travelMode].icon;
-        updateMapLogic();
-    }
-
-    if (navigator.geolocation) {
-        navigator.geolocation.watchPosition(handlePositionUpdate, null, { 
-            enableHighAccuracy: true, 
-            maximumAge: 5000, 
-            timeout: 10000 
-        });
-    }
-
     map.on('click', async e => { 
-        if(gameState !== 'MAP') return;
-        if(ignoreClick) return; 
+        if (isLiveReceiver) return; // Blockera klick om man bara kollar
+        if (gameState !== 'MAP') return;
+        if (ignoreClick) return; 
         playClickSound(); 
         
         currentTargetName = "Söker adress..."; 
@@ -238,6 +246,7 @@ function initMap() {
     });
 
     map.on('contextmenu', e => {
+        if (isLiveReceiver) return;
         if(gameState !== 'MAP' || !currentTargetCoords) return;
         ignoreClick = true;
         setTimeout(() => { ignoreClick = false; }, 600);
@@ -246,12 +255,111 @@ function initMap() {
     });
 
     map.on('movestart', (e) => { if (!e.hard) isTracking = false; });
-    setupInteractions();
+    
+    if (!isLiveReceiver) {
+        setupInteractions();
+    }
     updateButtonUI();
     handleOrientationLayout();
     window.addEventListener('resize', handleOrientationLayout);
     setupSwipeListener(); 
 }
+
+function setupSavedWaypoints() {
+    waypointsDit.forEach(wp => {
+        const m = L.circleMarker(wp, { radius: 7, fillColor: "#2196F3", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
+        m.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); removeWaypoint(m, wp); });
+        waypointMarkers.push(m);
+    });
+    waypointsHem.forEach(wp => {
+        const m = L.circleMarker(wp, { radius: 7, fillColor: "#FF9800", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
+        m.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); removeWaypoint(m, wp); });
+        waypointMarkers.push(m);
+    });
+    if (els.modeBtn) els.modeBtn.innerText = modes[travelMode].icon;
+    updateMapLogic();
+}
+
+// ---------------- LIVESÄNDNINGS LOGIK ----------------
+async function pushLiveEvent(eventName, data) {
+    if (!isLiveSharing || !liveSessionId) return;
+    const channelName = `live-${liveSessionId}`;
+    const bodyObj = { name: eventName, channel: channelName, data: JSON.stringify(data) };
+    const bodyStr = JSON.stringify(bodyObj);
+    const md5 = CryptoJS.MD5(bodyStr).toString();
+    const timestamp = Math.floor(Date.now() / 1000);
+    const path = `/apps/${pusherAppId}/events`;
+    
+    let queryString = `auth_key=${pusherKey}&auth_timestamp=${timestamp}&auth_version=1.0&body_md5=${md5}`;
+    const stringToSign = `POST\n${path}\n${queryString}`;
+    const signature = CryptoJS.HmacSHA256(stringToSign, pusherSecret).toString();
+    queryString += `&auth_signature=${signature}`;
+
+    try {
+        await fetch(`https://api-${pusherCluster}.pusher.com${path}?${queryString}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: bodyStr
+        });
+    } catch (e) {
+        console.error("Pusher error", e);
+    }
+}
+
+function broadcastLiveState() {
+    if (!isLiveSharing || !liveSessionId) return;
+    pushLiveEvent('update', {
+        userCoords: userCoords,
+        targetCoords: currentTargetCoords ? {lat: currentTargetCoords.lat, lng: currentTargetCoords.lng} : null,
+        targetName: currentTargetName,
+        travelMode: travelMode,
+        waypointsDit: waypointsDit.map(w => ({lat: w.lat, lng: w.lng})),
+        waypointsHem: waypointsHem.map(w => ({lat: w.lat, lng: w.lng})),
+        gameState: gameState
+    });
+}
+
+function handleLiveUpdate(dataStr) {
+    let parsed;
+    try { parsed = JSON.parse(dataStr); } catch(e) { return; }
+
+    // Kolla om målet har ändrats
+    if (parsed.targetCoords && (!currentTargetCoords || currentTargetCoords.lat !== parsed.targetCoords.lat || currentTargetCoords.lng !== parsed.targetCoords.lng)) {
+        currentTargetName = parsed.targetName;
+        travelMode = parsed.travelMode;
+        waypointsDit = parsed.waypointsDit.map(w => L.latLng(w.lat, w.lng));
+        waypointsHem = parsed.waypointsHem.map(w => L.latLng(w.lat, w.lng));
+        setTarget(L.latLng(parsed.targetCoords.lat, parsed.targetCoords.lng), false, true, false);
+        els.distInfo.innerHTML = `🔴 Du följer resan till ${currentTargetName}...`;
+    }
+
+    // Uppdatera positionen
+    if (parsed.userCoords) {
+        userCoords = parsed.userCoords;
+        if (!userMarker) {
+            userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, fillOpacity: 0.8}).addTo(map);
+        } else userMarker.setLatLng(userCoords);
+        if (gameState === 'MAP') map.panTo(userCoords);
+        if (!initialZoomPerformed) { map.flyTo(userCoords, 18); initialZoomPerformed = true; }
+    }
+
+    // Kontrollera om spelstatusen har ändrats
+    if (parsed.gameState === 'GAME' && gameState !== 'GAME') {
+        startGame(); 
+    } else if (parsed.gameState === 'FINISHED' && gameState !== 'FINISHED') {
+        finishGame();
+    } else if (parsed.gameState === 'MAP' && (gameState === 'GAME' || gameState === 'FINISHED')) {
+        stopGame();
+    }
+
+    // Uppdatera gränssnittet
+    if (gameState === 'GAME') {
+        updateGameLogic();
+    } else if (gameState === 'MAP') {
+        updateMapLogic();
+    }
+}
+// ----------------------------------------------------
 
 function clearMapData() {
     playClickSound();
@@ -270,7 +378,7 @@ function clearMapData() {
     
     fixedStartCoords = null;
     
-    els.distInfo.innerHTML = "Vart ska vi? 🐭";
+    els.distInfo.innerHTML = "Vart ska vi åka? 🐭";
     els.startBtn.classList.add('hidden');
     
     if (userCoords) {
@@ -281,6 +389,7 @@ function clearMapData() {
     
     updateLocateBtnText();
     saveSession();
+    broadcastLiveState();
 }
 
 function setupSwipeListener() {
@@ -354,6 +463,7 @@ function updateGameMapView(forceCenter = false) {
 }
 
 function saveSession() {
+    if (isLiveReceiver) return;
     const sessionData = {
         target: currentTargetCoords ? { coords: {lat: currentTargetCoords.lat, lng: currentTargetCoords.lng}, name: currentTargetName } : null,
         startCoords: fixedStartCoords,
@@ -367,6 +477,7 @@ function saveSession() {
 }
 
 function removeWaypoint(marker, latlng) {
+    if (isLiveReceiver) return;
     playClickSound();
     let index = waypointsDit.findIndex(wp => wp.lat === latlng.lat && wp.lng === latlng.lng);
     if (index !== -1) { waypointsDit.splice(index, 1); } 
@@ -378,6 +489,7 @@ function removeWaypoint(marker, latlng) {
     waypointMarkers = waypointMarkers.filter(m => m !== marker);
     updateMapLogic();
     saveSession();
+    broadcastLiveState();
 }
 
 function showWaypointChoiceMenu(e) {
@@ -413,11 +525,12 @@ function addWaypoint(latlng, direction) {
     waypointMarkers.push(wpMarker);
     updateMapLogic();
     saveSession();
+    broadcastLiveState();
 }
 
 function handlePositionUpdate(pos) {
     userCoords = [pos.coords.latitude, pos.coords.longitude];
-    if (!currentTargetCoords) els.distInfo.innerHTML = "Vart ska vi åka? 🐭";
+    if (!currentTargetCoords && !isLiveReceiver) els.distInfo.innerHTML = "Vart ska vi åka? 🐭";
     if (!userMarker) {
         userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, fillOpacity: 0.8}).addTo(map);
     } else userMarker.setLatLng(userCoords);
@@ -463,12 +576,14 @@ async function updateMapLogic() {
             } else if (connectionLineReturn) { map.removeLayer(connectionLineReturn); connectionLineReturn = null; }
             
             const distKm = route.distance / 1000;
-            if (travelMode === 2) {
-                els.distInfo.innerHTML = `<b>${distKm.toFixed(2)} km</b> till ${currentTargetName} och tillbaka`;
-            } else {
-                els.distInfo.innerHTML = `<b>${distKm.toFixed(2)} km</b> till ${currentTargetName}`;
+            if (!isLiveReceiver) {
+                if (travelMode === 2) {
+                    els.distInfo.innerHTML = `<b>${distKm.toFixed(2)} km</b> till ${currentTargetName} och tillbaka`;
+                } else {
+                    els.distInfo.innerHTML = `<b>${distKm.toFixed(2)} km</b> till ${currentTargetName}`;
+                }
+                els.startBtn.classList.remove('hidden');
             }
-            els.startBtn.classList.remove('hidden');
         } else { fallbackDist(); }
     } catch (e) { fallbackDist(); }
 }
@@ -487,12 +602,14 @@ function fallbackDist() {
         else connectionLineReturn = L.polyline(coordsRetur, {color: '#FF9800', weight: 4, opacity: 0.7}).addTo(map);
     } else if (connectionLineReturn) { map.removeLayer(connectionLineReturn); connectionLineReturn = null; }
     
-    if (travelMode === 2) {
-        els.distInfo.innerHTML = `<b>${total.toFixed(2)} km</b> till målet och tillbaka (fågelvägen)`;
-    } else {
-        els.distInfo.innerHTML = `<b>${total.toFixed(2)} km</b> (fågelvägen)`;
+    if (!isLiveReceiver) {
+        if (travelMode === 2) {
+            els.distInfo.innerHTML = `<b>${total.toFixed(2)} km</b> till målet och tillbaka (fågelvägen)`;
+        } else {
+            els.distInfo.innerHTML = `<b>${total.toFixed(2)} km</b> (fågelvägen)`;
+        }
+        els.startBtn.classList.remove('hidden');
     }
-    els.startBtn.classList.remove('hidden');
 }
 
 function setTarget(latlng, shouldSave, clearWaypoints = true, updateStart = true) {
@@ -511,7 +628,9 @@ function setTarget(latlng, shouldSave, clearWaypoints = true, updateStart = true
     if (targetMarker) targetMarker.setLatLng(latlng);
     else targetMarker = L.marker(latlng).addTo(map);
     if (shouldSave) saveSession();
-    updateMapLogic(); updateLocateBtnText();
+    updateMapLogic(); 
+    if (!isLiveReceiver) updateLocateBtnText();
+    broadcastLiveState();
 }
 
 function zoomToUser() { if (userCoords) map.flyTo(userCoords, 18); }
@@ -521,7 +640,7 @@ function toggleView() {
     updateLocateBtnText();
 }
 function updateLocateBtnText() { els.locateBtn.innerHTML = (!currentTargetCoords || isShowingUser) ? "🎯 HITTA MEJ" : `🏁 ${currentTargetName.toUpperCase()}`; }
-function toggleTravelMode() { travelMode = (travelMode + 1) % modes.length; els.modeBtn.innerText = modes[travelMode].icon; updateMapLogic(); saveSession(); }
+function toggleTravelMode() { travelMode = (travelMode + 1) % modes.length; els.modeBtn.innerText = modes[travelMode].icon; updateMapLogic(); saveSession(); broadcastLiveState(); }
 async function requestWakeLock() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} }
 function releaseWakeLock() { if (wakeLock !== null) wakeLock.release().then(() => { wakeLock = null; }); }
 
@@ -539,7 +658,7 @@ function startVoiceSearch() {
 function startGame() {
     if (!currentTargetCoords || !userCoords) return;
     gameState = 'GAME';
-    startCoords = [...userCoords];
+    if (!isLiveReceiver) startCoords = [...userCoords];
     maxStepsReached = 0;
     lastRouteIndex = 0;
     hasReachedMidpoint = false;
@@ -552,8 +671,22 @@ function startGame() {
     if (distDisplay) distDisplay.classList.add('hidden');
     
     els.pathGrid.classList.remove('hidden');
-    const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', '');
-    const totalDistanceKm = parseFloat(distStr);
+    
+    // Vi läser distansen - om vi är mottagare räknar vi ut det direkt
+    let totalDistanceKm = 0;
+    if (isLiveReceiver) {
+        if (currentRouteCoords.length > 0) {
+            for (let i = 0; i < currentRouteCoords.length - 1; i++) {
+                totalDistanceKm += (map.distance(currentRouteCoords[i], currentRouteCoords[i+1]) / 1000);
+            }
+        } else {
+            totalDistanceKm = (map.distance(fixedStartCoords || userCoords, currentTargetCoords) / 1000) * (travelMode === 2 ? 2 : 1);
+        }
+    } else {
+        const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', '');
+        totalDistanceKm = parseFloat(distStr);
+    }
+    
     initialTotalKm = Math.max(1, Math.ceil(totalDistanceKm / modes[travelMode].factor));
     els.mapPage.classList.add('hidden');
     els.gamePage.classList.remove('hidden');
@@ -561,19 +694,20 @@ function startGame() {
     requestWakeLock();
     els.pathGrid.innerHTML = '<div id="the-mouse">🐭</div>';
 
-    // SWIPE-HINT LOGIKEN
     if (!swipeHintShown) {
         const hint = document.getElementById('swipe-hint');
         if (hint) {
             hint.classList.remove('hidden');
-            setTimeout(() => hint.classList.add('show-hint'), 50); // Mjuk inflygning
+            setTimeout(() => hint.classList.add('show-hint'), 50); 
             setTimeout(() => {
                 hint.classList.remove('show-hint');
-                setTimeout(() => hint.classList.add('hidden'), 500); // Göm helt efter animation
-            }, 4000); // Visas i 4 sekunder
+                setTimeout(() => hint.classList.add('hidden'), 500); 
+            }, 4000); 
         }
-        swipeHintShown = true;
-        saveSession();
+        if(!isLiveReceiver) {
+            swipeHintShown = true;
+            saveSession();
+        }
     }
 
     if (travelMode === 2 && currentRouteCoords.length > 0) {
@@ -598,6 +732,7 @@ function startGame() {
         els.pathGrid.appendChild(step);
     }
     setTimeout(() => moveMouse(0), 100);
+    broadcastLiveState();
 }
 
 function updateGameLogic() {
@@ -642,7 +777,7 @@ function updateGameLogic() {
         if (s) i < maxStepsReached ? s.classList.add('eat-animation') : s.classList.remove('eat-animation');
     }
     
-    const goal = (travelMode === 2) ? startCoords : currentTargetCoords;
+    const goal = (travelMode === 2) ? (fixedStartCoords || startCoords) : currentTargetCoords;
     const distToFinal = map.distance(userCoords, goal);
 
     if (travelMode === 2) {
@@ -690,12 +825,15 @@ function finishGame() {
     m.innerHTML = '🐭🧀'; m.classList.add('victory');
     createConfettiBurst(); 
     confettiInterval = setInterval(createConfettiBurst, 800); 
-    els.shareBtn.classList.remove('hidden');
+    if(!isLiveReceiver) els.shareBtn.classList.remove('hidden');
     releaseWakeLock();
+    broadcastLiveState();
 }
 
 function stopGame() { 
-    gameState = 'MAP'; fixedStartCoords = null; clearInterval(confettiInterval);
+    gameState = 'MAP'; 
+    if (!isLiveReceiver) fixedStartCoords = null; 
+    clearInterval(confettiInterval);
     isGameMapVisible = false;
     els.gameMapElement.classList.add('hidden');
     const distDisplay = document.getElementById('game-distance-display');
@@ -706,14 +844,15 @@ function stopGame() {
     m.classList.remove('victory'); m.classList.remove('turn-dance'); m.innerHTML = '🐭';
     document.querySelectorAll('.confetti').forEach(c => c.remove());
     els.gamePage.classList.add('hidden'); els.mapPage.classList.remove('hidden'); 
-    els.shareBtn.classList.remove('hidden'); releaseWakeLock();
-    saveSession();
+    
+    if(!isLiveReceiver) els.shareBtn.classList.remove('hidden'); 
+    releaseWakeLock();
+    if(!isLiveReceiver) saveSession();
 
     setTimeout(() => {
-        if (map) {
-            map.invalidateSize();
-        }
+        if (map) { map.invalidateSize(); }
     }, 50);
+    broadcastLiveState();
 }
 
 function createConfettiBurst() {
@@ -767,6 +906,7 @@ function updateButtonUI() {
 }
 
 function handleSlotClick(i) { 
+    if(isLiveReceiver) return;
     const d = savedLocations[i]; 
     if (d) { 
         currentTargetName = d.name; 
@@ -831,14 +971,72 @@ function setupInteractions() {
 }
 
 function playClickSound() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); const o = audioCtx.createOscillator(); o.type='triangle'; o.frequency.setValueAtTime(3000, audioCtx.currentTime); o.start(); o.stop(audioCtx.currentTime+0.1); }
-function closeInstructions() { els.welcomeOverlay.classList.add('hidden'); saveSession(); }
+function closeInstructions() { els.welcomeOverlay.classList.add('hidden'); if(!isLiveReceiver) saveSession(); }
 
-function shareApp() { 
+// --- NY DELA-FUNKTION MED VAL-MENY ---
+function shareApp(e) { 
+    if (isLiveReceiver) {
+        alert("Du följer redan en live-sändning!");
+        return;
+    }
+
+    const oldMenu = document.getElementById('share-menu');
+    if (oldMenu) { oldMenu.remove(); return; }
+
+    const menu = document.createElement('div');
+    menu.id = 'share-menu';
+    menu.style.position = 'fixed';
+    menu.style.top = '65px';
+    menu.style.left = '15px';
+    menu.style.zIndex = '10001';
+    menu.style.background = 'white';
+    menu.style.borderRadius = '15px';
+    menu.style.padding = '10px';
+    menu.style.boxShadow = '0 5px 20px rgba(0,0,0,0.3)';
+    menu.style.display = 'flex';
+    menu.style.flexDirection = 'column';
+    menu.style.gap = '8px';
+    menu.style.border = '2px solid var(--primary)';
+
+    const btnNormal = document.createElement('button');
+    btnNormal.className = 'wp-menu-btn';
+    btnNormal.style.background = 'var(--blue)';
+    btnNormal.innerText = 'Dela rutt (Statisk)';
+    btnNormal.onclick = () => { menu.remove(); shareNormal(); };
+
+    const btnLive = document.createElement('button');
+    btnLive.className = 'wp-menu-btn';
+    btnLive.style.background = '#ff4444';
+    btnLive.innerText = 'Dela LIVE 🔴';
+    btnLive.onclick = () => { menu.remove(); startLiveSharing(); };
+
+    const btnCancel = document.createElement('button');
+    btnCancel.innerText = 'Avbryt';
+    btnCancel.style.fontSize = '0.7rem';
+    btnCancel.style.background = 'none';
+    btnCancel.onclick = () => menu.remove();
+
+    menu.appendChild(btnNormal);
+    menu.appendChild(btnLive);
+    menu.appendChild(btnCancel);
+    document.body.appendChild(menu);
+
+    setTimeout(() => {
+        const close = (event) => {
+            if (!menu.contains(event.target) && event.target.id !== 'share-btn') {
+                menu.remove();
+                document.removeEventListener('click', close);
+            }
+        };
+        document.addEventListener('click', close);
+    }, 100);
+}
+
+function shareNormal() {
     let shareUrl = window.location.origin + window.location.pathname;
     let title = 'Mouse & Cheese Tracker';
     let text = 'Häng med på äventyr med musen!';
 
-    // OM EN RUTT ÄR AKTIV, SKAPA EN DELNINGS-LÄNK
     if (currentTargetCoords) {
         const data = {
             t: [currentTargetCoords.lat, currentTargetCoords.lng],
@@ -847,7 +1045,6 @@ function shareApp() {
             wh: waypointsHem.map(w => [w.lat, w.lng]),
             n: currentTargetName
         };
-        // Packa ner datan till en Base64-sträng för URL:en
         const encoded = btoa(JSON.stringify(data));
         shareUrl += '?r=' + encoded;
         text = `Följ min rutt till ${currentTargetName}! 🐭🧀`;
@@ -857,10 +1054,31 @@ function shareApp() {
     if(navigator.share) {
         navigator.share(d).catch(e => console.log("Delning avbruten"));
     } else {
-        // Fallback om webbläsaren inte stödjer dela-api:et
         prompt("Kopiera länken för att dela rutt:", shareUrl);
     }
 }
 
+function startLiveSharing() {
+    if (!liveSessionId) liveSessionId = Math.random().toString(36).substr(2, 9);
+    isLiveSharing = true;
+
+    let shareUrl = window.location.origin + window.location.pathname + '?live=' + liveSessionId;
+
+    const d = {title: 'Följ mig live!', text: 'Följ musens jakt på osten live! 🐭🔴', url: shareUrl};
+    if(navigator.share) {
+        navigator.share(d).catch(e => console.log("Delning avbruten"));
+    } else {
+        prompt("Kopiera länken för att dela live-rutt:", shareUrl);
+    }
+
+    broadcastLiveState();
+    
+    // Säkerställ att musen alltid är uppdaterad live för mottagarna
+    if(!liveBroadcastInterval) {
+        liveBroadcastInterval = setInterval(() => {
+            if (isLiveSharing) broadcastLiveState();
+        }, 3000); // Tvingad synk var 3e sekund
+    }
+}
 
 window.onload = initMap;
