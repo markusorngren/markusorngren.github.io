@@ -132,16 +132,17 @@ function checkInstallState() {
     }
 }
 
-// Skapar inställningarna för lokalt kryptolås (tillåter klienten att prata direkt med Pusher)
-function getPusherAuthorizer() {
-    return (channel, options) => {
-        return {
-            authorize: (socketId, callback) => {
-                const stringToSign = socketId + ':' + channel.name;
+// Uppdaterad till Pusher v8.2+ format för klient-auktorisering
+function getPusherConfig() {
+    return {
+        cluster: pusherCluster,
+        channelAuthorization: {
+            customHandler: (params, callback) => {
+                const stringToSign = params.socketId + ':' + params.channelName;
                 const signature = CryptoJS.HmacSHA256(stringToSign, pusherSecret).toString(CryptoJS.enc.Hex);
-                callback(false, { auth: pusherKey + ':' + signature });
+                callback(null, { auth: pusherKey + ':' + signature });
             }
-        };
+        }
     };
 }
 
@@ -185,14 +186,15 @@ function initMap() {
         els.actionContainer.classList.add('hidden');
         const cancelBtn = document.getElementById('cancel-game-btn');
         if (cancelBtn) cancelBtn.classList.add('hidden');
-        els.distInfo.innerHTML = "🔴 Laddar live-rutt...";
+        els.distInfo.innerHTML = "🔴 Ansluter till sändaren...";
 
-        // Initiera Pusher direkt som klient för mottagare
-        pusher = new Pusher(pusherKey, { 
-            cluster: pusherCluster,
-            authorizer: getPusherAuthorizer()
-        });
+        // Initiera Pusher med rätt konfig för mottagaren
+        pusher = new Pusher(pusherKey, getPusherConfig());
         liveChannel = pusher.subscribe(`private-live-${liveSessionId}`);
+        
+        liveChannel.bind('pusher:subscription_succeeded', () => {
+            els.distInfo.innerHTML = "🟢 Väntar på musens uppdatering...";
+        });
         liveChannel.bind('client-update', handleLiveUpdate);
 
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -1072,10 +1074,7 @@ function startLiveSharing() {
     
     // Initiera Pusher lokalt så att sändaren själv pratar direkt via WebSockets
     if (!pusher) {
-        pusher = new Pusher(pusherKey, {
-            cluster: pusherCluster,
-            authorizer: getPusherAuthorizer()
-        });
+        pusher = new Pusher(pusherKey, getPusherConfig());
     }
 
     liveChannel = pusher.subscribe(`private-live-${liveSessionId}`);
