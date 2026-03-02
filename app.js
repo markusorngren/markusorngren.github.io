@@ -621,7 +621,7 @@ function handlePositionUpdate(pos) {
         userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, fillOpacity: 0.8}).addTo(map);
     } else userMarker.setLatLng(userCoords);
     if (isTracking && gameState === 'MAP') map.panTo(userCoords);
-    if (!initialZoomPerformed) { zoomToUser(); initialZoomPerformed = true; isTracking = true; }
+    if (!initialZoomPerformed) { zoomToUser(true); initialZoomPerformed = true; isTracking = true; }
     if (gameState === 'MAP') { if (!fixedStartCoords) updateMapLogic(); }
     else if (gameState === 'GAME') updateGameLogic();
 }
@@ -719,7 +719,13 @@ function setTarget(latlng, shouldSave, clearWaypoints = true, updateStart = true
     broadcastLiveState();
 }
 
-function zoomToUser() { if (userCoords) map.flyTo(userCoords, 18); }
+function zoomToUser(instant = false) { 
+    if (userCoords) {
+        if (instant) map.setView(userCoords, 18);
+        else map.flyTo(userCoords, 18);
+    }
+}
+
 function toggleView() { 
     if (!currentTargetCoords || isShowingUser) { zoomToUser(); isShowingUser = false; isTracking = true; }
     else { map.flyTo(currentTargetCoords, 18); isShowingUser = true; isTracking = false; }
