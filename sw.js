@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mouse-tracker-v75'; // Uppdaterad version för att tvinga fram update
+const CACHE_NAME = 'mouse-tracker-v76'; // Uppdaterad version för att tvinga fram update
 const MAP_CACHE = 'mouse-map-tiles-v1'; // Ny cache för kartplattor
 const ASSETS = [
   './',
@@ -7,6 +7,8 @@ const ASSETS = [
   './app.js',
   './manifest.json',
   './icon.png',
+  './icon-192.png',
+  './icon-512.png',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
 ];
