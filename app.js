@@ -643,7 +643,7 @@ async function updateMapLogic() {
     
     // --- NY OPENROUTESERVICE-KOPPLING VIA POST ---
     const apiKey = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjgxOTdlMWQxYzhmODQ2NGY4NjM0OWYzNDI2NzM3OWM5IiwiaCI6Im11cm11cjY0In0=";
-    const url = `https://api.openrouteservice.org/v2/directions/${mode.profile}`;
+    const url = `https://api.openrouteservice.org/v2/directions/${mode.profile}/geojson`;
     
     try {
         const res = await fetch(url, {
