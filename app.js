@@ -175,7 +175,6 @@ function initMap() {
     };
     clearControl.addTo(map);
 
-    // Återskapa sparad manuell startpunkt vid omladdning
     if (sessionRaw && sessionRaw.hasManualStart && fixedStartCoords) {
         manualStartMarker = L.circleMarker(fixedStartCoords, { radius: 8, fillColor: "#4CAF50", color: "#fff", weight: 2, fillOpacity: 1 }).addTo(map);
         manualStartMarker.on('contextmenu', (e) => {
@@ -216,7 +215,6 @@ function initMap() {
                 waypointsDit = (data.wd || []).map(p => L.latLng(p[0], p[1]));
                 waypointsHem = (data.wh || []).map(p => L.latLng(p[0], p[1]));
                 
-                // Läs in delad manuell startpunkt
                 if (data.s) {
                     fixedStartCoords = data.s;
                     manualStartMarker = L.circleMarker(data.s, { radius: 8, fillColor: "#4CAF50", color: "#fff", weight: 2, fillOpacity: 1 }).addTo(map);
@@ -267,9 +265,14 @@ function initMap() {
         try {
             const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${e.latlng.lat}&lon=${e.latlng.lng}`);
             const d = await res.json();
-            if (d && d.display_name) {
-                const parts = d.display_name.split(',');
-                currentTargetName = parts[0].trim();
+            if (d && d.address) {
+                // HÄR ÄR FIXEN: Vi kollar först om det finns ett tydligt gatunamn
+                if (d.address.road) {
+                    currentTargetName = d.address.road + (d.address.house_number ? ' ' + d.address.house_number : '');
+                } else if (d.display_name) {
+                    let parts = d.display_name.split(',');
+                    currentTargetName = isNaN(parts[0].trim()) ? parts[0].trim() : (parts[1] ? parts[1].trim() + ' ' + parts[0].trim() : parts[0].trim());
+                }
                 updateMapLogic(); 
                 updateLocateBtnText(); 
                 saveSession();
@@ -280,7 +283,6 @@ function initMap() {
         }
     });
 
-    // NY LÅNGTRYCKS-MENY FÖR ATT SÄTTA STARTPUNKT & VIA-PUNKTER
     map.on('contextmenu', e => {
         if (isLiveReceiver) return;
         if (gameState !== 'MAP') return;
@@ -478,7 +480,6 @@ function clearMapData() {
     waypointMarkers.forEach(m => map.removeLayer(m)); 
     waypointMarkers = [];
     
-    // Rensa ev. manuell startpunkt
     if (manualStartMarker) { map.removeLayer(manualStartMarker); manualStartMarker = null; }
     fixedStartCoords = null;
     
@@ -631,7 +632,6 @@ async function updateMapLogic() {
     const startPoint = fixedStartCoords || userCoords;
     const mode = modes[travelMode];
     
-    // Bygg en array med alla koordinater
     let coordArray = [];
     coordArray.push([startPoint[1], startPoint[0]]);
     waypointsDit.forEach(wp => coordArray.push([wp.lng, wp.lat]));
@@ -641,7 +641,6 @@ async function updateMapLogic() {
         coordArray.push([startPoint[1], startPoint[0]]);
     }
     
-    // --- NY OPENROUTESERVICE-KOPPLING VIA POST ---
     const apiKey = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjgxOTdlMWQxYzhmODQ2NGY4NjM0OWYzNDI2NzM3OWM5IiwiaCI6Im11cm11cjY0In0=";
     const url = `https://api.openrouteservice.org/v2/directions/${mode.profile}/geojson`;
     
@@ -663,10 +662,8 @@ async function updateMapLogic() {
         
         const data = await res.json();
         
-        // ORS lägger sin rutt-data i en "features"-array
         if (data.features && data.features.length > 0) {
             const route = data.features[0];
-            // ORS returnerar koordinater som [lon, lat], Leaflet vill ha [lat, lon]
             currentRouteCoords = route.geometry.coordinates.map(c => [c[1], c[0]]); 
             
             let splitIndex = currentRouteCoords.length;
@@ -688,7 +685,6 @@ async function updateMapLogic() {
                 else connectionLineReturn = L.polyline(coordsRetur, {color: '#FF9800', weight: 4, opacity: 0.7}).addTo(map);
             } else if (connectionLineReturn) { map.removeLayer(connectionLineReturn); connectionLineReturn = null; }
             
-            // ORS returnerar distansen i meter, vi gör om till km
             const distKm = route.properties.summary.distance / 1000;
             
             if (!isLiveReceiver) {
@@ -781,7 +777,6 @@ function startGame() {
     if (!isLiveReceiver && !userCoords && !fixedStartCoords) return; 
 
     gameState = 'GAME';
-    // Om vi har en manuell startpunkt och spelar själv, hoppa dit. Annars använd GPS.
     if (!isLiveReceiver) startCoords = fixedStartCoords ? [...fixedStartCoords] : [...(userCoords || [0,0])];
     
     maxStepsReached = 0;
@@ -995,10 +990,16 @@ function toggleSearchUI() { els.searchContainer.classList.toggle('hidden'); if (
 async function executeTextSearch() {
     const q = els.searchInput.value; if (!q) return;
     try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`);
+        // HÄR ÄR FIXEN FÖR TEXTSÖKET OCKSÅ
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(q)}`);
         const d = await res.json();
         if (d.length > 0) {
-            currentTargetName = d[0].display_name.split(',')[0];
+            if (d[0].address && d[0].address.road) {
+                currentTargetName = d[0].address.road + (d[0].address.house_number ? ' ' + d[0].address.house_number : '');
+            } else {
+                let parts = d[0].display_name.split(',');
+                currentTargetName = isNaN(parts[0].trim()) ? parts[0].trim() : (parts[1] ? parts[1].trim() + ' ' + parts[0].trim() : parts[0].trim());
+            }
             setTarget({lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon)}, true, true, true);
             map.flyTo(currentTargetCoords, 18); els.searchContainer.classList.add('hidden');
         }
@@ -1174,7 +1175,7 @@ function shareNormal() {
             wd: waypointsDit.map(w => [w.lat, w.lng]),
             wh: waypointsHem.map(w => [w.lat, w.lng]),
             n: currentTargetName,
-            s: manualStartMarker ? fixedStartCoords : null // Skickar med manuell startpunkt!
+            s: manualStartMarker ? fixedStartCoords : null 
         };
         const encoded = btoa(JSON.stringify(data));
         shareUrl += '?r=' + encoded;
