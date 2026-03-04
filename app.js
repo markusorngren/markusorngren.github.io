@@ -70,9 +70,9 @@ let swipeStartX = 0;
 
 let travelMode = 0; 
 const modes = [
-    { icon: '🚗', factor: 1.0, osrm: 'car' },
-    { icon: '🚶', factor: 0.1, osrm: 'foot' },
-    { icon: '🚶↔️', factor: 0.1, osrm: 'foot' } 
+    { icon: '🚗', factor: 1.0, profile: 'driving-car' },
+    { icon: '🚶', factor: 0.1, profile: 'foot-walking' },
+    { icon: '🚶↔️', factor: 0.1, profile: 'foot-walking' } 
 ];
 
 const els = {
@@ -630,20 +630,45 @@ async function updateMapLogic() {
     if ((!userCoords && !fixedStartCoords) || !currentTargetCoords) return;
     const startPoint = fixedStartCoords || userCoords;
     const mode = modes[travelMode];
-    let pts = [`${startPoint[1]},${startPoint[0]}`];
-    waypointsDit.forEach(wp => pts.push(`${wp.lng},${wp.lat}`));
-    pts.push(`${currentTargetCoords.lng},${currentTargetCoords.lat}`);
+    
+    // Bygg en array med alla koordinater
+    let coordArray = [];
+    coordArray.push([startPoint[1], startPoint[0]]);
+    waypointsDit.forEach(wp => coordArray.push([wp.lng, wp.lat]));
+    coordArray.push([currentTargetCoords.lng, currentTargetCoords.lat]);
     if (travelMode === 2) {
-        waypointsHem.forEach(wp => pts.push(`${wp.lng},${wp.lat}`));
-        pts.push(`${startPoint[1]},${startPoint[0]}`);
+        waypointsHem.forEach(wp => coordArray.push([wp.lng, wp.lat]));
+        coordArray.push([startPoint[1], startPoint[0]]);
     }
-    const url = `https://router.project-osrm.org/route/v1/${mode.osrm}/${pts.join(';')}?overview=full&geometries=geojson`;
+    
+    // --- NY OPENROUTESERVICE-KOPPLING VIA POST ---
+    const apiKey = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjgxOTdlMWQxYzhmODQ2NGY4NjM0OWYzNDI2NzM3OWM5IiwiaCI6Im11cm11cjY0In0=";
+    const url = `https://api.openrouteservice.org/v2/directions/${mode.profile}`;
+    
     try {
-        const res = await fetch(url);
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8',
+                'Content-Type': 'application/json',
+                'Authorization': apiKey
+            },
+            body: JSON.stringify({
+                coordinates: coordArray,
+                elevation: false,
+                instructions: false,
+                preference: 'recommended'
+            })
+        });
+        
         const data = await res.json();
-        if (data.code === 'Ok') {
-            const route = data.routes[0];
-            currentRouteCoords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+        
+        // ORS lägger sin rutt-data i en "features"-array
+        if (data.features && data.features.length > 0) {
+            const route = data.features[0];
+            // ORS returnerar koordinater som [lon, lat], Leaflet vill ha [lat, lon]
+            currentRouteCoords = route.geometry.coordinates.map(c => [c[1], c[0]]); 
+            
             let splitIndex = currentRouteCoords.length;
             if (travelMode === 2) {
                 let minD = Infinity;
@@ -654,14 +679,18 @@ async function updateMapLogic() {
             }
             const coordsDit = currentRouteCoords.slice(0, splitIndex + 1);
             const coordsRetur = currentRouteCoords.slice(splitIndex);
+            
             if (connectionLine) connectionLine.setLatLngs(coordsDit);
             else connectionLine = L.polyline(coordsDit, {color: '#007bff', weight: 4, opacity: 0.7}).addTo(map);
+            
             if (travelMode === 2) {
                 if (connectionLineReturn) connectionLineReturn.setLatLngs(coordsRetur);
                 else connectionLineReturn = L.polyline(coordsRetur, {color: '#FF9800', weight: 4, opacity: 0.7}).addTo(map);
             } else if (connectionLineReturn) { map.removeLayer(connectionLineReturn); connectionLineReturn = null; }
             
-            const distKm = route.distance / 1000;
+            // ORS returnerar distansen i meter, vi gör om till km
+            const distKm = route.properties.summary.distance / 1000;
+            
             if (!isLiveReceiver) {
                 if (travelMode === 2) {
                     els.distInfo.innerHTML = `<b>${distKm.toFixed(2)} km</b> till ${currentTargetName} och tillbaka`;
