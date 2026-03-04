@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mouse-tracker-v84'; // Uppdaterad version för att visa företagsnamn igen
+const CACHE_NAME = 'mouse-tracker-v85'; // Uppdaterad version för att visa företagsnamn igen
 const MAP_CACHE = 'mouse-map-tiles-v1'; // Ny cache för kartplattor
 const ASSETS = [
   './',
