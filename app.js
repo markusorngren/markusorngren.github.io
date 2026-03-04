@@ -265,14 +265,21 @@ function initMap() {
         try {
             const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${e.latlng.lat}&lon=${e.latlng.lng}`);
             const d = await res.json();
-            if (d && d.address) {
-                // HÄR ÄR FIXEN: Vi kollar först om det finns ett tydligt gatunamn
-                if (d.address.road) {
-                    currentTargetName = d.address.road + (d.address.house_number ? ' ' + d.address.house_number : '');
-                } else if (d.display_name) {
-                    let parts = d.display_name.split(',');
-                    currentTargetName = isNaN(parts[0].trim()) ? parts[0].trim() : (parts[1] ? parts[1].trim() + ' ' + parts[0].trim() : parts[0].trim());
+            
+            if (d && d.display_name) {
+                let parts = d.display_name.split(',');
+                let firstPart = parts[0].trim();
+
+                if (!isNaN(firstPart)) {
+                    currentTargetName = (d.address && d.address.road) ? (d.address.road + ' ' + firstPart) : firstPart;
+                } else {
+                    if (d.address && d.address.road && firstPart === d.address.road) {
+                        currentTargetName = d.address.road + (d.address.house_number ? ' ' + d.address.house_number : '');
+                    } else {
+                        currentTargetName = firstPart; 
+                    }
                 }
+                
                 updateMapLogic(); 
                 updateLocateBtnText(); 
                 saveSession();
@@ -990,15 +997,20 @@ function toggleSearchUI() { els.searchContainer.classList.toggle('hidden'); if (
 async function executeTextSearch() {
     const q = els.searchInput.value; if (!q) return;
     try {
-        // HÄR ÄR FIXEN FÖR TEXTSÖKET OCKSÅ
         const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(q)}`);
         const d = await res.json();
         if (d.length > 0) {
-            if (d[0].address && d[0].address.road) {
-                currentTargetName = d[0].address.road + (d[0].address.house_number ? ' ' + d[0].address.house_number : '');
+            let parts = d[0].display_name.split(',');
+            let firstPart = parts[0].trim();
+
+            if (!isNaN(firstPart)) {
+                currentTargetName = (d[0].address && d[0].address.road) ? (d[0].address.road + ' ' + firstPart) : firstPart;
             } else {
-                let parts = d[0].display_name.split(',');
-                currentTargetName = isNaN(parts[0].trim()) ? parts[0].trim() : (parts[1] ? parts[1].trim() + ' ' + parts[0].trim() : parts[0].trim());
+                if (d[0].address && d[0].address.road && firstPart === d[0].address.road) {
+                    currentTargetName = d[0].address.road + (d[0].address.house_number ? ' ' + d[0].address.house_number : '');
+                } else {
+                    currentTargetName = firstPart;
+                }
             }
             setTarget({lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon)}, true, true, true);
             map.flyTo(currentTargetCoords, 18); els.searchContainer.classList.add('hidden');
