@@ -37,6 +37,9 @@ let isLiveReceiver = false;
 let liveSessionId = null;
 let liveBroadcastInterval = null;
 
+let currentHeading = 0;
+let lastUserCoordsForHeading = null;
+
 let map, targetMarker, userMarker, connectionLine, connectionLineReturn, userCoords;
 let fixedStartCoords = null; 
 let manualStartMarker = null; 
@@ -89,7 +92,8 @@ const els = {
     shareBtn: document.getElementById('share-btn'),
     modeBtn: document.getElementById('mode-btn'),
     actionContainer: document.querySelector('.action-container'),
-    gameMapElement: document.getElementById('game-map')
+    gameMapElement: document.getElementById('game-map'),
+    gameMapWrapper: document.getElementById('game-map-wrapper')
 };
 
 let sessionRaw = JSON.parse(localStorage.getItem('mouse_session'));
@@ -144,6 +148,16 @@ function getPusherConfig() {
             }
         }
     };
+}
+
+function getBearing(lat1, lng1, lat2, lng2) {
+    const toRad = Math.PI / 180;
+    const toDeg = 180 / Math.PI;
+    const dLng = (lng2 - lng1) * toRad;
+    const y = Math.sin(dLng) * Math.cos(lat2 * toRad);
+    const x = Math.cos(lat1 * toRad) * Math.sin(lat2 * toRad) - Math.sin(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.cos(dLng);
+    const brng = Math.atan2(y, x) * toDeg;
+    return (brng + 360) % 360;
 }
 
 function initMap() {
@@ -420,6 +434,16 @@ function handleLiveUpdate(parsed) {
     if (parsed.startCoords) fixedStartCoords = parsed.startCoords; 
 
     if (parsed.userCoords) {
+        if (lastUserCoordsForHeading) {
+            const dist = L.latLng(lastUserCoordsForHeading).distanceTo(parsed.userCoords);
+            if (dist > 2) {
+                currentHeading = getBearing(lastUserCoordsForHeading[0], lastUserCoordsForHeading[1], parsed.userCoords[0], parsed.userCoords[1]);
+            }
+        }
+        if (!lastUserCoordsForHeading || L.latLng(lastUserCoordsForHeading).distanceTo(parsed.userCoords) > 2) {
+            lastUserCoordsForHeading = [...parsed.userCoords];
+        }
+
         userCoords = parsed.userCoords;
         if (!userMarker) {
             userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, fillOpacity: 0.8}).addTo(map);
@@ -521,7 +545,7 @@ function toggleGameMap() {
     const distDisplay = document.getElementById('game-distance-display');
     if (isGameMapVisible) {
         els.pathGrid.classList.add('hidden');
-        els.gameMapElement.classList.remove('hidden');
+        els.gameMapWrapper.classList.remove('hidden');
         if (distDisplay) distDisplay.classList.remove('hidden');
         if (!gameMap) {
             gameMap = L.map('game-map', { 
@@ -535,7 +559,7 @@ function toggleGameMap() {
             updateGameMapView(true);
         }, 50);
     } else {
-        els.gameMapElement.classList.add('hidden');
+        els.gameMapWrapper.classList.add('hidden');
         els.pathGrid.classList.remove('hidden');
         if (distDisplay) distDisplay.classList.add('hidden');
     }
@@ -572,6 +596,12 @@ function updateGameMapView(forceCenter = false) {
     }
     
     gameMap.setView(userCoords, 16);
+
+    if (currentHeading !== null) {
+        if (els.gameMapElement) {
+            els.gameMapElement.style.transform = `rotate(${-currentHeading}deg)`;
+        }
+    }
 }
 
 function saveSession() {
@@ -624,6 +654,19 @@ function handlePositionUpdate(pos) {
     if (isLiveReceiver) return; 
     
     userCoords = [pos.coords.latitude, pos.coords.longitude];
+
+    if (pos.coords.heading !== null && !isNaN(pos.coords.heading)) {
+        currentHeading = pos.coords.heading;
+    } else if (lastUserCoordsForHeading) {
+        const dist = L.latLng(lastUserCoordsForHeading).distanceTo(userCoords);
+        if (dist > 2) { 
+            currentHeading = getBearing(lastUserCoordsForHeading[0], lastUserCoordsForHeading[1], userCoords[0], userCoords[1]);
+        }
+    }
+    if (!lastUserCoordsForHeading || L.latLng(lastUserCoordsForHeading).distanceTo(userCoords) > 2) {
+        lastUserCoordsForHeading = [...userCoords];
+    }
+
     if (!currentTargetCoords && !isLiveReceiver) els.distInfo.innerHTML = "Vart ska vi åka? 🐭";
     if (!userMarker) {
         userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, fillOpacity: 0.8}).addTo(map);
@@ -793,7 +836,7 @@ function startGame() {
     isCelebratingTurn = false;
     
     isGameMapVisible = false;
-    els.gameMapElement.classList.add('hidden');
+    els.gameMapWrapper.classList.add('hidden');
     const distDisplay = document.getElementById('game-distance-display');
     if (distDisplay) distDisplay.classList.add('hidden');
     
@@ -953,7 +996,7 @@ function stopGame() {
     if (!isLiveReceiver) fixedStartCoords = null; 
     clearInterval(confettiInterval);
     isGameMapVisible = false;
-    els.gameMapElement.classList.add('hidden');
+    els.gameMapWrapper.classList.add('hidden');
     const distDisplay = document.getElementById('game-distance-display');
     if (distDisplay) distDisplay.classList.add('hidden');
     
@@ -1074,7 +1117,7 @@ function handleSlotClick(i) {
                 waypointMarkers.push(m);
             });
         }
-        setTarget(d.coords, true, false, false); // Uppdatera målet, men rör inte startpunkten här!
+        setTarget(d.coords, true, false, false); 
         map.flyTo(d.coords, 14); 
     } 
 }

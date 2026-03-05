@@ -84,7 +84,10 @@
         <button id="cancel-game-btn" style="background:#ff4444; color:white; border-radius: 20px; padding: 6px 15px; font-size: 0.75rem;" onclick="stopGame()">AVBRYT</button>
     </div>
     <div class="apple-grid" id="path"><div id="the-mouse">🐭</div></div>
-    <div id="game-map" class="hidden"></div>
+    
+    <div id="game-map-wrapper" class="hidden">
+        <div id="game-map"></div>
+    </div>
 </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
