@@ -27,36 +27,36 @@
 
 <div id="welcome-overlay">
     <div class="welcome-content">
-        <h2 id="welcome-title">Hej! 🐭</h2>
-        <p id="welcome-desc">Hjälp musen att hitta osten!</p>
+        <h2 id="welcome-title"></h2>
+        <p id="welcome-desc"></p>
         <ul>
-            <li>🚗🚶↔️ <b>Välj färdsätt</b></li>
-            <li>📍 <b>Välj resmål</b> Klicka på kartan eller sök</li>
-            <li>💡 <b>Via-punkter</b> långtryck för att lägga till eller ta bort</li>
-            <li>💾 <b>Spara favoriter</b> långtryck på en spara-knapp</li>
-            <li>🚀 <b>STARTA</b></li>
+            <li id="instr-1"></li>
+            <li id="instr-2"></li>
+            <li id="instr-3"></li>
+            <li id="instr-4"></li>
+            <li id="instr-5"></li>
         </ul>
-        <button class="ok-btn" onclick="closeInstructions()">Okej! Jag förstår!</button>
+        <button class="ok-btn" id="welcome-ok-btn" onclick="closeInstructions()"></button>
     </div>
 </div>
 
 <div id="ios-install-prompt" class="hidden">
-    <div class="ios-header"><span>🐭 Cheese Tracker</span></div>
-    <div class="ios-instructions">Installera appen för att få fullskärm och snabb åtkomst!</div>
-    <div class="ios-footer">Tryck på 
+    <div class="ios-header"><span id="ios-title">🐭 Cheese Tracker</span></div>
+    <div class="ios-instructions" id="ios-desc">Installera appen för att få fullskärm och snabb åtkomst!</div>
+    <div class="ios-footer" id="ios-footer-txt">Tryck på 
         <svg width="20" height="20" viewBox="0 0 50 50" style="margin: 0 5px; vertical-align: middle;">
             <path d="M30,35v10H10V15h10v-2H8v34h24V35H30z" fill="#007AFF"/>
             <path d="M24,2v30h2V2.5l8,8l1.5-1.5L25,0L24,2z" fill="#007AFF"/>
         </svg> 
         och välj <b>"Lägg till på hemskärmen"</b>.
     </div>
-    <button class="close-ios-btn" onclick="this.parentElement.classList.add('hidden')">Kanske senare</button>
+    <button class="close-ios-btn" id="ios-close" onclick="this.parentElement.classList.add('hidden')">Kanske senare</button>
 </div>
 
 <div id="map-page">
     <div id="map"></div>
     <div class="panel">
-        <div id="dist-info">Söker din GPS... 📍</div>
+        <div id="dist-info"></div>
         <div class="save-btn-container">
             <button id="btn-0" class="slot-btn" onclick="handleSlotClick(0)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
             <button id="btn-1" class="slot-btn" onclick="handleSlotClick(1)"><div class="btn-text-container"><span class="scrolling-text"></span></div></button>
@@ -65,23 +65,23 @@
             <button id="mode-btn" class="mode-btn" onclick="toggleTravelMode()">🚗</button>
         </div>
         <div id="search-container" class="hidden">
-            <input type="text" id="text-search-input" placeholder="Vart ska vi?">
+            <input type="text" id="text-search-input">
             <button id="go-btn" onclick="executeTextSearch()">➔</button>
         </div>
         <div class="action-container">
-            <button id="start-btn" class="action-btn hidden" onclick="startGame()">STARTA 🧀</button>
-            <button id="voice-btn" class="action-btn" onclick="startVoiceSearch()">🎤 RÖST SÖK</button>
-            <button id="text-btn" class="action-btn" onclick="toggleSearchUI()">✎TEXT SÖK</button> 
-            <button id="locate-btn" class="action-btn" onclick="toggleView()">🎯 HITTA MEJ</button>
+            <button id="start-btn" class="action-btn hidden" onclick="startGame()"></button>
+            <button id="voice-btn" class="action-btn" onclick="startVoiceSearch()"></button>
+            <button id="text-btn" class="action-btn" onclick="toggleSearchUI()"></button> 
+            <button id="locate-btn" class="action-btn" onclick="toggleView()"></button>
         </div>
     </div>
 </div>
 
 <div id="game-page" class="hidden">
-    <div id="swipe-hint" class="hidden">👈 Swipa för karta 👉</div>
+    <div id="swipe-hint" class="hidden"></div>
     <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: 10px; z-index: 10000; position: relative; width: 100%;">
         <div id="game-distance-display" class="hidden" style="font-weight: bold; font-size: 0.9rem; background: rgba(255,255,255,0.9); padding: 5px 12px; border-radius: 20px; color: #333;"></div>
-        <button id="cancel-game-btn" style="background:#ff4444; color:white; border-radius: 20px; padding: 6px 15px; font-size: 0.75rem;" onclick="stopGame()">AVBRYT</button>
+        <button id="cancel-game-btn" style="background:#ff4444; color:white; border-radius: 20px; padding: 6px 15px; font-size: 0.75rem;" onclick="stopGame()"></button>
     </div>
     <div class="apple-grid" id="path"><div id="the-mouse">🐭</div></div>
     
