@@ -38,6 +38,7 @@ let liveSessionId = null;
 let liveBroadcastInterval = null;
 
 let currentHeading = 0;
+let renderedHeading = 0;
 let lastUserCoordsForHeading = null;
 
 let map, targetMarker, userMarker, connectionLine, connectionLineReturn, userCoords;
@@ -555,9 +556,9 @@ function toggleGameMap() {
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(gameMap);
         }
         setTimeout(() => {
-            gameMap.invalidateSize();
+            gameMap.invalidateSize(true);
             updateGameMapView(true);
-        }, 50);
+        }, 250);
     } else {
         els.gameMapWrapper.classList.add('hidden');
         els.pathGrid.classList.remove('hidden');
@@ -599,7 +600,17 @@ function updateGameMapView(forceCenter = false) {
 
     if (currentHeading !== null) {
         if (els.gameMapElement) {
-            els.gameMapElement.style.transform = `rotate(${-currentHeading}deg)`;
+            let currentRot = renderedHeading % 360;
+            if (currentRot < 0) currentRot += 360;
+            
+            let diff = currentHeading - currentRot;
+            
+            if (diff > 180) diff -= 360;
+            if (diff < -180) diff += 360;
+            
+            renderedHeading += diff;
+            
+            els.gameMapElement.style.transform = `translateZ(0) rotate(${-renderedHeading}deg)`;
         }
     }
 }
@@ -813,12 +824,69 @@ function releaseWakeLock() { if (wakeLock !== null) wakeLock.release().then(() =
 
 function startVoiceSearch() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) { alert("Tyvärr stöder inte din webbläsare röstsök."); return; }
+    if (!SpeechRecognition) { 
+        alert("Tyvärr stöder inte din webbläsare röstsök. Testa Google Chrome eller Safari!"); 
+        return; 
+    }
+    
     const recognition = new SpeechRecognition();
     recognition.lang = 'sv-SE';
-    recognition.onstart = () => { els.voiceBtn.classList.add('listening'); els.voiceBtn.innerText = "LYSSNAR..."; };
-    recognition.onresult = (event) => { els.searchInput.value = event.results[0][0].transcript; els.searchContainer.classList.remove('hidden'); executeTextSearch(); };
-    recognition.onend = () => { els.voiceBtn.classList.remove('listening'); els.voiceBtn.innerText = "🎤 RÖST"; };
+    
+    recognition.onstart = () => { 
+        els.voiceBtn.classList.add('listening'); 
+        els.voiceBtn.innerText = "LYSSNAR..."; 
+    };
+    
+    recognition.onresult = (event) => { 
+        const result = event.results[0][0];
+        const transcript = result.transcript;
+        const confidence = result.confidence;
+        
+        els.searchInput.value = transcript; 
+        els.searchContainer.classList.remove('hidden'); 
+        
+        if (confidence > 0.75) {
+            executeTextSearch(); 
+        } else {
+            els.searchInput.focus(); 
+            els.voiceBtn.innerText = "HÖRDE JAG RÄTT?";
+            setTimeout(() => {
+                if (!els.voiceBtn.classList.contains('listening')) {
+                    els.voiceBtn.innerText = "🎤 RÖST SÖK";
+                }
+            }, 3000);
+        }
+    };
+    
+    recognition.onerror = (event) => {
+        console.warn("Röstsök stötte på ett problem:", event.error);
+        els.voiceBtn.classList.remove('listening'); 
+        
+        if (event.error === 'not-allowed') {
+            alert("Du måste tillåta mikrofonen i webbläsaren för att röstsöket ska fungera.");
+            els.voiceBtn.innerText = "🎤 RÖST SÖK";
+        } else if (event.error === 'no-speech') {
+            alert("Hörde inget! 🐭 Säg adressen lite högre.");
+            els.voiceBtn.innerText = "🎤 RÖST SÖK";
+        } else {
+            els.voiceBtn.innerText = "FEL 🛑";
+            setTimeout(() => { els.voiceBtn.innerText = "🎤 RÖST SÖK"; }, 2000);
+        }
+    };
+
+    recognition.onnomatch = () => {
+        alert("Kunde tyvärr inte tyda vad du sa. Testa igen! 🧀");
+        els.voiceBtn.classList.remove('listening');
+        els.voiceBtn.innerText = "🎤 RÖST SÖK";
+    };
+    
+    recognition.onend = () => { 
+        els.voiceBtn.classList.remove('listening'); 
+        if (els.voiceBtn.innerText === "LYSSNAR...") {
+            els.voiceBtn.innerText = "🎤 RÖST SÖK"; 
+        }
+    };
+    
     recognition.start();
 }
 
