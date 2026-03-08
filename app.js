@@ -59,6 +59,11 @@ const i18n = {
         swipeHint: "👈 Swipa för karta 👉",
         iosInstall: "Installera appen för att få fullskärm och snabb åtkomst!",
         iosClose: "Kanske senare",
+        devTitle: "🛠 DEV MODE",
+        devLang: "🌐 SPRÅK / LANGUAGE",
+        devTheme: "🎨 TEMA / THEMES",
+        devClose: "Stäng",
+        devReset: "🔄 Återställ Inställningar",
         themes: {
             default: { name: 'musen', targetName: 'osten' },
             easter: { name: 'påskharen', targetName: 'påskägget' },
@@ -118,6 +123,11 @@ const i18n = {
         swipeHint: "👈 Swipe for map 👉",
         iosInstall: "Install the app for full screen and quick access!",
         iosClose: "Maybe later",
+        devTitle: "🛠 DEV MODE",
+        devLang: "🌐 LANGUAGE",
+        devTheme: "🎨 THEMES",
+        devClose: "Close",
+        devReset: "🔄 Reset Settings",
         themes: {
             default: { name: 'the mouse', targetName: 'the cheese' },
             easter: { name: 'the easter bunny', targetName: 'the egg' },
@@ -177,6 +187,11 @@ const i18n = {
         swipeHint: "👈 Свайп к карте 👉",
         iosInstall: "Установите приложение для полного экрана!",
         iosClose: "Возможно позже",
+        devTitle: "🛠 РЕЖИМ РАЗРАБОТЧИКА",
+        devLang: "🌐 ЯЗЫК / LANGUAGE",
+        devTheme: "🎨 ТЕМЫ / THEMES",
+        devClose: "Закрыть",
+        devReset: "🔄 Сброс настроек",
         themes: {
             default: { name: 'мыши', targetName: 'сыр' },
             easter: { name: 'пасхальному кролику', targetName: 'пасхальное яйцо' },
@@ -236,6 +251,11 @@ const i18n = {
         swipeHint: "👈 ለካርታ ያንሸራትቱ 👉",
         iosInstall: "ሙሉ ስክሪን ለማግኘት መተግበሪያውን ይጫኑ!",
         iosClose: "ምናልባት በኋላ",
+        devTitle: "🛠 DEV MODE",
+        devLang: "🌐 ቋንቋ / LANGUAGE",
+        devTheme: "🎨 ገጽታዎች / THEMES",
+        devClose: "ዝጋ",
+        devReset: "🔄 ዳግም አስጀምር",
         themes: {
             default: { name: 'አይጥ', targetName: 'አይብ' },
             easter: { name: 'የፋሲካ ጥንቸል', targetName: 'እንቁላል' },
@@ -284,6 +304,22 @@ if ('serviceWorker' in navigator) {
     });
 }
 
+// --- DYNAMIC VOICE LANG ---
+let dynamicVoiceLang = currentLang === 'sv' ? 'sv-SE' : currentLang === 'ru' ? 'ru-RU' : currentLang === 'am' ? 'am-ET' : 'en-US';
+
+function updateVoiceLangFromCountry(countryCode) {
+    if (!countryCode) return;
+    const cc = countryCode.toLowerCase();
+    const langMap = { 
+        'se': 'sv-SE', 'no': 'no-NO', 'dk': 'da-DK', 'fi': 'fi-FI', 
+        'gb': 'en-GB', 'us': 'en-US', 'de': 'de-DE', 'fr': 'fr-FR', 
+        'es': 'es-ES', 'it': 'it-IT', 'ru': 'ru-RU', 'et': 'am-ET', 'er': 'ti-ER' 
+    };
+    if (langMap[cc]) {
+        dynamicVoiceLang = langMap[cc];
+    }
+}
+
 // --- THEME ENGINE ---
 const themes = {
     default:   { id: 'default', player: '🐭', target: '🧀', path: '🍎', color: '#4CAF50', name: 'musen', targetName: 'osten' },
@@ -307,7 +343,7 @@ function getCurrentTheme() {
     return themes.default;
 }
 
-let activeTheme = getCurrentTheme(); 
+let activeTheme = themes[localStorage.getItem('app_theme_override')] || getCurrentTheme(); 
 
 function applyTranslations() {
     const wt = document.getElementById('welcome-title'); if(wt) wt.innerHTML = t('welcome', {player: activeTheme.player});
@@ -539,6 +575,7 @@ function initMap() {
             const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${e.latlng.lat}&lon=${e.latlng.lng}`);
             const d = await res.json();
             if (d && d.display_name) {
+                if (d.address && d.address.country_code) updateVoiceLangFromCountry(d.address.country_code); 
                 let parts = d.display_name.split(','); let firstPart = parts[0].trim();
                 if (!isNaN(firstPart)) { currentTargetName = (d.address && d.address.road) ? (d.address.road + ' ' + firstPart) : firstPart; } 
                 else { currentTargetName = (d.address && d.address.road && firstPart === d.address.road) ? (d.address.road + (d.address.house_number ? ' ' + d.address.house_number : '')) : firstPart; }
@@ -730,7 +767,17 @@ function handlePositionUpdate(pos) {
     else if (lastUserCoordsForHeading) { const dist = L.latLng(lastUserCoordsForHeading).distanceTo(userCoords); if (dist > 2) { currentHeading = getBearing(lastUserCoordsForHeading[0], lastUserCoordsForHeading[1], userCoords[0], userCoords[1]); } }
     if (!lastUserCoordsForHeading || L.latLng(lastUserCoordsForHeading).distanceTo(userCoords) > 2) { lastUserCoordsForHeading = [...userCoords]; }
     if (!currentTargetCoords && !isLiveReceiver) els.distInfo.innerHTML = t('whereTo', {player: activeTheme.player});
-    if (!userMarker) { userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, fillOpacity: 0.8}).addTo(map); } else userMarker.setLatLng(userCoords);
+    
+    if (!userMarker) { 
+        userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, fillOpacity: 0.8}).addTo(map); 
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${userCoords[0]}&lon=${userCoords[1]}`)
+            .then(r => r.json())
+            .then(d => { if (d && d.address && d.address.country_code) updateVoiceLangFromCountry(d.address.country_code); })
+            .catch(() => {});
+    } else { 
+        userMarker.setLatLng(userCoords); 
+    }
+    
     if (isTracking && gameState === 'MAP') map.panTo(userCoords);
     if (!initialZoomPerformed) { zoomToUser(true); initialZoomPerformed = true; isTracking = true; }
     if (gameState === 'MAP') { if (!fixedStartCoords) updateMapLogic(); } else if (gameState === 'GAME') updateGameLogic();
@@ -802,7 +849,8 @@ function releaseWakeLock() { if (wakeLock !== null) wakeLock.release().then(() =
 function startVoiceSearch() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) { alert(t('voiceNotSupported')); return; }
-    const recognition = new SpeechRecognition(); recognition.lang = currentLang === 'sv' ? 'sv-SE' : currentLang === 'ru' ? 'ru-RU' : currentLang === 'am' ? 'am-ET' : 'en-US';
+    const recognition = new SpeechRecognition(); 
+    recognition.lang = dynamicVoiceLang; 
     
     recognition.onstart = () => { els.voiceBtn.classList.add('listening'); els.voiceBtn.innerText = t('voiceListening'); };
     recognition.onresult = (event) => { 
@@ -914,6 +962,7 @@ async function executeTextSearch() {
     try {
         const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(q)}`); const d = await res.json();
         if (d.length > 0) {
+            if (d[0].address && d[0].address.country_code) updateVoiceLangFromCountry(d[0].address.country_code); 
             let parts = d[0].display_name.split(','); let firstPart = parts[0].trim();
             if (!isNaN(firstPart)) { currentTargetName = (d[0].address && d[0].address.road) ? (d[0].address.road + ' ' + firstPart) : firstPart; } 
             else { if (d[0].address && d[0].address.road && firstPart === d[0].address.road) { currentTargetName = d[0].address.road + (d[0].address.house_number ? ' ' + d[0].address.house_number : ''); } else { currentTargetName = firstPart; } }
@@ -1017,10 +1066,10 @@ function openDeveloperMode() {
     menu.style.display = 'flex'; menu.style.flexDirection = 'column'; menu.style.gap = '12px'; menu.style.width = '260px'; menu.style.border = '2px solid #555';
     menu.style.maxHeight = '80vh'; menu.style.overflowY = 'auto';
 
-    const title = document.createElement('h3'); title.innerText = '🛠 DEV MODE'; title.style.margin = '0 0 10px 0'; title.style.textAlign = 'center'; title.style.letterSpacing = '2px'; menu.appendChild(title);
+    const title = document.createElement('h3'); title.innerText = t('devTitle'); title.style.margin = '0 0 10px 0'; title.style.textAlign = 'center'; title.style.letterSpacing = '2px'; menu.appendChild(title);
 
     // --- SPRÅKVAL ---
-    const langTitle = document.createElement('h4'); langTitle.innerText = '🌐 SPRÅK / LANGUAGE'; langTitle.style.margin = '10px 0 5px 0'; langTitle.style.textAlign = 'center'; menu.appendChild(langTitle);
+    const langTitle = document.createElement('h4'); langTitle.innerText = t('devLang'); langTitle.style.margin = '10px 0 5px 0'; langTitle.style.textAlign = 'center'; menu.appendChild(langTitle);
     
     const langGrid = document.createElement('div'); langGrid.style.display = 'grid'; langGrid.style.gridTemplateColumns = '1fr 1fr'; langGrid.style.gap = '8px'; menu.appendChild(langGrid);
 
@@ -1035,22 +1084,39 @@ function openDeveloperMode() {
     });
 
     // --- TEMAVAL ---
-    const themeTitle = document.createElement('h4'); themeTitle.innerText = '🎨 TEMA / THEMES'; themeTitle.style.margin = '15px 0 5px 0'; themeTitle.style.textAlign = 'center'; menu.appendChild(themeTitle);
+    const themeTitle = document.createElement('h4'); themeTitle.innerText = t('devTheme'); themeTitle.style.margin = '15px 0 5px 0'; themeTitle.style.textAlign = 'center'; menu.appendChild(themeTitle);
+
+    const currentThemeId = localStorage.getItem('app_theme_override');
 
     Object.keys(themes).forEach(themeKey => {
         const btn = document.createElement('button');
-        btn.innerText = `${themes[themeKey].player} Force: ${themeKey.toUpperCase()}`;
-        btn.style.padding = '10px'; btn.style.borderRadius = '10px'; btn.style.border = 'none'; btn.style.background = '#444'; btn.style.color = 'white'; btn.style.fontWeight = 'bold'; btn.style.cursor = 'pointer';
+        const translatedThemeName = i18n[currentLang]?.themes?.[themeKey]?.name || themes[themeKey].name;
+        btn.innerText = `${themes[themeKey].player} ${translatedThemeName.toUpperCase()}` + (currentThemeId === themeKey ? ' ✔' : '');
+        btn.style.padding = '10px'; btn.style.borderRadius = '10px'; btn.style.border = 'none'; 
+        btn.style.background = currentThemeId === themeKey ? '#4CAF50' : '#444'; 
+        btn.style.color = 'white'; btn.style.fontWeight = 'bold'; btn.style.cursor = 'pointer';
         btn.onclick = () => {
-            activeTheme = themes[themeKey]; applyThemeUI();
-            if (gameState === 'GAME') { const mouse = document.getElementById('the-mouse'); if (mouse) mouse.innerHTML = activeTheme.player; for (let i = 0; i < initialTotalKm; i++) { const step = document.getElementById(`step-${i}`); if (step) { if (i === initialTotalKm - 1 || i === midpointStepIndex) { step.innerHTML = activeTheme.target; } else { step.innerHTML = activeTheme.path; } } } } 
-            else { if (!currentTargetCoords && !isLiveReceiver) { els.distInfo.innerHTML = t('whereTo', {player: activeTheme.player}); } }
-            menu.remove();
+            localStorage.setItem('app_theme_override', themeKey); location.reload();
         };
         menu.appendChild(btn);
     });
 
-    const closeBtn = document.createElement('button'); closeBtn.innerText = 'Stäng'; closeBtn.style.background = '#ff4444'; closeBtn.style.color = 'white'; closeBtn.style.padding = '12px'; closeBtn.style.borderRadius = '10px'; closeBtn.style.marginTop = '15px'; closeBtn.style.fontWeight = 'bold'; closeBtn.onclick = () => menu.remove(); menu.appendChild(closeBtn);
+    // --- ÅTERSTÄLL ---
+    const resetBtn = document.createElement('button'); resetBtn.innerText = t('devReset');
+    resetBtn.style.background = '#FF9800'; resetBtn.style.color = 'white'; resetBtn.style.padding = '12px'; resetBtn.style.borderRadius = '10px'; resetBtn.style.marginTop = '15px'; resetBtn.style.fontWeight = 'bold'; resetBtn.style.border = 'none'; resetBtn.style.cursor = 'pointer';
+    resetBtn.onclick = () => {
+        localStorage.removeItem('app_lang');
+        localStorage.removeItem('app_theme_override');
+        location.reload();
+    };
+    menu.appendChild(resetBtn);
+
+    // --- STÄNG ---
+    const closeBtn = document.createElement('button'); closeBtn.innerText = t('devClose'); 
+    closeBtn.style.background = '#ff4444'; closeBtn.style.color = 'white'; closeBtn.style.padding = '12px'; closeBtn.style.borderRadius = '10px'; closeBtn.style.marginTop = '5px'; closeBtn.style.fontWeight = 'bold'; closeBtn.style.border = 'none'; closeBtn.style.cursor = 'pointer'; 
+    closeBtn.onclick = () => menu.remove(); 
+    menu.appendChild(closeBtn);
+    
     document.body.appendChild(menu);
 }
 // ----------------------
