@@ -25,6 +25,56 @@ if ('serviceWorker' in navigator) {
     });
 }
 
+// --- THEME ENGINE ---
+const themes = {
+    default:   { player: '🐭', target: '🧀', path: '🍎', color: '#4CAF50', name: 'musen', targetName: 'osten' },
+    easter:    { player: '🐰', target: '🥚', path: '🍬', color: '#FFEB3B', name: 'påskharen', targetName: 'påskägget' },
+    midsummer: { player: '🐸', target: '🍓', path: '🌸', color: '#8BC34A', name: 'grodan', targetName: 'jordgubben' },
+    halloween: { player: '👻', target: '🎃', path: '🦇', color: '#FF9800', name: 'spöket', targetName: 'pumpan' },
+    christmas: { player: '🎅', target: '🎁', path: '🍪', color: '#F44336', name: 'tomten', targetName: 'julklappen' },
+    newyear:   { player: '🚀', target: '🎆', path: '✨', color: '#3F51B5', name: 'raketen', targetName: 'fyrverkeriet' },
+    birthday:  { player: '🥳', target: '🎂', path: '🎈', color: '#E91E63', name: 'födelsedagsbarnet', targetName: 'tårtan' } // Ligger kvar men triggas ej automatiskt
+};
+
+function getCurrentTheme() {
+    const today = new Date();
+    const month = today.getMonth() + 1;
+    const date = today.getDate();
+    
+    // Nyår (30 Dec - 2 Jan) - Måste ligga FÖRE jul för att skriva över 30-31 dec!
+    if ((month === 12 && date >= 30) || (month === 1 && date <= 2)) return themes.newyear;
+
+    // Påsk (Ungefärlig: 20 Mars - 15 April)
+    if ((month === 3 && date >= 20) || (month === 4 && date <= 15)) return themes.easter;
+    
+    // Midsommar (15-25 Juni)
+    if (month === 6 && date >= 15 && date <= 25) return themes.midsummer;
+    
+    // Halloween (20 Okt - 5 Nov)
+    if ((month === 10 && date >= 20) || (month === 11 && date <= 5)) return themes.halloween;
+    
+    // Jul (1 Dec - 29 Dec)
+    if (month === 12) return themes.christmas;
+
+    // Standardtema
+    return themes.default;
+}
+
+let activeTheme = getCurrentTheme(); // Ändrad från const till let för Dev Mode!
+
+function applyThemeUI() {
+    document.documentElement.style.setProperty('--primary', activeTheme.color);
+    
+    const welcomeTitle = document.getElementById('welcome-title');
+    if (welcomeTitle) welcomeTitle.innerText = `Hej! ${activeTheme.player}`;
+    
+    const welcomeDesc = document.getElementById('welcome-desc');
+    if (welcomeDesc) welcomeDesc.innerText = `Hjälp ${activeTheme.name} att hitta ${activeTheme.targetName}!`;
+    
+    if (els.startBtn) els.startBtn.innerText = `STARTA ${activeTheme.target}`;
+}
+// --------------------
+
 // Pusher Config
 const pusherAppId = "2121505";
 const pusherKey = "57555a0b571c5d9c6f9b";
@@ -162,7 +212,13 @@ function getBearing(lat1, lng1, lat2, lng2) {
 }
 
 function initMap() {
+    applyThemeUI(); 
     checkInstallState();
+    
+    if (!currentTargetCoords && !isLiveReceiver) {
+        els.distInfo.innerHTML = `Vart ska vi åka? ${activeTheme.player}`;
+    }
+
     map = L.map('map', { zoomControl: false, attributionControl: false }).setView([59.3, 14.1], 5);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
@@ -214,7 +270,7 @@ function initMap() {
         liveChannel = pusher.subscribe(`private-live-${liveSessionId}`);
         
         liveChannel.bind('pusher:subscription_succeeded', () => {
-            els.distInfo.innerHTML = "🟢 Väntar på musens uppdatering...";
+            els.distInfo.innerHTML = `🟢 Väntar på ${activeTheme.name}s uppdatering...`;
         });
         liveChannel.bind('client-update', handleLiveUpdate);
 
@@ -515,7 +571,7 @@ function clearMapData() {
     if (manualStartMarker) { map.removeLayer(manualStartMarker); manualStartMarker = null; }
     fixedStartCoords = null;
     
-    els.distInfo.innerHTML = "Vart ska vi åka? 🐭";
+    els.distInfo.innerHTML = `Vart ska vi åka? ${activeTheme.player}`;
     els.startBtn.classList.add('hidden');
     
     if (userCoords) {
@@ -678,7 +734,7 @@ function handlePositionUpdate(pos) {
         lastUserCoordsForHeading = [...userCoords];
     }
 
-    if (!currentTargetCoords && !isLiveReceiver) els.distInfo.innerHTML = "Vart ska vi åka? 🐭";
+    if (!currentTargetCoords && !isLiveReceiver) els.distInfo.innerHTML = `Vart ska vi åka? ${activeTheme.player}`;
     if (!userMarker) {
         userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, fillOpacity: 0.8}).addTo(map);
     } else userMarker.setLatLng(userCoords);
@@ -866,7 +922,7 @@ function startVoiceSearch() {
             alert("Du måste tillåta mikrofonen i webbläsaren för att röstsöket ska fungera.");
             els.voiceBtn.innerText = "🎤 RÖST SÖK";
         } else if (event.error === 'no-speech') {
-            alert("Hörde inget! 🐭 Säg adressen lite högre.");
+            alert(`Hörde inget! ${activeTheme.player} Säg adressen lite högre.`);
             els.voiceBtn.innerText = "🎤 RÖST SÖK";
         } else {
             els.voiceBtn.innerText = "FEL 🛑";
@@ -875,7 +931,7 @@ function startVoiceSearch() {
     };
 
     recognition.onnomatch = () => {
-        alert("Kunde tyvärr inte tyda vad du sa. Testa igen! 🧀");
+        alert(`Kunde tyvärr inte tyda vad du sa. Testa igen! ${activeTheme.target}`);
         els.voiceBtn.classList.remove('listening');
         els.voiceBtn.innerText = "🎤 RÖST SÖK";
     };
@@ -921,7 +977,7 @@ function startGame() {
     if(!isLiveReceiver) els.shareBtn.classList.add('hidden');
     
     requestWakeLock();
-    els.pathGrid.innerHTML = '<div id="the-mouse">🐭</div>';
+    els.pathGrid.innerHTML = `<div id="the-mouse">${activeTheme.player}</div>`;
 
     if (!swipeHintShown && !isLiveReceiver) {
         const hint = document.getElementById('swipe-hint');
@@ -954,9 +1010,9 @@ function startGame() {
     for (let i = 0; i < initialTotalKm; i++) {
         const step = document.createElement('div');
         step.className = 'step'; step.id = `step-${i}`;
-        if (i === initialTotalKm - 1) { step.innerHTML = '🧀'; } 
-        else if (i === midpointStepIndex) { step.innerHTML = '🧀'; } 
-        else { step.innerHTML = '🍎'; }
+        if (i === initialTotalKm - 1) { step.innerHTML = activeTheme.target; } 
+        else if (i === midpointStepIndex) { step.innerHTML = activeTheme.target; } 
+        else { step.innerHTML = activeTheme.path; }
         els.pathGrid.appendChild(step);
     }
     
@@ -1028,10 +1084,10 @@ function triggerTurnAroundDance() {
     const step = document.getElementById(`step-${midpointStepIndex}`);
     if(step) step.classList.add('eat-animation');
     const m = document.getElementById('the-mouse');
-    m.innerHTML = '🐭🧀'; m.classList.add('turn-dance');
+    m.innerHTML = activeTheme.player + activeTheme.target; m.classList.add('turn-dance');
     playClickSound();
     setTimeout(() => {
-        m.classList.remove('turn-dance'); m.innerHTML = '🐭';
+        m.classList.remove('turn-dance'); m.innerHTML = activeTheme.player;
         hasReachedMidpoint = true; isCelebratingTurn = false; maxStepsReached = midpointStepIndex + 1;
     }, 3000);
 }
@@ -1051,7 +1107,7 @@ function finishGame() {
     if (gameState === 'FINISHED') return;
     gameState = 'FINISHED';
     const m = document.getElementById('the-mouse');
-    m.innerHTML = '🐭🧀'; m.classList.add('victory');
+    m.innerHTML = activeTheme.player + activeTheme.target; m.classList.add('victory');
     createConfettiBurst(); 
     confettiInterval = setInterval(createConfettiBurst, 800); 
     if(!isLiveReceiver) els.shareBtn.classList.remove('hidden');
@@ -1070,7 +1126,7 @@ function stopGame() {
     
     els.pathGrid.classList.remove('hidden');
     const m = document.getElementById('the-mouse');
-    m.classList.remove('victory'); m.classList.remove('turn-dance'); m.innerHTML = '🐭';
+    m.classList.remove('victory'); m.classList.remove('turn-dance'); m.innerHTML = activeTheme.player;
     document.querySelectorAll('.confetti').forEach(c => c.remove());
     els.gamePage.classList.add('hidden'); els.mapPage.classList.remove('hidden'); 
     
@@ -1250,7 +1306,7 @@ function shareApp(e) {
     menu.style.display = 'flex';
     menu.style.flexDirection = 'column';
     menu.style.gap = '8px';
-    menu.style.border = '2px solid var(--primary)';
+    menu.style.border = `2px solid var(--primary)`;
 
     const btnNormal = document.createElement('button');
     btnNormal.className = 'wp-menu-btn';
@@ -1288,8 +1344,8 @@ function shareApp(e) {
 
 function shareNormal() {
     let shareUrl = window.location.origin + window.location.pathname;
-    let title = 'Mouse & Cheese Tracker';
-    let text = 'Häng med på äventyr med musen!';
+    let title = 'Tracker';
+    let text = `Häng med på äventyr med ${activeTheme.name}!`;
 
     if (currentTargetCoords) {
         const data = {
@@ -1302,7 +1358,7 @@ function shareNormal() {
         };
         const encoded = btoa(JSON.stringify(data));
         shareUrl += '?r=' + encoded;
-        text = `Följ min rutt till ${currentTargetName}! 🐭🧀`;
+        text = `Följ min rutt till ${currentTargetName}! ${activeTheme.player}${activeTheme.target}`;
     }
 
     const d = {title: title, text: text, url: shareUrl}; 
@@ -1334,12 +1390,132 @@ function startLiveSharing() {
 
     let shareUrl = window.location.origin + window.location.pathname + '?live=' + liveSessionId;
 
-    const d = {title: 'Följ mig live!', text: 'Följ musens jakt på osten live! 🐭🔴', url: shareUrl};
+    const d = {title: 'Följ mig live!', text: `Följ ${activeTheme.name}s jakt på ${activeTheme.targetName} live! ${activeTheme.player}🔴`, url: shareUrl};
     if(navigator.share) {
         navigator.share(d).catch(e => console.log("Delning avbruten"));
     } else {
         prompt("Kopiera länken för att dela live-rutt:", shareUrl);
     }
 }
+
+// --- DEVELOPER MODE ---
+// Gör versionsnumret klickbart (tar bort CSS-spärren)
+window.addEventListener('DOMContentLoaded', () => {
+    const versionTag = document.getElementById('version-tag');
+    if (versionTag) {
+        versionTag.style.pointerEvents = 'auto';
+        versionTag.style.cursor = 'pointer';
+
+        let devTapCount = 0;
+        let devTapTimer = null;
+
+        // Lyssna efter 5 snabba klick
+        versionTag.addEventListener('click', () => {
+            devTapCount++;
+            clearTimeout(devTapTimer);
+            
+            // Återställ räknaren om man är för långsam
+            devTapTimer = setTimeout(() => { devTapCount = 0; }, 1000);
+
+            if (devTapCount >= 5) {
+                devTapCount = 0;
+                openDeveloperMode();
+            }
+        });
+    }
+});
+
+function openDeveloperMode() {
+    playClickSound();
+    
+    // Stäng menyn om den redan är öppen
+    const oldMenu = document.getElementById('dev-menu');
+    if (oldMenu) oldMenu.remove();
+
+    // Skapa modalen
+    const menu = document.createElement('div');
+    menu.id = 'dev-menu';
+    menu.style.position = 'fixed';
+    menu.style.top = '50%';
+    menu.style.left = '50%';
+    menu.style.transform = 'translate(-50%, -50%)';
+    menu.style.zIndex = '100000';
+    menu.style.background = 'rgba(30, 30, 30, 0.95)';
+    menu.style.backdropFilter = 'blur(10px)';
+    menu.style.color = 'white';
+    menu.style.padding = '25px';
+    menu.style.borderRadius = '20px';
+    menu.style.boxShadow = '0 15px 40px rgba(0,0,0,0.5)';
+    menu.style.display = 'flex';
+    menu.style.flexDirection = 'column';
+    menu.style.gap = '12px';
+    menu.style.width = '260px';
+    menu.style.border = '2px solid #555';
+
+    const title = document.createElement('h3');
+    title.innerText = '🛠 DEV MODE';
+    title.style.margin = '0 0 10px 0';
+    title.style.textAlign = 'center';
+    title.style.letterSpacing = '2px';
+    menu.appendChild(title);
+
+    // Loopa igenom alla teman och skapa en knapp för varje
+    Object.keys(themes).forEach(themeKey => {
+        const btn = document.createElement('button');
+        btn.innerText = `${themes[themeKey].player} Force: ${themeKey.toUpperCase()}`;
+        btn.style.padding = '12px';
+        btn.style.borderRadius = '10px';
+        btn.style.border = 'none';
+        btn.style.background = '#444';
+        btn.style.color = 'white';
+        btn.style.fontWeight = 'bold';
+        btn.style.cursor = 'pointer';
+        
+        btn.onclick = () => {
+            // Skriv över aktivt tema
+            activeTheme = themes[themeKey];
+            applyThemeUI();
+            
+            // Uppdatera UI on the fly om spelet är igång
+            if (gameState === 'GAME') {
+                const mouse = document.getElementById('the-mouse');
+                if (mouse) mouse.innerHTML = activeTheme.player;
+                
+                for (let i = 0; i < initialTotalKm; i++) {
+                    const step = document.getElementById(`step-${i}`);
+                    if (step) {
+                        if (i === initialTotalKm - 1 || i === midpointStepIndex) {
+                            step.innerHTML = activeTheme.target;
+                        } else {
+                            step.innerHTML = activeTheme.path;
+                        }
+                    }
+                }
+            } else {
+                // Uppdatera startskärmens text
+                if (!currentTargetCoords && !isLiveReceiver) {
+                    els.distInfo.innerHTML = `Vart ska vi åka? ${activeTheme.player}`;
+                }
+            }
+            menu.remove();
+        };
+        menu.appendChild(btn);
+    });
+
+    // Stäng-knapp
+    const closeBtn = document.createElement('button');
+    closeBtn.innerText = 'Stäng';
+    closeBtn.style.background = '#ff4444';
+    closeBtn.style.color = 'white';
+    closeBtn.style.padding = '12px';
+    closeBtn.style.borderRadius = '10px';
+    closeBtn.style.marginTop = '15px';
+    closeBtn.style.fontWeight = 'bold';
+    closeBtn.onclick = () => menu.remove();
+    menu.appendChild(closeBtn);
+
+    document.body.appendChild(menu);
+}
+// ----------------------
 
 window.onload = initMap;
