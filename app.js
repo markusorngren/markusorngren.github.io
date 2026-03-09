@@ -4,6 +4,7 @@ function getDeviceLanguage() {
     if (lang.toLowerCase().startsWith('sv')) return 'sv';
     if (lang.toLowerCase().startsWith('ru')) return 'ru';
     if (lang.toLowerCase().startsWith('am')) return 'am';
+    if (lang.toLowerCase().startsWith('ar')) return 'ar';
     return 'en'; // Fallback
 }
 
@@ -265,6 +266,70 @@ const i18n = {
             newyear: { name: 'ሮኬት', targetName: 'ርችት' },
             birthday: { name: 'የልደት ልጅ', targetName: 'ኬክ' }
         }
+    },
+    ar: {
+        welcome: "مرحباً! {player}",
+        helpFind: "ساعد {name} في العثور على {targetName}!",
+        instr1: "🚗🚶↔️ <b>اختر وسيلة النقل</b>",
+        instr2: "📍 <b>اختر الوجهة</b> انقر على الخريطة أو ابحث",
+        instr3: "💡 <b>نقاط الطريق</b> اضغط مطولاً للإضافة أو الإزالة",
+        instr4: "💾 <b>حفظ المفضلة</b> اضغط مطولاً على زر الحفظ",
+        instr5: "🚀 <b>ابدأ</b>",
+        okGotIt: "حسناً! فهمت!",
+        searchingGps: "جاري البحث عن GPS... 📍",
+        whereTo: "إلى أين نذهب؟ {player}",
+        start: "ابدأ {target}",
+        voiceSearch: "🎤 بحث صوتي",
+        textSearch: "✎ بحث نصي",
+        locateMe: "🎯 حدد موقعي",
+        cancel: "إلغاء",
+        clear: "مسح",
+        searchPlaceholder: "إلى أين؟",
+        saveSlot: "حفظ {num}",
+        promptSaveAs: "حفظ باسم:",
+        promptSaveWaypoints: "هل تريد الحفظ مع نقاط الطريق؟",
+        addressSearch: "جاري البحث عن العنوان...",
+        markedLocation: "موقع محدد",
+        kmTo: "<b>{dist} كم</b> إلى {target}",
+        kmToAndBack: "<b>{dist} كم</b> إلى {target} والعودة",
+        kmBird: "<b>{dist} كم</b> (بخط مستقيم)",
+        kmBirdAndBack: "<b>{dist} كم</b> للهدف والعودة (بخط مستقيم)",
+        voiceListening: "أستمع...",
+        didIHearRight: "هل سمعت بشكل صحيح؟",
+        voiceError: "خطأ 🛑",
+        micDenied: "يجب عليك السماح بالوصول إلى الميكروفون في متصفحك.",
+        heardNothing: "لم أسمع شيئاً! {player} تحدث بصوت أعلى قليلاً.",
+        voiceNoMatch: "لم أتمكن من فهم ما قلته. حاول مرة أخرى! {target}",
+        voiceNotSupported: "عذراً، متصفحك لا يدعم البحث الصوتي.",
+        liveConnecting: "🔴 جاري الاتصال بالبث...",
+        liveWaiting: "🟢 في انتظار تحديث {name}...",
+        liveFollowing: "🔴 تتابع الرحلة إلى {target}...",
+        alreadyLive: "أنت تتابع بثاً مباشراً بالفعل!",
+        shareStatic: "مشاركة المسار (ثابت)",
+        shareLive: "مشاركة مباشر 🔴",
+        btnCancel: "إلغاء",
+        setStartPoint: "📍 تعيين كنقطة بداية",
+        waypointDit: "🏁 في الطريق إلى هناك",
+        waypointHem: "🏁 في طريق العودة",
+        addWaypoint: "🏁 إضافة نقطة طريق",
+        kmLeft: "متبقي {dist} كم",
+        swipeHint: "👈 اسحب للخريطة 👉",
+        iosInstall: "قم بتثبيت التطبيق للحصول على شاشة كاملة ووصول سريع!",
+        iosClose: "ربما لاحقاً",
+        devTitle: "🛠 وضع المطور",
+        devLang: "🌐 اللغة / LANGUAGE",
+        devTheme: "🎨 السمات / THEMES",
+        devClose: "إغلاق",
+        devReset: "🔄 إعادة ضبط الإعدادات",
+        themes: {
+            default: { name: 'الفأر', targetName: 'الجبن' },
+            easter: { name: 'أرنب عيد الفصح', targetName: 'بيضة الفصح' },
+            midsummer: { name: 'الضفدع', targetName: 'الفراولة' },
+            halloween: { name: 'الشبح', targetName: 'اليقطين' },
+            christmas: { name: 'سانتا', targetName: 'الهدية' },
+            newyear: { name: 'الصاروخ', targetName: 'الألعاب النارية' },
+            birthday: { name: 'صاحب عيد الميلاد', targetName: 'الكعكة' }
+        }
     }
 };
 
@@ -305,7 +370,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // --- DYNAMIC VOICE LANG ---
-let dynamicVoiceLang = currentLang === 'sv' ? 'sv-SE' : currentLang === 'ru' ? 'ru-RU' : currentLang === 'am' ? 'am-ET' : 'en-US';
+let dynamicVoiceLang = currentLang === 'sv' ? 'sv-SE' : currentLang === 'ru' ? 'ru-RU' : currentLang === 'am' ? 'am-ET' : currentLang === 'ar' ? 'ar-SA' : 'en-US';
 
 function updateVoiceLangFromCountry(countryCode) {
     if (!countryCode) return;
@@ -313,7 +378,8 @@ function updateVoiceLangFromCountry(countryCode) {
     const langMap = { 
         'se': 'sv-SE', 'no': 'no-NO', 'dk': 'da-DK', 'fi': 'fi-FI', 
         'gb': 'en-GB', 'us': 'en-US', 'de': 'de-DE', 'fr': 'fr-FR', 
-        'es': 'es-ES', 'it': 'it-IT', 'ru': 'ru-RU', 'et': 'am-ET', 'er': 'ti-ER' 
+        'es': 'es-ES', 'it': 'it-IT', 'ru': 'ru-RU', 'et': 'am-ET', 'er': 'ti-ER',
+        'ae': 'ar-AE', 'sa': 'ar-SA', 'eg': 'ar-EG', 'ma': 'ar-MA', 'iq': 'ar-IQ'
     };
     if (langMap[cc]) {
         dynamicVoiceLang = langMap[cc];
@@ -1073,7 +1139,7 @@ function openDeveloperMode() {
     
     const langGrid = document.createElement('div'); langGrid.style.display = 'grid'; langGrid.style.gridTemplateColumns = '1fr 1fr'; langGrid.style.gap = '8px'; menu.appendChild(langGrid);
 
-    ['sv', 'en', 'ru', 'am'].forEach(l => {
+    ['sv', 'en', 'ru', 'am', 'ar'].forEach(l => {
         const btn = document.createElement('button');
         btn.innerText = l.toUpperCase() + (currentLang === l ? ' ✔' : '');
         btn.style.padding = '10px'; btn.style.borderRadius = '10px'; btn.style.border = 'none';
