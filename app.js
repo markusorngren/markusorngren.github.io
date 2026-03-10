@@ -943,13 +943,13 @@ function startGame() {
     isGameMapVisible = false; els.gameMapWrapper.classList.add('hidden'); const distDisplay = document.getElementById('game-distance-display'); if (distDisplay) distDisplay.classList.add('hidden');
     els.pathGrid.classList.remove('hidden');
     
-    if (!isLiveReceiver) { const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', ''); const totalDistanceKm = parseFloat(distStr) || 1; initialTotalKm = Math.max(1, Math.ceil(totalDistanceKm / modes[travelMode].factor)); }
+    if (!isLiveReceiver) { const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', ''); const totalDistanceKm = parseFloat(distStr) || 1; const f = modes[travelMode].factor; const r = totalDistanceKm % f; initialTotalKm = Math.max(1, Math.floor(totalDistanceKm / f) + (r > 0.05 ? 2 : 1)); }
     els.mapPage.classList.add('hidden'); els.gamePage.classList.remove('hidden'); if(!isLiveReceiver) els.shareBtn.classList.add('hidden');
     requestWakeLock(); els.pathGrid.innerHTML = `<div id="the-mouse">${activeTheme.player}</div>`;
 
     if (!swipeHintShown && !isLiveReceiver) { const hint = document.getElementById('swipe-hint'); if (hint) { hint.classList.remove('hidden'); setTimeout(() => hint.classList.add('show-hint'), 50); setTimeout(() => { hint.classList.remove('show-hint'); setTimeout(() => hint.classList.add('hidden'), 500); }, 4000); } swipeHintShown = true; saveSession(); }
 
-    if (!isLiveReceiver && travelMode === 2 && currentRouteCoords.length > 0) { let distToTarget = 0; let splitIndex = 0; let minD = Infinity; currentRouteCoords.forEach((c, i) => { const d = L.latLng(c).distanceTo(currentTargetCoords); if (d < minD) { minD = d; splitIndex = i; } }); for (let i = 0; i < splitIndex; i++) { distToTarget += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]); } midpointStepIndex = Math.floor((distToTarget / 1000) / modes[travelMode].factor); }
+    if (!isLiveReceiver && travelMode === 2 && currentRouteCoords.length > 0) { let distToTarget = 0; let splitIndex = 0; let minD = Infinity; currentRouteCoords.forEach((c, i) => { const d = L.latLng(c).distanceTo(currentTargetCoords); if (d < minD) { minD = d; splitIndex = i; } }); for (let i = 0; i < splitIndex; i++) { distToTarget += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]); } const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', ''); const totalDistanceKm = parseFloat(distStr) || 1; const f = modes[travelMode].factor; const r = totalDistanceKm % f; const tKm = distToTarget / 1000; midpointStepIndex = r > 0.05 ? (tKm < r ? 0 : Math.floor((tKm - r) / f) + 1) : Math.floor(tKm / f); }
     
     for (let i = 0; i < initialTotalKm; i++) {
         const step = document.createElement('div'); step.className = 'step'; step.id = `step-${i}`;
@@ -973,15 +973,15 @@ function updateGameLogic() {
     let remainingDist = totalRouteDist - traveledDist; const distDisplay = document.getElementById('game-distance-display');
     if (distDisplay) { distDisplay.innerText = t('kmLeft', {dist: (remainingDist / 1000).toFixed(2)}); }
 
-    let currentSteps = Math.floor((traveledDist / 1000) / modes[travelMode].factor);
+    const f = modes[travelMode].factor; const r = (totalRouteDist / 1000) % f; const tKm = traveledDist / 1000; let currentSteps = r > 0.05 ? (tKm < r ? 0 : Math.floor((tKm - r) / f) + 1) : Math.floor(tKm / f);
     if (!hasReachedMidpoint && travelMode === 2 && currentSteps > midpointStepIndex) { currentSteps = midpointStepIndex; }
     if (currentSteps > maxStepsReached) { maxStepsReached = currentSteps; }
     
     for (let i = 0; i < initialTotalKm - 1; i++) { const s = document.getElementById(`step-${i}`); if (s) i < maxStepsReached ? s.classList.add('eat-animation') : s.classList.remove('eat-animation'); }
     
     const goal = (travelMode === 2) ? (fixedStartCoords || startCoords) : currentTargetCoords; const distToFinal = map.distance(userCoords, goal);
-    if (travelMode === 2) { if (hasReachedMidpoint && distToFinal < 40 && maxStepsReached > (initialTotalKm * 0.8)) { moveMouse(initialTotalKm - 1); setTimeout(finishGame, 500); } else { moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 2))); } } 
-    else { if (distToFinal < 40) { moveMouse(initialTotalKm - 1); setTimeout(finishGame, 500); } else { moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 1))); } }
+    if (travelMode === 2) { if (hasReachedMidpoint && distToFinal < 40 && maxStepsReached > (initialTotalKm * 0.8)) { moveMouse(initialTotalKm - 1); finishGame(); } else { moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 2))); } } 
+    else { if (distToFinal < 40) { moveMouse(initialTotalKm - 1); finishGame(); } else { moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 2))); } }
     
     if (isGameMapVisible) { updateGameMapView(false); }
 }
