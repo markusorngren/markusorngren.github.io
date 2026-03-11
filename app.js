@@ -463,6 +463,14 @@ let isLiveReceiver = false;
 let liveSessionId = null;
 let liveBroadcastInterval = null;
 
+let savedGameState = 'MAP';
+let savedInitialTotalKm = 0;
+let savedMaxStepsReached = 0;
+let savedLastRouteIndex = 0;
+let savedMidpointStepIndex = -1;
+let savedHasReachedMidpoint = false;
+let savedGameStartCoords = null;
+
 let currentHeading = 0; let renderedHeading = 0; let lastUserCoordsForHeading = null;
 let map, targetMarker, userMarker, connectionLine, connectionLineReturn, userCoords;
 let fixedStartCoords = null; let manualStartMarker = null; let currentTargetCoords = null;
@@ -511,6 +519,15 @@ if (sessionRaw && (Date.now() - sessionRaw.timestamp < 10800000)) {
     waypointsHem = (sessionRaw.waypointsHem || []).map(p => L.latLng(p.lat, p.lng));
     swipeHintShown = sessionRaw.swipeHintShown || false;
     if (sessionRaw.startCoords) { fixedStartCoords = sessionRaw.startCoords; }
+    
+    savedGameState = sessionRaw.gameState || 'MAP';
+    savedInitialTotalKm = sessionRaw.initialTotalKm || 0;
+    savedMaxStepsReached = sessionRaw.maxStepsReached || 0;
+    savedLastRouteIndex = sessionRaw.lastRouteIndex || 0;
+    savedMidpointStepIndex = sessionRaw.midpointStepIndex !== undefined ? sessionRaw.midpointStepIndex : -1;
+    savedHasReachedMidpoint = sessionRaw.hasReachedMidpoint || false;
+    savedGameStartCoords = sessionRaw.gameStartCoords || null;
+
     els.welcomeOverlay.classList.add('hidden');
 }
 
@@ -810,7 +827,23 @@ function updateGameMapView(forceCenter = false) {
 
 function saveSession() {
     if (isLiveReceiver) return;
-    const sessionData = { target: currentTargetCoords ? { coords: {lat: currentTargetCoords.lat, lng: currentTargetCoords.lng}, name: currentTargetName } : null, startCoords: fixedStartCoords, hasManualStart: !!manualStartMarker, travelMode: travelMode, waypointsDit: waypointsDit.map(wp => ({lat: wp.lat, lng: wp.lng})), waypointsHem: waypointsHem.map(wp => ({lat: wp.lat, lng: wp.lng})), timestamp: Date.now(), swipeHintShown: swipeHintShown };
+    const sessionData = { 
+        target: currentTargetCoords ? { coords: {lat: currentTargetCoords.lat, lng: currentTargetCoords.lng}, name: currentTargetName } : null, 
+        startCoords: fixedStartCoords, 
+        hasManualStart: !!manualStartMarker, 
+        travelMode: travelMode, 
+        waypointsDit: waypointsDit.map(wp => ({lat: wp.lat, lng: wp.lng})), 
+        waypointsHem: waypointsHem.map(wp => ({lat: wp.lat, lng: wp.lng})), 
+        timestamp: Date.now(), 
+        swipeHintShown: swipeHintShown,
+        gameState: gameState,
+        initialTotalKm: initialTotalKm,
+        maxStepsReached: maxStepsReached,
+        lastRouteIndex: lastRouteIndex,
+        midpointStepIndex: midpointStepIndex,
+        hasReachedMidpoint: hasReachedMidpoint,
+        gameStartCoords: (gameState === 'GAME' || gameState === 'FINISHED') ? startCoords : null
+    };
     localStorage.setItem('mouse_session', JSON.stringify(sessionData));
 }
 
@@ -830,6 +863,22 @@ function addWaypoint(latlng, direction) {
     const wpMarker = L.circleMarker(latlng, { radius: 7, fillColor: color, color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map);
     wpMarker.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); removeWaypoint(wpMarker, latlng); });
     waypointMarkers.push(wpMarker); updateMapLogic(); saveSession(); broadcastLiveState();
+}
+
+function checkRestoreGame() {
+    if (savedGameState === 'GAME' && !isLiveReceiver) {
+        savedGameState = 'MAP';
+        setTimeout(() => {
+            startGame(true, {
+                initialTotalKm: savedInitialTotalKm,
+                maxStepsReached: savedMaxStepsReached,
+                lastRouteIndex: savedLastRouteIndex,
+                midpointStepIndex: savedMidpointStepIndex,
+                hasReachedMidpoint: savedHasReachedMidpoint,
+                gameStartCoords: savedGameStartCoords
+            });
+        }, 500);
+    }
 }
 
 function handlePositionUpdate(pos) {
@@ -883,6 +932,7 @@ async function updateMapLogic() {
                 else { els.distInfo.innerHTML = t('kmTo', {dist: distKm.toFixed(2), target: currentTargetName}); }
                 els.startBtn.classList.remove('hidden');
             }
+            checkRestoreGame();
         } else { fallbackDist(); }
     } catch (e) { fallbackDist(); }
 }
@@ -898,6 +948,7 @@ function fallbackDist() {
         else { els.distInfo.innerHTML = t('kmBird', {dist: total.toFixed(2)}); }
         els.startBtn.classList.remove('hidden');
     }
+    checkRestoreGame();
 }
 
 function setTarget(latlng, shouldSave, clearWaypoints = true, updateStart = true) {
@@ -940,28 +991,42 @@ function startVoiceSearch() {
     recognition.start();
 }
 
-function startGame() {
+function startGame(isRestoring = false, restoreData = null) {
     if (!currentTargetCoords) return;
     if (!isLiveReceiver && !userCoords && !fixedStartCoords) return; 
-    gameState = 'GAME'; if (!isLiveReceiver) startCoords = fixedStartCoords ? [...fixedStartCoords] : [...(userCoords || [0,0])];
-    maxStepsReached = 0; lastRouteIndex = 0; hasReachedMidpoint = false; midpointStepIndex = -1; isCelebratingTurn = false;
+    gameState = 'GAME'; 
+
+    if (isRestoring && restoreData) {
+        if (!isLiveReceiver) startCoords = restoreData.gameStartCoords || (fixedStartCoords ? [...fixedStartCoords] : [...(userCoords || [0,0])]);
+        maxStepsReached = restoreData.maxStepsReached;
+        lastRouteIndex = restoreData.lastRouteIndex;
+        hasReachedMidpoint = restoreData.hasReachedMidpoint;
+        midpointStepIndex = restoreData.midpointStepIndex;
+        initialTotalKm = restoreData.initialTotalKm;
+        isCelebratingTurn = false;
+    } else {
+        if (!isLiveReceiver) startCoords = fixedStartCoords ? [...fixedStartCoords] : [...(userCoords || [0,0])];
+        maxStepsReached = 0; lastRouteIndex = 0; hasReachedMidpoint = false; midpointStepIndex = -1; isCelebratingTurn = false;
+        if (!isLiveReceiver) { const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', ''); const totalDistanceKm = parseFloat(distStr) || 1; const f = modes[travelMode].factor; const r = totalDistanceKm % f; initialTotalKm = Math.max(1, Math.floor(totalDistanceKm / f) + (r > 0.05 ? 2 : 1)); }
+    }
+
     isGameMapVisible = false; els.gameMapWrapper.classList.add('hidden'); const distDisplay = document.getElementById('game-distance-display'); if (distDisplay) distDisplay.classList.add('hidden');
     els.pathGrid.classList.remove('hidden');
-    
-    if (!isLiveReceiver) { const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', ''); const totalDistanceKm = parseFloat(distStr) || 1; const f = modes[travelMode].factor; const r = totalDistanceKm % f; initialTotalKm = Math.max(1, Math.floor(totalDistanceKm / f) + (r > 0.05 ? 2 : 1)); }
     els.mapPage.classList.add('hidden'); els.gamePage.classList.remove('hidden'); if(!isLiveReceiver) els.shareBtn.classList.add('hidden');
     requestWakeLock(); els.pathGrid.innerHTML = `<div id="the-mouse">${activeTheme.player}</div>`;
 
     if (!swipeHintShown && !isLiveReceiver) { const hint = document.getElementById('swipe-hint'); if (hint) { hint.classList.remove('hidden'); setTimeout(() => hint.classList.add('show-hint'), 50); setTimeout(() => { hint.classList.remove('show-hint'); setTimeout(() => hint.classList.add('hidden'), 500); }, 4000); } swipeHintShown = true; saveSession(); }
 
-    if (!isLiveReceiver && travelMode === 2 && currentRouteCoords.length > 0) { let distToTarget = 0; let splitIndex = 0; let minD = Infinity; currentRouteCoords.forEach((c, i) => { const d = L.latLng(c).distanceTo(currentTargetCoords); if (d < minD) { minD = d; splitIndex = i; } }); for (let i = 0; i < splitIndex; i++) { distToTarget += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]); } const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', ''); const totalDistanceKm = parseFloat(distStr) || 1; const f = modes[travelMode].factor; const r = totalDistanceKm % f; const tKm = distToTarget / 1000; midpointStepIndex = r > 0.05 ? (tKm < r ? 0 : Math.floor((tKm - r) / f) + 1) : Math.floor(tKm / f); }
+    if (!isRestoring && !isLiveReceiver && travelMode === 2 && currentRouteCoords.length > 0) { let distToTarget = 0; let splitIndex = 0; let minD = Infinity; currentRouteCoords.forEach((c, i) => { const d = L.latLng(c).distanceTo(currentTargetCoords); if (d < minD) { minD = d; splitIndex = i; } }); for (let i = 0; i < splitIndex; i++) { distToTarget += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]); } const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', ''); const totalDistanceKm = parseFloat(distStr) || 1; const f = modes[travelMode].factor; const r = totalDistanceKm % f; const tKm = distToTarget / 1000; midpointStepIndex = r > 0.05 ? (tKm < r ? 0 : Math.floor((tKm - r) / f) + 1) : Math.floor(tKm / f); }
     
     for (let i = 0; i < initialTotalKm; i++) {
         const step = document.createElement('div'); step.className = 'step'; step.id = `step-${i}`;
         if (i === initialTotalKm - 1) { step.innerHTML = activeTheme.target; } else if (i === midpointStepIndex) { step.innerHTML = activeTheme.target; } else { step.innerHTML = activeTheme.path; }
+        if (isRestoring && i < maxStepsReached) step.classList.add('eat-animation');
         els.pathGrid.appendChild(step);
     }
-    setTimeout(() => moveMouse(isLiveReceiver ? maxStepsReached : 0), 100); if(!isLiveReceiver) broadcastLiveState();
+    setTimeout(() => moveMouse(isLiveReceiver ? maxStepsReached : (isRestoring ? maxStepsReached : 0)), 100); if(!isLiveReceiver) broadcastLiveState();
+    if (!isLiveReceiver && !isRestoring) saveSession();
 }
 
 function updateGameLogic() {
@@ -980,7 +1045,11 @@ function updateGameLogic() {
 
     const f = modes[travelMode].factor; const r = (totalRouteDist / 1000) % f; const tKm = traveledDist / 1000; let currentSteps = r > 0.05 ? (tKm < r ? 0 : Math.floor((tKm - r) / f) + 1) : Math.floor(tKm / f);
     if (!hasReachedMidpoint && travelMode === 2 && currentSteps > midpointStepIndex) { currentSteps = midpointStepIndex; }
-    if (currentSteps > maxStepsReached) { maxStepsReached = currentSteps; }
+    
+    if (currentSteps > maxStepsReached) { 
+        maxStepsReached = currentSteps; 
+        saveSession(); 
+    }
     
     for (let i = 0; i < initialTotalKm - 1; i++) { const s = document.getElementById(`step-${i}`); if (s) i < maxStepsReached ? s.classList.add('eat-animation') : s.classList.remove('eat-animation'); }
     
@@ -995,7 +1064,7 @@ function triggerTurnAroundDance() {
     if (isCelebratingTurn) return; isCelebratingTurn = true; moveMouse(midpointStepIndex);
     const step = document.getElementById(`step-${midpointStepIndex}`); if(step) step.classList.add('eat-animation');
     const m = document.getElementById('the-mouse'); m.innerHTML = activeTheme.player + activeTheme.target; m.classList.add('turn-dance');
-    playClickSound(); setTimeout(() => { m.classList.remove('turn-dance'); m.innerHTML = activeTheme.player; hasReachedMidpoint = true; isCelebratingTurn = false; maxStepsReached = midpointStepIndex + 1; }, 3000);
+    playClickSound(); setTimeout(() => { m.classList.remove('turn-dance'); m.innerHTML = activeTheme.player; hasReachedMidpoint = true; isCelebratingTurn = false; maxStepsReached = midpointStepIndex + 1; saveSession(); }, 3000);
 }
 
 function moveMouse(index) {
@@ -1008,6 +1077,7 @@ function finishGame() {
     m.innerHTML = activeTheme.player + activeTheme.target; m.classList.add('victory');
     createConfettiBurst(); confettiInterval = setInterval(createConfettiBurst, 800); 
     if(!isLiveReceiver) els.shareBtn.classList.remove('hidden'); releaseWakeLock(); broadcastLiveState();
+    if(!isLiveReceiver) saveSession();
 }
 
 function stopGame() { 
