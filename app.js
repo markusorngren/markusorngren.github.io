@@ -51,6 +51,7 @@ const i18n = {
         alreadyLive: "Du följer redan en live-sändning!",
         shareStatic: "Dela rutt (Statisk)",
         shareLive: "Dela LIVE 🔴",
+        shareAppBtn: "Dela appen 📱",
         btnCancel: "Avbryt",
         setStartPoint: "📍 Sätt som startpunkt",
         waypointDit: "🏁 På vägen dit",
@@ -115,6 +116,7 @@ const i18n = {
         alreadyLive: "You are already following a live session!",
         shareStatic: "Share route (Static)",
         shareLive: "Share LIVE 🔴",
+        shareAppBtn: "Share app 📱",
         btnCancel: "Cancel",
         setStartPoint: "📍 Set as starting point",
         waypointDit: "🏁 On the way there",
@@ -179,6 +181,7 @@ const i18n = {
         alreadyLive: "Вы уже следите за трансляцией!",
         shareStatic: "Поделиться маршрутом (Статика)",
         shareLive: "Поделиться LIVE 🔴",
+        shareAppBtn: "Поделиться приложением 📱",
         btnCancel: "Отмена",
         setStartPoint: "📍 Установить как точку старта",
         waypointDit: "🏁 По пути туда",
@@ -243,6 +246,7 @@ const i18n = {
         alreadyLive: "እርስዎ ቀድሞውኑ የቀጥታ ስርጭት እየተከታተሉ ነው!",
         shareStatic: "መንገድ አጋራ (መደበኛ)",
         shareLive: "በቀጥታ አጋራ 🔴",
+        shareAppBtn: "መተግበሪያ አጋራ 📱",
         btnCancel: "ሰርዝ",
         setStartPoint: "📍 እንደ መነሻ ነጥብ ያድርጉ",
         waypointDit: "🏁 በመሄጃው መንገድ ላይ",
@@ -307,6 +311,7 @@ const i18n = {
         alreadyLive: "أنت تتابع بثاً مباشراً بالفعل!",
         shareStatic: "مشاركة المسار (ثابت)",
         shareLive: "مشاركة مباشر 🔴",
+        shareAppBtn: "مشاركة التطبيق 📱",
         btnCancel: "إلغاء",
         setStartPoint: "📍 تعيين كنقطة بداية",
         waypointDit: "🏁 في الطريق إلى هناك",
@@ -1084,9 +1089,12 @@ function shareApp(e) {
     const btnLive = document.createElement('button'); btnLive.className = 'wp-menu-btn'; btnLive.style.background = '#ff4444'; btnLive.innerText = t('shareLive');
     btnLive.onclick = () => { menu.remove(); startLiveSharing(); };
 
+    const btnShareApp = document.createElement('button'); btnShareApp.className = 'wp-menu-btn'; btnShareApp.style.background = 'var(--primary)'; btnShareApp.innerText = t('shareAppBtn');
+    btnShareApp.onclick = () => { menu.remove(); shareOnlyApp(); };
+
     const btnCancel = document.createElement('button'); btnCancel.innerText = t('btnCancel'); btnCancel.style.fontSize = '0.7rem'; btnCancel.style.background = 'none'; btnCancel.onclick = () => menu.remove();
 
-    menu.appendChild(btnNormal); menu.appendChild(btnLive); menu.appendChild(btnCancel); document.body.appendChild(menu);
+    menu.appendChild(btnNormal); menu.appendChild(btnLive); menu.appendChild(btnShareApp); menu.appendChild(btnCancel); document.body.appendChild(menu);
 
     setTimeout(() => { const close = (event) => { if (!menu.contains(event.target) && event.target.id !== 'share-btn') { menu.remove(); document.removeEventListener('click', close); } }; document.addEventListener('click', close); }, 100);
 }
@@ -1109,6 +1117,12 @@ function startLiveSharing() {
     let shareUrl = window.location.origin + window.location.pathname + '?live=' + liveSessionId;
     const d = {title: 'Följ mig live!', text: `Följ jakten live! 🔴`, url: shareUrl};
     if(navigator.share) { navigator.share(d).catch(e => console.log("Delning avbruten")); } else { prompt("Kopiera länken för att dela live-rutt:", shareUrl); }
+}
+
+function shareOnlyApp() {
+    let shareUrl = window.location.origin + window.location.pathname;
+    const d = {title: 'Marcus Mouse & Cheese Tracker', text: `Kolla in den här appen! 🐭🧀`, url: shareUrl}; 
+    if(navigator.share) { navigator.share(d).catch(e => console.log("Delning avbruten")); } else { prompt("Kopiera länken för att dela appen:", shareUrl); }
 }
 
 // --- DEVELOPER MODE ---
