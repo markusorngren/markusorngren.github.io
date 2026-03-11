@@ -968,6 +968,13 @@ function toggleTravelMode() { travelMode = (travelMode + 1) % modes.length; els.
 async function requestWakeLock() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} }
 function releaseWakeLock() { if (wakeLock !== null) wakeLock.release().then(() => { wakeLock = null; }); }
 
+// Ny event listener för att hantera background/foreground
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && gameState === 'GAME') {
+        requestWakeLock();
+    }
+});
+
 function startVoiceSearch() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) { alert(t('voiceNotSupported')); return; }
