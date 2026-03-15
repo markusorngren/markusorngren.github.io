@@ -1076,7 +1076,7 @@ function triggerTurnAroundDance() {
 
 function moveMouse(index) {
     const m = document.getElementById('the-mouse'); const s = document.getElementById(`step-${index}`); const container = els.pathGrid;
-    if (s && container) { m.style.left = s.offsetLeft + "px"; m.style.top = s.offsetTop + "px"; let targetScroll = (s.offsetTop + (s.offsetHeight * 2.5)) - container.clientHeight; if (targetScroll > 0) container.scrollTo({ top: targetScroll, behavior: 'smooth' }); }
+    if (s && container) { m.style.left = s.offsetLeft + "px"; m.style.top = s.offsetTop + "px"; let targetScroll = (s.offsetTop + (s.offsetHeight * 7.5)) - container.clientHeight; if (targetScroll > 0) container.scrollTo({ top: targetScroll, behavior: 'smooth' }); }
 }
 
 function finishGame() {
