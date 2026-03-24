@@ -21,7 +21,8 @@ const i18n = {
         instr5: "🚀 <b>STARTA</b>",
         okGotIt: "Okej! Jag förstår!",
         searchingGps: "Söker din GPS... 📍",
-        whereTo: "Vart ska vi åka? {player}",
+        whereToDrive: "Vart ska vi åka? {player}",
+        whereToWalk: "Vart ska vi gå? {player}",
         start: "STARTA {target}",
         voiceSearch: "🎤 RÖST SÖK",
         textSearch: "✎ TEXT SÖK",
@@ -86,7 +87,8 @@ const i18n = {
         instr5: "🚀 <b>START</b>",
         okGotIt: "Okay! I understand!",
         searchingGps: "Searching GPS... 📍",
-        whereTo: "Where are we going? {player}",
+        whereToDrive: "Where are we driving? {player}",
+        whereToWalk: "Where are we walking? {player}",
         start: "START {target}",
         voiceSearch: "🎤 VOICE SEARCH",
         textSearch: "✎ TEXT SEARCH",
@@ -151,7 +153,8 @@ const i18n = {
         instr5: "🚀 <b>СТАРТ</b>",
         okGotIt: "Понятно!",
         searchingGps: "Поиск GPS... 📍",
-        whereTo: "Куда едем? {player}",
+        whereToDrive: "Куда едем? {player}",
+        whereToWalk: "Куда идем? {player}",
         start: "СТАРТ {target}",
         voiceSearch: "🎤 ГОЛОС",
         textSearch: "✎ ТЕКСТ",
@@ -216,7 +219,8 @@ const i18n = {
         instr5: "🚀 <b>ጀምር</b>",
         okGotIt: "እሺ! ገባኝ!",
         searchingGps: "ጂፒኤስ በመፈለግ ላይ... 📍",
-        whereTo: "የት እንሂድ? {player}",
+        whereToDrive: "ወደ የት እንጓዝ? {player}",
+        whereToWalk: "የት እንሂድ? {player}",
         start: "ጀምር {target}",
         voiceSearch: "🎤 የድምፅ ፍለጋ",
         textSearch: "✎ የጽሑፍ ፍለጋ",
@@ -281,7 +285,8 @@ const i18n = {
         instr5: "🚀 <b>ابدأ</b>",
         okGotIt: "حسناً! فهمت!",
         searchingGps: "جاري البحث عن GPS... 📍",
-        whereTo: "إلى أين نذهب؟ {player}",
+        whereToDrive: "إلى أين سنذهب بالسيارة؟ {player}",
+        whereToWalk: "إلى أين سنمشي؟ {player}",
         start: "ابدأ {target}",
         voiceSearch: "🎤 بحث صوتي",
         textSearch: "✎ بحث نصي",
@@ -346,6 +351,7 @@ function t(key, params = {}) {
 
 function getThemeName() { return i18n[currentLang]?.themes?.[activeTheme.id]?.name || activeTheme.name; }
 function getThemeTarget() { return i18n[currentLang]?.themes?.[activeTheme.id]?.targetName || activeTheme.targetName; }
+function getWhereToText() { return t(travelMode === 0 ? 'whereToDrive' : 'whereToWalk', {player: activeTheme.player}); }
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -581,7 +587,7 @@ function initMap() {
     applyThemeUI(); 
     checkInstallState();
     
-    if (!currentTargetCoords && !isLiveReceiver) { els.distInfo.innerHTML = t('whereTo', {player: activeTheme.player}); }
+    if (!currentTargetCoords && !isLiveReceiver) { els.distInfo.innerHTML = getWhereToText(); }
 
     map = L.map('map', { zoomControl: false, attributionControl: false }).setView([59.3, 14.1], 5);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
@@ -788,7 +794,7 @@ function clearMapData() {
     if (connectionLineReturn) { map.removeLayer(connectionLineReturn); connectionLineReturn = null; }
     waypointsDit = []; waypointsHem = []; waypointMarkers.forEach(m => map.removeLayer(m)); waypointMarkers = [];
     if (manualStartMarker) { map.removeLayer(manualStartMarker); manualStartMarker = null; } fixedStartCoords = null;
-    els.distInfo.innerHTML = t('whereTo', {player: activeTheme.player}); els.startBtn.classList.add('hidden');
+    els.distInfo.innerHTML = getWhereToText(); els.startBtn.classList.add('hidden');
     if (userCoords) { zoomToUser(); isShowingUser = false; isTracking = true; }
     updateLocateBtnText(); saveSession(); broadcastLiveState();
 }
@@ -886,7 +892,7 @@ function handlePositionUpdate(pos) {
     if (pos.coords.heading !== null && !isNaN(pos.coords.heading)) { currentHeading = pos.coords.heading; } 
     else if (lastUserCoordsForHeading) { const dist = L.latLng(lastUserCoordsForHeading).distanceTo(userCoords); if (dist > 2) { currentHeading = getBearing(lastUserCoordsForHeading[0], lastUserCoordsForHeading[1], userCoords[0], userCoords[1]); } }
     if (!lastUserCoordsForHeading || L.latLng(lastUserCoordsForHeading).distanceTo(userCoords) > 2) { lastUserCoordsForHeading = [...userCoords]; }
-    if (!currentTargetCoords && !isLiveReceiver) els.distInfo.innerHTML = t('whereTo', {player: activeTheme.player});
+    if (!currentTargetCoords && !isLiveReceiver) els.distInfo.innerHTML = getWhereToText();
     
     if (!userMarker) { 
         userMarker = L.circleMarker(userCoords, {radius: 8, fillColor: "#007bff", color: "#fff", weight: 2, fillOpacity: 0.8}).addTo(map); 
@@ -964,7 +970,7 @@ function setTarget(latlng, shouldSave, clearWaypoints = true, updateStart = true
 function zoomToUser(instant = false) { if (userCoords) { if (instant) map.setView(userCoords, 18); else map.flyTo(userCoords, 18); } }
 function toggleView() { if (!currentTargetCoords || isShowingUser) { zoomToUser(); isShowingUser = false; isTracking = true; } else { map.flyTo(currentTargetCoords, 18); isShowingUser = true; isTracking = false; } updateLocateBtnText(); }
 function updateLocateBtnText() { els.locateBtn.innerHTML = (!currentTargetCoords || isShowingUser) ? t('locateMe') : `🏁 ${currentTargetName.toUpperCase()}`; }
-function toggleTravelMode() { travelMode = (travelMode + 1) % modes.length; els.modeBtn.innerText = modes[travelMode].icon; updateMapLogic(); saveSession(); broadcastLiveState(); }
+function toggleTravelMode() { travelMode = (travelMode + 1) % modes.length; els.modeBtn.innerText = modes[travelMode].icon; if (!currentTargetCoords && !isLiveReceiver) els.distInfo.innerHTML = getWhereToText(); updateMapLogic(); saveSession(); broadcastLiveState(); }
 async function requestWakeLock() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} }
 function releaseWakeLock() { if (wakeLock !== null) wakeLock.release().then(() => { wakeLock = null; }); }
 
