@@ -477,6 +477,12 @@ let savedMidpointStepIndex = -1;
 let savedHasReachedMidpoint = false;
 let savedGameStartCoords = null;
 
+let gameBaseSteps = 0;
+let gameDynamicFactor = 0;
+let isReRouting = false;
+let originalPois = [];
+let savedWayPointsIndices = [];
+
 let currentHeading = 0; let renderedHeading = 0; let lastUserCoordsForHeading = null;
 let map, targetMarker, userMarker, connectionLine, connectionLineReturn, userCoords;
 let fixedStartCoords = null; let manualStartMarker = null; let currentTargetCoords = null;
@@ -517,6 +523,8 @@ const els = {
 
 let sessionRaw = JSON.parse(localStorage.getItem('mouse_session'));
 let lastTarget = null;
+let savedGameBaseSteps = 0;
+let savedGameDynamicFactor = 0;
 
 if (sessionRaw && (Date.now() - sessionRaw.timestamp < 10800000)) {
     lastTarget = sessionRaw.target;
@@ -533,6 +541,10 @@ if (sessionRaw && (Date.now() - sessionRaw.timestamp < 10800000)) {
     savedMidpointStepIndex = sessionRaw.midpointStepIndex !== undefined ? sessionRaw.midpointStepIndex : -1;
     savedHasReachedMidpoint = sessionRaw.hasReachedMidpoint || false;
     savedGameStartCoords = sessionRaw.gameStartCoords || null;
+    savedGameBaseSteps = sessionRaw.gameBaseSteps || 0;
+    savedGameDynamicFactor = sessionRaw.gameDynamicFactor || 0;
+    originalPois = sessionRaw.originalPois || [];
+    savedWayPointsIndices = sessionRaw.savedWayPointsIndices || [];
 
     els.welcomeOverlay.classList.add('hidden');
 }
@@ -794,6 +806,7 @@ function clearMapData() {
     if (connectionLineReturn) { map.removeLayer(connectionLineReturn); connectionLineReturn = null; }
     waypointsDit = []; waypointsHem = []; waypointMarkers.forEach(m => map.removeLayer(m)); waypointMarkers = [];
     if (manualStartMarker) { map.removeLayer(manualStartMarker); manualStartMarker = null; } fixedStartCoords = null;
+    originalPois = []; savedWayPointsIndices = [];
     els.distInfo.innerHTML = getWhereToText(); els.startBtn.classList.add('hidden');
     if (userCoords) { zoomToUser(); isShowingUser = false; isTracking = true; }
     updateLocateBtnText(); saveSession(); broadcastLiveState();
@@ -819,14 +832,23 @@ function updateGameMapView(forceCenter = false) {
     else if (gameRouteLine) { gameRouteLine.setLatLngs(currentRouteCoords); }
     if (!gameUserMarker) { gameUserMarker = L.circleMarker(userCoords, {radius: 7, fillColor: "#007bff", color: "#fff", weight: 2, fillOpacity: 1}).addTo(gameMap); } 
     else { gameUserMarker.setLatLng(userCoords); }
+    
     let snapCoords = currentRouteCoords[lastRouteIndex];
     if (snapCoords) {
-        if (!gameSnapMarker) { gameSnapMarker = L.circleMarker(snapCoords, {radius: 5, fillColor: "#FF9800", color: "#fff", weight: 2, fillOpacity: 1}).addTo(gameMap); } 
-        else { gameSnapMarker.setLatLng(snapCoords); }
-        let dashCoords = [userCoords, snapCoords];
-        if (!gameDashedLine) { gameDashedLine = L.polyline(dashCoords, {color: '#ff4444', weight: 3, dashArray: '8, 8'}).addTo(gameMap); } 
-        else { gameDashedLine.setLatLngs(dashCoords); }
+        let distToRoute = gameMap.distance(userCoords, snapCoords);
+        if (distToRoute > 30) {
+            if (!gameSnapMarker) { gameSnapMarker = L.circleMarker(snapCoords, {radius: 5, fillColor: "#FF9800", color: "#fff", weight: 2, fillOpacity: 1}).addTo(gameMap); } 
+            else { gameSnapMarker.setLatLng(snapCoords); if (!gameMap.hasLayer(gameSnapMarker)) gameSnapMarker.addTo(gameMap); }
+            
+            let dashCoords = [userCoords, snapCoords];
+            if (!gameDashedLine) { gameDashedLine = L.polyline(dashCoords, {color: '#ff4444', weight: 3, dashArray: '8, 8'}).addTo(gameMap); } 
+            else { gameDashedLine.setLatLngs(dashCoords); if (!gameMap.hasLayer(gameDashedLine)) gameDashedLine.addTo(gameMap); }
+        } else {
+            if (gameSnapMarker && gameMap.hasLayer(gameSnapMarker)) { gameSnapMarker.remove(); }
+            if (gameDashedLine && gameMap.hasLayer(gameDashedLine)) { gameDashedLine.remove(); }
+        }
     }
+    
     gameMap.setView(userCoords, 16);
     if (currentHeading !== null) { if (els.gameMapElement) { let currentRot = renderedHeading % 360; if (currentRot < 0) currentRot += 360; let diff = currentHeading - currentRot; if (diff > 180) diff -= 360; if (diff < -180) diff += 360; renderedHeading += diff; els.gameMapElement.style.transform = `translateZ(0) rotate(${-renderedHeading}deg)`; } }
 }
@@ -848,7 +870,11 @@ function saveSession() {
         lastRouteIndex: lastRouteIndex,
         midpointStepIndex: midpointStepIndex,
         hasReachedMidpoint: hasReachedMidpoint,
-        gameStartCoords: (gameState === 'GAME' || gameState === 'FINISHED') ? startCoords : null
+        gameStartCoords: (gameState === 'GAME' || gameState === 'FINISHED') ? startCoords : null,
+        gameBaseSteps: gameBaseSteps,
+        gameDynamicFactor: gameDynamicFactor,
+        originalPois: originalPois,
+        savedWayPointsIndices: savedWayPointsIndices
     };
     localStorage.setItem('mouse_session', JSON.stringify(sessionData));
 }
@@ -881,7 +907,9 @@ function checkRestoreGame() {
                 lastRouteIndex: savedLastRouteIndex,
                 midpointStepIndex: savedMidpointStepIndex,
                 hasReachedMidpoint: savedHasReachedMidpoint,
-                gameStartCoords: savedGameStartCoords
+                gameStartCoords: savedGameStartCoords,
+                gameBaseSteps: savedGameBaseSteps,
+                gameDynamicFactor: savedGameDynamicFactor
             });
         }, 500);
     }
@@ -916,6 +944,9 @@ async function updateMapLogic() {
     waypointsDit.forEach(wp => coordArray.push([wp.lng, wp.lat])); coordArray.push([currentTargetCoords.lng, currentTargetCoords.lat]);
     if (travelMode === 2) { waypointsHem.forEach(wp => coordArray.push([wp.lng, wp.lat])); coordArray.push([startPoint[1], startPoint[0]]); }
     
+    // Spara undan hela sekvensen av punkter så vi minns dem!
+    originalPois = coordArray.map(c => [c[1], c[0]]);
+
     const apiKey = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjgxOTdlMWQxYzhmODQ2NGY4NjM0OWYzNDI2NzM3OWM5IiwiaCI6Im11cm11cjY0In0=";
     const url = `https://api.openrouteservice.org/v2/directions/${mode.profile}/geojson`;
     
@@ -925,6 +956,8 @@ async function updateMapLogic() {
         
         if (data.features && data.features.length > 0) {
             const route = data.features[0]; currentRouteCoords = route.geometry.coordinates.map(c => [c[1], c[0]]); 
+            savedWayPointsIndices = route.properties.way_points || []; // Minns var via-punkterna ligger på linjen
+
             let splitIndex = currentRouteCoords.length;
             if (travelMode === 2) { let minD = Infinity; currentRouteCoords.forEach((c, i) => { const d = L.latLng(c).distanceTo(currentTargetCoords); if (d < minD) { minD = d; splitIndex = i; } }); }
             const coordsDit = currentRouteCoords.slice(0, splitIndex + 1); const coordsRetur = currentRouteCoords.slice(splitIndex);
@@ -959,7 +992,7 @@ function fallbackDist() {
 
 function setTarget(latlng, shouldSave, clearWaypoints = true, updateStart = true) {
     if (updateStart && !manualStartMarker) { if (userCoords) fixedStartCoords = [...userCoords]; else fixedStartCoords = null; }
-    if (clearWaypoints) { waypointsDit = []; waypointsHem = []; waypointMarkers.forEach(m => map.removeLayer(m)); waypointMarkers = []; }
+    if (clearWaypoints) { waypointsDit = []; waypointsHem = []; waypointMarkers.forEach(m => map.removeLayer(m)); waypointMarkers = []; originalPois = []; savedWayPointsIndices = []; }
     if (connectionLine) { map.removeLayer(connectionLine); connectionLine = null; }
     if (connectionLineReturn) { map.removeLayer(connectionLineReturn); connectionLineReturn = null; }
     currentTargetCoords = latlng;
@@ -974,7 +1007,6 @@ function toggleTravelMode() { travelMode = (travelMode + 1) % modes.length; els.
 async function requestWakeLock() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} }
 function releaseWakeLock() { if (wakeLock !== null) wakeLock.release().then(() => { wakeLock = null; }); }
 
-// Ny event listener för att hantera background/foreground
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && gameState === 'GAME') {
         requestWakeLock();
@@ -1016,10 +1048,13 @@ function startGame(isRestoring = false, restoreData = null) {
         hasReachedMidpoint = restoreData.hasReachedMidpoint;
         midpointStepIndex = restoreData.midpointStepIndex;
         initialTotalKm = restoreData.initialTotalKm;
+        gameBaseSteps = restoreData.gameBaseSteps || 0;
+        gameDynamicFactor = restoreData.gameDynamicFactor || 0;
         isCelebratingTurn = false;
     } else {
         if (!isLiveReceiver) startCoords = fixedStartCoords ? [...fixedStartCoords] : [...(userCoords || [0,0])];
         maxStepsReached = 0; lastRouteIndex = 0; hasReachedMidpoint = false; midpointStepIndex = -1; isCelebratingTurn = false;
+        gameBaseSteps = 0; gameDynamicFactor = 0;
         if (!isLiveReceiver) { const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', ''); const totalDistanceKm = parseFloat(distStr) || 1; const f = modes[travelMode].factor; const r = totalDistanceKm % f; initialTotalKm = Math.max(1, Math.floor(totalDistanceKm / f) + (r > 0.05 ? 2 : 1)); }
     }
 
@@ -1042,12 +1077,142 @@ function startGame(isRestoring = false, restoreData = null) {
     if (!isLiveReceiver && !isRestoring) saveSession();
 }
 
+async function performReRoute() {
+    if (isReRouting || isLiveReceiver || gameState !== 'GAME' || !currentTargetCoords) return;
+    isReRouting = true;
+
+    const mode = modes[travelMode];
+    
+    // Hitta exakt vilken via-punkt vi är på väg mot baserat på vart vi var på ursprungslinjen
+    let nextPoiIndex = 1; 
+    if (savedWayPointsIndices && savedWayPointsIndices.length > 0) {
+        nextPoiIndex = savedWayPointsIndices.length - 1; 
+        for (let i = 0; i < savedWayPointsIndices.length; i++) {
+            if (lastRouteIndex < savedWayPointsIndices[i]) {
+                nextPoiIndex = i;
+                break;
+            }
+        }
+        if (nextPoiIndex < 1) nextPoiIndex = 1;
+    }
+
+    // --- FÖRLÅTANDE LOGIK ---
+    // Kolla om vi har passerat / genat förbi den tänkta via-punkten
+    if (originalPois && originalPois.length > 0) {
+        let bestPoiIndex = nextPoiIndex;
+        for (let i = nextPoiIndex; i < originalPois.length - 1; i++) {
+            let distToCurrent = map.distance(userCoords, originalPois[i]);
+            let distToNext = map.distance(userCoords, originalPois[i+1]);
+            
+            // Om vi är närmare nästa punkt (eller målet) än den vi just missat, droppa den missade!
+            if (distToNext < distToCurrent) {
+                bestPoiIndex = i + 1;
+            } else {
+                break;
+            }
+        }
+        nextPoiIndex = bestPoiIndex;
+    }
+    // -------------------------
+
+    let coordArray = [];
+    coordArray.push([userCoords[1], userCoords[0]]); // Börja vid vår nya aktuella GPS-position
+
+    // Hämta ALLA de via-punkter (och målet) som vi inte har passerat än
+    if (originalPois && originalPois.length > 0) {
+         for (let i = nextPoiIndex; i < originalPois.length; i++) {
+             coordArray.push([originalPois[i][1], originalPois[i][0]]);
+         }
+    } else {
+         // Fallback om appen tappat minnet av punkterna
+         if (travelMode === 2) {
+             if (!hasReachedMidpoint) {
+                 coordArray.push([currentTargetCoords.lng, currentTargetCoords.lat]);
+                 if (fixedStartCoords) coordArray.push([fixedStartCoords[1], fixedStartCoords[0]]);
+             } else {
+                 if (fixedStartCoords) coordArray.push([fixedStartCoords[1], fixedStartCoords[0]]);
+             }
+         } else {
+             coordArray.push([currentTargetCoords.lng, currentTargetCoords.lat]);
+         }
+    }
+
+    const apiKey = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjgxOTdlMWQxYzhmODQ2NGY4NjM0OWYzNDI2NzM3OWM5IiwiaCI6Im11cm11cjY0In0=";
+    const url = `https://api.openrouteservice.org/v2/directions/${mode.profile}/geojson`;
+
+    try {
+        const res = await fetch(url, { method: 'POST', headers: { 'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8', 'Content-Type': 'application/json', 'Authorization': apiKey }, body: JSON.stringify({ coordinates: coordArray, elevation: false, instructions: false, preference: 'recommended' }) });
+        const data = await res.json();
+
+        if (data.features && data.features.length > 0) {
+            const route = data.features[0];
+            currentRouteCoords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+            
+            // Uppdatera vårt minne av punkterna för framtida omräkningar!
+            if (originalPois && originalPois.length > 0) {
+                let newOriginalPois = [[userCoords[0], userCoords[1]]];
+                for (let i = nextPoiIndex; i < originalPois.length; i++) {
+                    newOriginalPois.push(originalPois[i]);
+                }
+                originalPois = newOriginalPois;
+                savedWayPointsIndices = route.properties.way_points || [];
+            }
+
+            if (travelMode === 2 && !hasReachedMidpoint) {
+                let splitIndex = currentRouteCoords.length - 1;
+                let minD = Infinity;
+                currentRouteCoords.forEach((c, i) => { const d = L.latLng(c).distanceTo(currentTargetCoords); if (d < minD) { minD = d; splitIndex = i; } });
+                const coordsDit = currentRouteCoords.slice(0, splitIndex + 1);
+                const coordsRetur = currentRouteCoords.slice(splitIndex);
+                if (connectionLine) connectionLine.setLatLngs(coordsDit);
+                if (connectionLineReturn) connectionLineReturn.setLatLngs(coordsRetur);
+            } else {
+                if (connectionLine) connectionLine.setLatLngs(currentRouteCoords);
+                if (travelMode === 2 && hasReachedMidpoint) {
+                    if (connectionLineReturn) connectionLineReturn.setLatLngs(currentRouteCoords);
+                    if (connectionLine) connectionLine.setLatLngs([]); 
+                }
+            }
+
+            if (gameRouteLine) gameRouteLine.setLatLngs(currentRouteCoords);
+
+            gameBaseSteps = maxStepsReached;
+            let stepsLeft = initialTotalKm - 1 - gameBaseSteps;
+            
+            if (stepsLeft > 0) {
+                let newTotalDist = 0;
+                for (let i = 0; i < currentRouteCoords.length - 1; i++) {
+                    newTotalDist += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]);
+                }
+                gameDynamicFactor = newTotalDist / stepsLeft;
+            }
+
+            lastRouteIndex = 0; 
+            saveSession();
+        }
+    } catch (e) {
+        console.error("Re-route error", e);
+    }
+    isReRouting = false;
+}
+
 function updateGameLogic() {
     if (gameState !== 'GAME' || !currentRouteCoords.length || isCelebratingTurn || isLiveReceiver) return;
+    
+    const goal = (travelMode === 2) ? (fixedStartCoords || startCoords) : currentTargetCoords; 
+    const distToFinal = map.distance(userCoords, goal);
+    
     if (!hasReachedMidpoint && travelMode === 2) { const distToTarget = map.distance(userCoords, currentTargetCoords); if (distToTarget < 40) { triggerTurnAroundDance(); return; } }
 
     let minD = Infinity; let idx = lastRouteIndex; let searchLimit = (travelMode !== 2 || hasReachedMidpoint) ? currentRouteCoords.length : Math.floor(currentRouteCoords.length * 0.6); 
     for (let i = lastRouteIndex; i < searchLimit; i++) { const d = map.distance(userCoords, currentRouteCoords[i]); if (d < minD) { minD = d; idx = i; } }
+    
+    // --- OFF-TRACK CHECK FÖR NY RUTT (REROUTE) ---
+    if (minD > 100 && !isReRouting) {
+        performReRoute();
+        return; // Avbryt här och vänta in den nya rutten
+    }
+    
     lastRouteIndex = idx;
     
     let traveledDist = 0; for (let i = 0; i < lastRouteIndex; i++) { traveledDist += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]); }
@@ -1056,8 +1221,16 @@ function updateGameLogic() {
     let remainingDist = totalRouteDist - traveledDist; const distDisplay = document.getElementById('game-distance-display');
     if (distDisplay) { distDisplay.innerText = t('kmLeft', {dist: (remainingDist / 1000).toFixed(2)}); }
 
-    const f = modes[travelMode].factor; const r = (totalRouteDist / 1000) % f; const tKm = traveledDist / 1000; let currentSteps = r > 0.05 ? (tKm < r ? 0 : Math.floor((tKm - r) / f) + 1) : Math.floor(tKm / f);
+    let currentSteps = 0;
+    if (gameDynamicFactor > 0) {
+        currentSteps = gameBaseSteps + Math.floor(traveledDist / gameDynamicFactor);
+    } else {
+        const f = modes[travelMode].factor; const r = (totalRouteDist / 1000) % f; const tKm = traveledDist / 1000;
+        currentSteps = r > 0.05 ? (tKm < r ? 0 : Math.floor((tKm - r) / f) + 1) : Math.floor(tKm / f);
+    }
+    
     if (!hasReachedMidpoint && travelMode === 2 && currentSteps > midpointStepIndex) { currentSteps = midpointStepIndex; }
+    if (currentSteps >= initialTotalKm) { currentSteps = initialTotalKm - 1; }
     
     if (currentSteps > maxStepsReached) { 
         maxStepsReached = currentSteps; 
@@ -1066,7 +1239,6 @@ function updateGameLogic() {
     
     for (let i = 0; i < initialTotalKm - 1; i++) { const s = document.getElementById(`step-${i}`); if (s) i < maxStepsReached ? s.classList.add('eat-animation') : s.classList.remove('eat-animation'); }
     
-    const goal = (travelMode === 2) ? (fixedStartCoords || startCoords) : currentTargetCoords; const distToFinal = map.distance(userCoords, goal);
     if (travelMode === 2) { if (hasReachedMidpoint && distToFinal < 40 && maxStepsReached > (initialTotalKm * 0.8)) { moveMouse(initialTotalKm - 1); finishGame(); } else { moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 2))); } } 
     else { if (distToFinal < 40) { moveMouse(initialTotalKm - 1); finishGame(); } else { moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 2))); } }
     
@@ -1095,6 +1267,7 @@ function finishGame() {
 
 function stopGame() { 
     gameState = 'MAP'; if (!isLiveReceiver) fixedStartCoords = null; clearInterval(confettiInterval);
+    gameBaseSteps = 0; gameDynamicFactor = 0; isReRouting = false;
     isGameMapVisible = false; els.gameMapWrapper.classList.add('hidden'); const distDisplay = document.getElementById('game-distance-display'); if (distDisplay) distDisplay.classList.add('hidden');
     els.pathGrid.classList.remove('hidden'); const m = document.getElementById('the-mouse');
     m.classList.remove('victory'); m.classList.remove('turn-dance'); m.innerHTML = activeTheme.player;
