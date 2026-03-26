@@ -381,7 +381,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // --- DYNAMIC VOICE LANG ---
-let dynamicVoiceLang = currentLang === 'sv' ? 'sv-SE' : currentLang === 'ru' ? 'ru-RU' : currentLang === 'am' ? 'am-ET' : currentLang === 'ar' ? 'ar-SA' : 'en-US';
+let dynamicVoiceLang = currentLang === 'sv' ? 'sv-SE' : currentLang === 'ru' ? 'am-ET' : currentLang === 'ar' ? 'ar-SA' : 'en-US';
 
 function updateVoiceLangFromCountry(countryCode) {
     if (!countryCode) return;
@@ -480,6 +480,7 @@ let savedGameStartCoords = null;
 let gameBaseSteps = 0;
 let gameDynamicFactor = 0;
 let isReRouting = false;
+let lastReRouteTime = 0;
 let originalPois = [];
 let savedWayPointsIndices = [];
 
@@ -493,7 +494,7 @@ let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, nu
 let wakeLock = null; let currentRouteCoords = []; let ignoreClick = false; let confettiInterval = null;
 let maxStepsReached = 0; let lastRouteIndex = 0; let hasReachedMidpoint = false; 
 let midpointStepIndex = -1; let isCelebratingTurn = false; let swipeHintShown = false; 
-let gameMap = null; let gameRouteLine = null, gameUserMarker = null, gameSnapMarker = null, gameDashedLine = null;
+let gameMap = null; let gameRouteLine = null, gameUserMarker = null;
 let isGameMapVisible = false; let swipeStartX = 0;
 
 let travelMode = 0; 
@@ -828,29 +829,34 @@ function toggleGameMap() {
 
 function updateGameMapView(forceCenter = false) {
     if (!isGameMapVisible || gameState !== 'GAME' || !gameMap || !userCoords) return;
-    if (!gameRouteLine && currentRouteCoords.length > 0) { gameRouteLine = L.polyline(currentRouteCoords, {color: '#007bff', weight: 4, opacity: 0.5}).addTo(gameMap); } 
-    else if (gameRouteLine) { gameRouteLine.setLatLngs(currentRouteCoords); }
-    if (!gameUserMarker) { gameUserMarker = L.circleMarker(userCoords, {radius: 7, fillColor: "#007bff", color: "#fff", weight: 2, fillOpacity: 1}).addTo(gameMap); } 
-    else { gameUserMarker.setLatLng(userCoords); }
     
-    let snapCoords = currentRouteCoords[lastRouteIndex];
-    if (snapCoords) {
-        let distToRoute = gameMap.distance(userCoords, snapCoords);
-        if (distToRoute > 30) {
-            if (!gameSnapMarker) { gameSnapMarker = L.circleMarker(snapCoords, {radius: 5, fillColor: "#FF9800", color: "#fff", weight: 2, fillOpacity: 1}).addTo(gameMap); } 
-            else { gameSnapMarker.setLatLng(snapCoords); if (!gameMap.hasLayer(gameSnapMarker)) gameSnapMarker.addTo(gameMap); }
-            
-            let dashCoords = [userCoords, snapCoords];
-            if (!gameDashedLine) { gameDashedLine = L.polyline(dashCoords, {color: '#ff4444', weight: 3, dashArray: '8, 8'}).addTo(gameMap); } 
-            else { gameDashedLine.setLatLngs(dashCoords); if (!gameMap.hasLayer(gameDashedLine)) gameDashedLine.addTo(gameMap); }
-        } else {
-            if (gameSnapMarker && gameMap.hasLayer(gameSnapMarker)) { gameSnapMarker.remove(); }
-            if (gameDashedLine && gameMap.hasLayer(gameDashedLine)) { gameDashedLine.remove(); }
-        }
+    // Uppdatera ruttlinjen
+    if (!gameRouteLine && currentRouteCoords.length > 0) { 
+        gameRouteLine = L.polyline(currentRouteCoords, {color: '#007bff', weight: 4, opacity: 0.5}).addTo(gameMap); 
+    } else if (gameRouteLine) { 
+        gameRouteLine.setLatLngs(currentRouteCoords); 
     }
     
+    // Uppdatera spelarmarkören
+    if (!gameUserMarker) { 
+        gameUserMarker = L.circleMarker(userCoords, {radius: 7, fillColor: "#007bff", color: "#fff", weight: 2, fillOpacity: 1}).addTo(gameMap); 
+    } else { 
+        gameUserMarker.setLatLng(userCoords); 
+    }
+    
+    // Centrera och rotera kartan
     gameMap.setView(userCoords, 16);
-    if (currentHeading !== null) { if (els.gameMapElement) { let currentRot = renderedHeading % 360; if (currentRot < 0) currentRot += 360; let diff = currentHeading - currentRot; if (diff > 180) diff -= 360; if (diff < -180) diff += 360; renderedHeading += diff; els.gameMapElement.style.transform = `translateZ(0) rotate(${-renderedHeading}deg)`; } }
+    if (currentHeading !== null) { 
+        if (els.gameMapElement) { 
+            let currentRot = renderedHeading % 360; 
+            if (currentRot < 0) currentRot += 360; 
+            let diff = currentHeading - currentRot; 
+            if (diff > 180) diff -= 360; 
+            if (diff < -180) diff += 360; 
+            renderedHeading += diff; 
+            els.gameMapElement.style.transform = `translateZ(0) rotate(${-renderedHeading}deg)`; 
+        } 
+    }
 }
 
 function saveSession() {
@@ -1188,6 +1194,7 @@ async function performReRoute() {
             }
 
             lastRouteIndex = 0; 
+            lastReRouteTime = Date.now();
             saveSession();
         }
     } catch (e) {
@@ -1208,7 +1215,7 @@ function updateGameLogic() {
     for (let i = lastRouteIndex; i < searchLimit; i++) { const d = map.distance(userCoords, currentRouteCoords[i]); if (d < minD) { minD = d; idx = i; } }
     
     // --- OFF-TRACK CHECK FÖR NY RUTT (REROUTE) ---
-    if (minD > 100 && !isReRouting) {
+    if (minD > 300 && !isReRouting && (Date.now() - lastReRouteTime > 30000)) {
         performReRoute();
         return; // Avbryt här och vänta in den nya rutten
     }
