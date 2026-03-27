@@ -479,6 +479,7 @@ let savedGameStartCoords = null;
 
 let gameBaseSteps = 0;
 let gameDynamicFactor = 0;
+let gameVirtualDistOffset = 0;
 let isReRouting = false;
 let lastReRouteTime = 0;
 let originalPois = [];
@@ -526,6 +527,7 @@ let sessionRaw = JSON.parse(localStorage.getItem('mouse_session'));
 let lastTarget = null;
 let savedGameBaseSteps = 0;
 let savedGameDynamicFactor = 0;
+let savedGameVirtualDistOffset = 0;
 
 if (sessionRaw && (Date.now() - sessionRaw.timestamp < 10800000)) {
     lastTarget = sessionRaw.target;
@@ -544,6 +546,7 @@ if (sessionRaw && (Date.now() - sessionRaw.timestamp < 10800000)) {
     savedGameStartCoords = sessionRaw.gameStartCoords || null;
     savedGameBaseSteps = sessionRaw.gameBaseSteps || 0;
     savedGameDynamicFactor = sessionRaw.gameDynamicFactor || 0;
+    savedGameVirtualDistOffset = sessionRaw.gameVirtualDistOffset || 0;
     originalPois = sessionRaw.originalPois || [];
     savedWayPointsIndices = sessionRaw.savedWayPointsIndices || [];
 
@@ -879,6 +882,7 @@ function saveSession() {
         gameStartCoords: (gameState === 'GAME' || gameState === 'FINISHED') ? startCoords : null,
         gameBaseSteps: gameBaseSteps,
         gameDynamicFactor: gameDynamicFactor,
+        gameVirtualDistOffset: gameVirtualDistOffset,
         originalPois: originalPois,
         savedWayPointsIndices: savedWayPointsIndices
     };
@@ -915,7 +919,8 @@ function checkRestoreGame() {
                 hasReachedMidpoint: savedHasReachedMidpoint,
                 gameStartCoords: savedGameStartCoords,
                 gameBaseSteps: savedGameBaseSteps,
-                gameDynamicFactor: savedGameDynamicFactor
+                gameDynamicFactor: savedGameDynamicFactor,
+                gameVirtualDistOffset: savedGameVirtualDistOffset
             });
         }, 500);
     }
@@ -1056,11 +1061,12 @@ function startGame(isRestoring = false, restoreData = null) {
         initialTotalKm = restoreData.initialTotalKm;
         gameBaseSteps = restoreData.gameBaseSteps || 0;
         gameDynamicFactor = restoreData.gameDynamicFactor || 0;
+        gameVirtualDistOffset = restoreData.gameVirtualDistOffset || 0;
         isCelebratingTurn = false;
     } else {
         if (!isLiveReceiver) startCoords = fixedStartCoords ? [...fixedStartCoords] : [...(userCoords || [0,0])];
         maxStepsReached = 0; lastRouteIndex = 0; hasReachedMidpoint = false; midpointStepIndex = -1; isCelebratingTurn = false;
-        gameBaseSteps = 0; gameDynamicFactor = 0;
+        gameBaseSteps = 0; gameDynamicFactor = 0; gameVirtualDistOffset = 0;
         if (!isLiveReceiver) { const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', ''); const totalDistanceKm = parseFloat(distStr) || 1; const f = modes[travelMode].factor; const r = totalDistanceKm % f; initialTotalKm = Math.max(1, Math.floor(totalDistanceKm / f) + (r > 0.05 ? 2 : 1)); }
     }
 
@@ -1089,6 +1095,24 @@ async function performReRoute() {
 
     const mode = modes[travelMode];
     
+    // --- NY LOGIK: Räkna ut exakt % av det aktuella äpplet innan rutten byts ---
+    let oldTraveledDist = 0;
+    for (let i = 0; i < lastRouteIndex; i++) {
+        oldTraveledDist += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]);
+    }
+
+    let oldFraction = 0;
+    if (gameDynamicFactor > 0) {
+        oldFraction = (oldTraveledDist + gameVirtualDistOffset) / gameDynamicFactor;
+    } else {
+        const f = modes[travelMode].factor * 1000;
+        oldFraction = oldTraveledDist / f;
+    }
+
+    let fractionalProgress = oldFraction - Math.floor(oldFraction);
+    if (fractionalProgress < 0 || isNaN(fractionalProgress)) fractionalProgress = 0;
+    // ---------------------------------------------------------
+
     // Hitta exakt vilken via-punkt vi är på väg mot baserat på vart vi var på ursprungslinjen
     let nextPoiIndex = 1; 
     if (savedWayPointsIndices && savedWayPointsIndices.length > 0) {
@@ -1185,12 +1209,18 @@ async function performReRoute() {
             gameBaseSteps = maxStepsReached;
             let stepsLeft = initialTotalKm - 1 - gameBaseSteps;
             
-            if (stepsLeft > 0) {
+            let exactApplesLeft = stepsLeft - fractionalProgress;
+            
+            if (exactApplesLeft > 0) {
                 let newTotalDist = 0;
                 for (let i = 0; i < currentRouteCoords.length - 1; i++) {
                     newTotalDist += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]);
                 }
-                gameDynamicFactor = newTotalDist / stepsLeft;
+                gameDynamicFactor = newTotalDist / exactApplesLeft;
+                gameVirtualDistOffset = fractionalProgress * gameDynamicFactor;
+            } else {
+                gameDynamicFactor = 0;
+                gameVirtualDistOffset = 0;
             }
 
             lastRouteIndex = 0; 
@@ -1230,7 +1260,7 @@ function updateGameLogic() {
 
     let currentSteps = 0;
     if (gameDynamicFactor > 0) {
-        currentSteps = gameBaseSteps + Math.floor(traveledDist / gameDynamicFactor);
+        currentSteps = gameBaseSteps + Math.floor((traveledDist + gameVirtualDistOffset) / gameDynamicFactor);
     } else {
         const f = modes[travelMode].factor; const r = (totalRouteDist / 1000) % f; const tKm = traveledDist / 1000;
         currentSteps = r > 0.05 ? (tKm < r ? 0 : Math.floor((tKm - r) / f) + 1) : Math.floor(tKm / f);
@@ -1274,7 +1304,7 @@ function finishGame() {
 
 function stopGame() { 
     gameState = 'MAP'; if (!isLiveReceiver) fixedStartCoords = null; clearInterval(confettiInterval);
-    gameBaseSteps = 0; gameDynamicFactor = 0; isReRouting = false;
+    gameBaseSteps = 0; gameDynamicFactor = 0; gameVirtualDistOffset = 0; isReRouting = false;
     isGameMapVisible = false; els.gameMapWrapper.classList.add('hidden'); const distDisplay = document.getElementById('game-distance-display'); if (distDisplay) distDisplay.classList.add('hidden');
     els.pathGrid.classList.remove('hidden'); const m = document.getElementById('the-mouse');
     m.classList.remove('victory'); m.classList.remove('turn-dance'); m.innerHTML = activeTheme.player;
