@@ -950,13 +950,40 @@ function handlePositionUpdate(pos) {
 
 async function updateMapLogic() {
     if ((!userCoords && !fixedStartCoords) || !currentTargetCoords) return;
-    const startPoint = fixedStartCoords || userCoords; const mode = modes[travelMode];
-    let coordArray = []; coordArray.push([startPoint[1], startPoint[0]]);
-    waypointsDit.forEach(wp => coordArray.push([wp.lng, wp.lat])); coordArray.push([currentTargetCoords.lng, currentTargetCoords.lat]);
-    if (travelMode === 2) { waypointsHem.forEach(wp => coordArray.push([wp.lng, wp.lat])); coordArray.push([startPoint[1], startPoint[0]]); }
     
-    // Spara undan hela sekvensen av punkter så vi minns dem!
-    originalPois = coordArray.map(c => [c[1], c[0]]);
+    let coordArray = []; 
+    const mode = modes[travelMode];
+
+    // --- FIX FÖR ÅTERSTÄLLNING AV SPEL ---
+    if (savedGameState === 'GAME' && originalPois && originalPois.length > 0) {
+        // Om vi ska återställa ett spel, använd den exakta ursprungliga rutten!
+        coordArray = originalPois.map(c => [c[1], c[0]]); 
+    } else {
+        const startPoint = fixedStartCoords || userCoords; 
+        const startLatLng = L.latLng(startPoint[0], startPoint[1]);
+        
+        // Sortera dit-punkter baserat på avstånd från start
+        if (waypointsDit.length > 1) {
+            waypointsDit.sort((a, b) => startLatLng.distanceTo(a) - startLatLng.distanceTo(b));
+        }
+        
+        // Sortera hem-punkter baserat på avstånd från målet
+        if (travelMode === 2 && waypointsHem.length > 1) {
+            waypointsHem.sort((a, b) => currentTargetCoords.distanceTo(a) - currentTargetCoords.distanceTo(b));
+        }
+
+        coordArray.push([startPoint[1], startPoint[0]]);
+        waypointsDit.forEach(wp => coordArray.push([wp.lng, wp.lat])); 
+        coordArray.push([currentTargetCoords.lng, currentTargetCoords.lat]);
+        
+        if (travelMode === 2) { 
+            waypointsHem.forEach(wp => coordArray.push([wp.lng, wp.lat])); 
+            coordArray.push([startPoint[1], startPoint[0]]); 
+        }
+        
+        // Spara undan punkterna BARA om vi inte håller på att återställa
+        originalPois = coordArray.map(c => [c[1], c[0]]);
+    }
 
     const apiKey = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjgxOTdlMWQxYzhmODQ2NGY4NjM0OWYzNDI2NzM3OWM5IiwiaCI6Im11cm11cjY0In0=";
     const url = `https://api.openrouteservice.org/v2/directions/${mode.profile}/geojson`;
@@ -967,7 +994,7 @@ async function updateMapLogic() {
         
         if (data.features && data.features.length > 0) {
             const route = data.features[0]; currentRouteCoords = route.geometry.coordinates.map(c => [c[1], c[0]]); 
-            savedWayPointsIndices = route.properties.way_points || []; // Minns var via-punkterna ligger på linjen
+            savedWayPointsIndices = route.properties.way_points || []; 
 
             let splitIndex = currentRouteCoords.length;
             if (travelMode === 2) { let minD = Infinity; currentRouteCoords.forEach((c, i) => { const d = L.latLng(c).distanceTo(currentTargetCoords); if (d < minD) { minD = d; splitIndex = i; } }); }
@@ -1242,10 +1269,21 @@ function updateGameLogic() {
     if (!hasReachedMidpoint && travelMode === 2) { const distToTarget = map.distance(userCoords, currentTargetCoords); if (distToTarget < 40) { triggerTurnAroundDance(); return; } }
 
     let minD = Infinity; let idx = lastRouteIndex; let searchLimit = (travelMode !== 2 || hasReachedMidpoint) ? currentRouteCoords.length : Math.floor(currentRouteCoords.length * 0.6); 
-    for (let i = lastRouteIndex; i < searchLimit; i++) { const d = map.distance(userCoords, currentRouteCoords[i]); if (d < minD) { minD = d; idx = i; } }
+    
+    // Failsafe: Om index är out of bounds vid en återställning, börja från början!
+    let searchStart = lastRouteIndex;
+    if (searchStart >= searchLimit) {
+        searchStart = 0; 
+    }
+
+    for (let i = searchStart; i < searchLimit; i++) { 
+        const d = map.distance(userCoords, currentRouteCoords[i]); 
+        if (d < minD) { minD = d; idx = i; } 
+    }
     
     // --- OFF-TRACK CHECK FÖR NY RUTT (REROUTE) ---
-    if (minD > 300 && !isReRouting && (Date.now() - lastReRouteTime > 30000)) {
+    // Kolla att minD inte är Infinity (händer om rutten är buggad/tom) för att undvika falska re-routes
+    if (minD > 300 && minD !== Infinity && !isReRouting && (Date.now() - lastReRouteTime > 30000)) {
         performReRoute();
         return; // Avbryt här och vänta in den nya rutten
     }
