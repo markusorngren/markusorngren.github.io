@@ -195,7 +195,7 @@ const i18n = {
         iosInstall: "Установите приложение для полного экрана!",
         iosClose: "Возможно позже",
         devTitle: "🛠 РЕЖИМ РАЗРАБОТЧИКА",
-        devLang: "🌐 ЯЗЫК / LANGUAGE",
+        devLang: "🌐 Я ЯЗЫК / LANGUAGE",
         devTheme: "🎨 ТЕМЫ / THEMES",
         devClose: "Закрыть",
         devReset: "🔄 Сброс настроек",
@@ -500,9 +500,9 @@ let isGameMapVisible = false; let swipeStartX = 0;
 
 let travelMode = 0; 
 const modes = [
-    { icon: '🚗', factor: 1.0, profile: 'driving-car' },
-    { icon: '🚶', factor: 0.1, profile: 'foot-walking' },
-    { icon: '🚶↔️', factor: 0.1, profile: 'foot-walking' } 
+    { icon: '🚗', factor: 1.0, profile: 'driving-car', osrmProfile: 'car' },
+    { icon: '🚶', factor: 0.1, profile: 'foot-walking', osrmProfile: 'foot' },
+    { icon: '🚶↔️', factor: 0.1, profile: 'foot-walking', osrmProfile: 'foot' } 
 ];
 
 const els = {
@@ -764,7 +764,9 @@ function broadcastLiveState() {
         targetName: currentTargetName, travelMode: travelMode,
         waypointsDit: waypointsDit.map(w => ({lat: w.lat, lng: w.lng})), waypointsHem: waypointsHem.map(w => ({lat: w.lat, lng: w.lng})),
         gameState: gameState, initialTotalKm: initialTotalKm, midpointStepIndex: midpointStepIndex, maxStepsReached: maxStepsReached,
-        lastRouteIndex: lastRouteIndex, distRemainingStr: distDisplay ? distDisplay.innerText : ""
+        lastRouteIndex: lastRouteIndex, distRemainingStr: distDisplay ? distDisplay.innerText : "",
+        lastReRouteTime: lastReRouteTime,
+        originalPois: originalPois
     });
 }
 
@@ -789,6 +791,14 @@ function handleLiveUpdate(parsed) {
         els.distInfo.innerHTML = t('liveFollowing', {target: currentTargetName});
     } 
     else if (gameState === 'MAP' && !connectionLine && currentTargetCoords && userCoords) { updateMapLogic(); }
+
+    if (parsed.lastReRouteTime && parsed.lastReRouteTime !== lastReRouteTime) {
+        lastReRouteTime = parsed.lastReRouteTime;
+        originalPois = parsed.originalPois || [];
+        if (currentTargetCoords) {
+            updateMapLogic();
+        }
+    }
 
     if (parsed.gameState === 'GAME' && gameState !== 'GAME') { startGame(); } 
     else if (parsed.gameState === 'FINISHED' && gameState !== 'FINISHED') { finishGame(); } 
@@ -833,21 +843,18 @@ function toggleGameMap() {
 function updateGameMapView(forceCenter = false) {
     if (!isGameMapVisible || gameState !== 'GAME' || !gameMap || !userCoords) return;
     
-    // Uppdatera ruttlinjen
     if (!gameRouteLine && currentRouteCoords.length > 0) { 
         gameRouteLine = L.polyline(currentRouteCoords, {color: '#007bff', weight: 4, opacity: 0.5}).addTo(gameMap); 
     } else if (gameRouteLine) { 
         gameRouteLine.setLatLngs(currentRouteCoords); 
     }
     
-    // Uppdatera spelarmarkören
     if (!gameUserMarker) { 
         gameUserMarker = L.circleMarker(userCoords, {radius: 7, fillColor: "#007bff", color: "#fff", weight: 2, fillOpacity: 1}).addTo(gameMap); 
     } else { 
         gameUserMarker.setLatLng(userCoords); 
     }
     
-    // Centrera och rotera kartan
     gameMap.setView(userCoords, 16);
     if (currentHeading !== null) { 
         if (els.gameMapElement) { 
@@ -948,26 +955,26 @@ function handlePositionUpdate(pos) {
     if (gameState === 'MAP') { if (!fixedStartCoords) updateMapLogic(); } else if (gameState === 'GAME') updateGameLogic();
 }
 
+let isFetchingRoute = false; 
+
 async function updateMapLogic() {
     if ((!userCoords && !fixedStartCoords) || !currentTargetCoords) return;
+    
+    if (isFetchingRoute) return;
+    isFetchingRoute = true;
     
     let coordArray = []; 
     const mode = modes[travelMode];
 
-    // --- FIX FÖR ÅTERSTÄLLNING AV SPEL ---
-    if (savedGameState === 'GAME' && originalPois && originalPois.length > 0) {
-        // Om vi ska återställa ett spel, använd den exakta ursprungliga rutten!
+    if ((savedGameState === 'GAME' || (isLiveReceiver && gameState === 'GAME')) && originalPois && originalPois.length > 0) {
         coordArray = originalPois.map(c => [c[1], c[0]]); 
     } else {
         const startPoint = fixedStartCoords || userCoords; 
         const startLatLng = L.latLng(startPoint[0], startPoint[1]);
         
-        // Sortera dit-punkter baserat på avstånd från start
         if (waypointsDit.length > 1) {
             waypointsDit.sort((a, b) => startLatLng.distanceTo(a) - startLatLng.distanceTo(b));
         }
-        
-        // Sortera hem-punkter baserat på avstånd från målet
         if (travelMode === 2 && waypointsHem.length > 1) {
             waypointsHem.sort((a, b) => currentTargetCoords.distanceTo(a) - currentTargetCoords.distanceTo(b));
         }
@@ -980,8 +987,6 @@ async function updateMapLogic() {
             waypointsHem.forEach(wp => coordArray.push([wp.lng, wp.lat])); 
             coordArray.push([startPoint[1], startPoint[0]]); 
         }
-        
-        // Spara undan punkterna BARA om vi inte håller på att återställa
         originalPois = coordArray.map(c => [c[1], c[0]]);
     }
 
@@ -989,7 +994,14 @@ async function updateMapLogic() {
     const url = `https://api.openrouteservice.org/v2/directions/${mode.profile}/geojson`;
     
     try {
-        const res = await fetch(url, { method: 'POST', headers: { 'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8', 'Content-Type': 'application/json', 'Authorization': apiKey }, body: JSON.stringify({ coordinates: coordArray, elevation: false, instructions: false, preference: 'recommended' }) });
+        const res = await fetch(url, { 
+            method: 'POST', 
+            headers: { 'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8', 'Content-Type': 'application/json', 'Authorization': apiKey }, 
+            body: JSON.stringify({ coordinates: coordArray, elevation: false, instructions: false, preference: 'recommended' }) 
+        });
+        
+        if (!res.ok) throw new Error("ORS Rate Limit eller fel: " + res.status);
+        
         const data = await res.json();
         
         if (data.features && data.features.length > 0) {
@@ -1003,6 +1015,8 @@ async function updateMapLogic() {
             if (connectionLine) connectionLine.setLatLngs(coordsDit); else connectionLine = L.polyline(coordsDit, {color: '#007bff', weight: 4, opacity: 0.7}).addTo(map);
             if (travelMode === 2) { if (connectionLineReturn) connectionLineReturn.setLatLngs(coordsRetur); else connectionLineReturn = L.polyline(coordsRetur, {color: '#FF9800', weight: 4, opacity: 0.7}).addTo(map); } else if (connectionLineReturn) { map.removeLayer(connectionLineReturn); connectionLineReturn = null; }
             
+            if (gameRouteLine) { gameRouteLine.setLatLngs(currentRouteCoords); }
+
             const distKm = route.properties.summary.distance / 1000;
             if (!isLiveReceiver) {
                 if (travelMode === 2) { els.distInfo.innerHTML = t('kmToAndBack', {dist: distKm.toFixed(2), target: currentTargetName}); } 
@@ -1010,8 +1024,47 @@ async function updateMapLogic() {
                 els.startBtn.classList.remove('hidden');
             }
             checkRestoreGame();
-        } else { fallbackDist(); }
-    } catch (e) { fallbackDist(); }
+        } else { 
+            throw new Error("Inga rutter hittades i OpenRouteService"); 
+        }
+    } catch (e) { 
+        console.warn("Huvud-API misslyckades. Testar reserv-API (OSRM)...", e);
+        
+        try {
+            const coordString = coordArray.map(c => `${c[0]},${c[1]}`).join(';');
+            const osrmUrl = `https://router.project-osrm.org/route/v1/${mode.osrmProfile}/${coordString}?overview=full&geometries=geojson`;
+            
+            const osrmRes = await fetch(osrmUrl);
+            if (!osrmRes.ok) throw new Error("OSRM API fel");
+            
+            const osrmData = await osrmRes.json();
+            if (osrmData.routes && osrmData.routes.length > 0) {
+                const route = osrmData.routes[0];
+                currentRouteCoords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+                savedWayPointsIndices = []; 
+                
+                if (connectionLine) connectionLine.setLatLngs(currentRouteCoords);
+                else connectionLine = L.polyline(currentRouteCoords, {color: '#007bff', weight: 4, opacity: 0.7}).addTo(map);
+                
+                if (gameRouteLine) { gameRouteLine.setLatLngs(currentRouteCoords); }
+
+                const distKm = route.distance / 1000;
+                if (!isLiveReceiver) {
+                    if (travelMode === 2) { els.distInfo.innerHTML = t('kmToAndBack', {dist: distKm.toFixed(2), target: currentTargetName}); } 
+                    else { els.distInfo.innerHTML = t('kmTo', {dist: distKm.toFixed(2), target: currentTargetName}); }
+                    els.startBtn.classList.remove('hidden');
+                }
+                checkRestoreGame();
+            } else {
+                fallbackDist(); 
+            }
+        } catch (err2) {
+            console.error("Båda rutt-tjänsterna misslyckades", err2);
+            fallbackDist(); 
+        }
+    } finally {
+        isFetchingRoute = false; 
+    }
 }
 
 function fallbackDist() {
@@ -1122,7 +1175,6 @@ async function performReRoute() {
 
     const mode = modes[travelMode];
     
-    // --- NY LOGIK: Räkna ut exakt % av det aktuella äpplet innan rutten byts ---
     let oldTraveledDist = 0;
     for (let i = 0; i < lastRouteIndex; i++) {
         oldTraveledDist += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]);
@@ -1138,9 +1190,7 @@ async function performReRoute() {
 
     let fractionalProgress = oldFraction - Math.floor(oldFraction);
     if (fractionalProgress < 0 || isNaN(fractionalProgress)) fractionalProgress = 0;
-    // ---------------------------------------------------------
 
-    // Hitta exakt vilken via-punkt vi är på väg mot baserat på vart vi var på ursprungslinjen
     let nextPoiIndex = 1; 
     if (savedWayPointsIndices && savedWayPointsIndices.length > 0) {
         nextPoiIndex = savedWayPointsIndices.length - 1; 
@@ -1153,15 +1203,12 @@ async function performReRoute() {
         if (nextPoiIndex < 1) nextPoiIndex = 1;
     }
 
-    // --- FÖRLÅTANDE LOGIK ---
-    // Kolla om vi har passerat / genat förbi den tänkta via-punkten
     if (originalPois && originalPois.length > 0) {
         let bestPoiIndex = nextPoiIndex;
         for (let i = nextPoiIndex; i < originalPois.length - 1; i++) {
             let distToCurrent = map.distance(userCoords, originalPois[i]);
             let distToNext = map.distance(userCoords, originalPois[i+1]);
             
-            // Om vi är närmare nästa punkt (eller målet) än den vi just missat, droppa den missade!
             if (distToNext < distToCurrent) {
                 bestPoiIndex = i + 1;
             } else {
@@ -1170,18 +1217,15 @@ async function performReRoute() {
         }
         nextPoiIndex = bestPoiIndex;
     }
-    // -------------------------
 
     let coordArray = [];
-    coordArray.push([userCoords[1], userCoords[0]]); // Börja vid vår nya aktuella GPS-position
+    coordArray.push([userCoords[1], userCoords[0]]); 
 
-    // Hämta ALLA de via-punkter (och målet) som vi inte har passerat än
     if (originalPois && originalPois.length > 0) {
          for (let i = nextPoiIndex; i < originalPois.length; i++) {
              coordArray.push([originalPois[i][1], originalPois[i][0]]);
          }
     } else {
-         // Fallback om appen tappat minnet av punkterna
          if (travelMode === 2) {
              if (!hasReachedMidpoint) {
                  coordArray.push([currentTargetCoords.lng, currentTargetCoords.lat]);
@@ -1205,7 +1249,6 @@ async function performReRoute() {
             const route = data.features[0];
             currentRouteCoords = route.geometry.coordinates.map(c => [c[1], c[0]]);
             
-            // Uppdatera vårt minne av punkterna för framtida omräkningar!
             if (originalPois && originalPois.length > 0) {
                 let newOriginalPois = [[userCoords[0], userCoords[1]]];
                 for (let i = nextPoiIndex; i < originalPois.length; i++) {
@@ -1270,7 +1313,6 @@ function updateGameLogic() {
 
     let minD = Infinity; let idx = lastRouteIndex; let searchLimit = (travelMode !== 2 || hasReachedMidpoint) ? currentRouteCoords.length : Math.floor(currentRouteCoords.length * 0.6); 
     
-    // Failsafe: Om index är out of bounds vid en återställning, börja från början!
     let searchStart = lastRouteIndex;
     if (searchStart >= searchLimit) {
         searchStart = 0; 
@@ -1281,11 +1323,9 @@ function updateGameLogic() {
         if (d < minD) { minD = d; idx = i; } 
     }
     
-    // --- OFF-TRACK CHECK FÖR NY RUTT (REROUTE) ---
-    // Kolla att minD inte är Infinity (händer om rutten är buggad/tom) för att undvika falska re-routes
     if (minD > 300 && minD !== Infinity && !isReRouting && (Date.now() - lastReRouteTime > 30000)) {
         performReRoute();
-        return; // Avbryt här och vänta in den nya rutten
+        return; 
     }
     
     lastRouteIndex = idx;
