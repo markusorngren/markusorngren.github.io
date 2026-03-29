@@ -528,6 +528,8 @@ let lastTarget = null;
 let savedGameBaseSteps = 0;
 let savedGameDynamicFactor = 0;
 let savedGameVirtualDistOffset = 0;
+let savedLiveSessionId = null;
+let savedIsLiveSharing = false;
 
 if (sessionRaw && (Date.now() - sessionRaw.timestamp < 10800000)) {
     lastTarget = sessionRaw.target;
@@ -549,6 +551,8 @@ if (sessionRaw && (Date.now() - sessionRaw.timestamp < 10800000)) {
     savedGameVirtualDistOffset = sessionRaw.gameVirtualDistOffset || 0;
     originalPois = sessionRaw.originalPois || [];
     savedWayPointsIndices = sessionRaw.savedWayPointsIndices || [];
+    savedLiveSessionId = sessionRaw.liveSessionId || null;
+    savedIsLiveSharing = sessionRaw.isLiveSharing || false;
 
     els.welcomeOverlay.classList.add('hidden');
 }
@@ -672,6 +676,11 @@ function initMap() {
         if (navigator.geolocation) {
             navigator.geolocation.watchPosition(handlePositionUpdate, null, { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 });
         }
+    }
+
+    if (!isLiveReceiver && savedIsLiveSharing && savedLiveSessionId) {
+        liveSessionId = savedLiveSessionId;
+        resumeLiveSharing();
     }
 
     map.on('click', async e => { 
@@ -891,7 +900,9 @@ function saveSession() {
         gameDynamicFactor: gameDynamicFactor,
         gameVirtualDistOffset: gameVirtualDistOffset,
         originalPois: originalPois,
-        savedWayPointsIndices: savedWayPointsIndices
+        savedWayPointsIndices: savedWayPointsIndices,
+        liveSessionId: liveSessionId,
+        isLiveSharing: isLiveSharing
     };
     localStorage.setItem('mouse_session', JSON.stringify(sessionData));
 }
@@ -1488,6 +1499,18 @@ function startLiveSharing() {
     let shareUrl = window.location.origin + window.location.pathname + '?live=' + liveSessionId;
     const d = {title: 'Följ mig live!', text: `Följ jakten live! 🔴`, url: shareUrl};
     if(navigator.share) { navigator.share(d).catch(e => console.log("Delning avbruten")); } else { prompt("Kopiera länken för att dela live-rutt:", shareUrl); }
+}
+
+function resumeLiveSharing() {
+    if (!pusher) { pusher = new Pusher(pusherKey, getPusherConfig()); }
+    liveChannel = pusher.subscribe(`private-live-${liveSessionId}`);
+    liveChannel.bind('pusher:subscription_succeeded', () => { 
+        isLiveSharing = true; 
+        broadcastLiveState(); 
+        if(!liveBroadcastInterval) { 
+            liveBroadcastInterval = setInterval(() => { if (isLiveSharing) broadcastLiveState(); }, 3000); 
+        } 
+    });
 }
 
 function shareOnlyApp() {
