@@ -25,9 +25,9 @@ body {
     right: 10px;
     z-index: 10000;
     background: rgba(255, 255, 255, 0.4);
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 0.65rem;
+    padding: 6px 24px;
+    border-radius: 30px;
+    font-size: 1.95rem;
     font-family: monospace;
     pointer-events: none;
     color: rgba(0, 0, 0, 0.5);
