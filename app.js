@@ -623,9 +623,23 @@ if ('serviceWorker' in navigator) {
 }
 
 // --- DYNAMIC VOICE LANG ---
-let dynamicVoiceLang = currentLang === 'sv' ? 'sv-SE' : currentLang === 'ru' ? 'am-ET' : currentLang === 'ar' ? 'ar-SA' : 'en-US';
+const manualLangOverride = localStorage.getItem('app_lang');
+let dynamicVoiceLang = 'en-US';
+
+if (manualLangOverride) {
+    // Om användaren valt i dev-menyn, lås röstigenkänningen till detta
+    const langCodeMap = { 'sv': 'sv-SE', 'en': 'en-US', 'ru': 'ru-RU', 'am': 'am-ET', 'ar': 'ar-SA' };
+    dynamicVoiceLang = langCodeMap[manualLangOverride] || 'en-US';
+} else {
+    // Fallback till enhets/standard-språk
+    const langCodeMap = { 'sv': 'sv-SE', 'en': 'en-US', 'ru': 'ru-RU', 'am': 'am-ET', 'ar': 'ar-SA' };
+    dynamicVoiceLang = langCodeMap[currentLang] || 'en-US';
+}
 
 function updateVoiceLangFromCountry(countryCode) {
+    // Avbryt och uppdatera inte dynamiskt om vi har tvingat ett språk manuellt
+    if (manualLangOverride) return;
+
     if (!countryCode) return;
     const cc = countryCode.toLowerCase();
     const langMap = { 
