@@ -239,19 +239,33 @@ function initARScene() {
     closeBtn.onclick = () => { window.location.reload(); };
     document.body.appendChild(closeBtn);
 
-    // --- FIX: Gör pilen extremt responsiv genom att lyssna direkt på enhetens rotation ---
-    window.addEventListener('deviceorientation', function(event) {
+    // --- FIX: Gör pilen extremt responsiv och plattformsoberoende ---
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const orientationEvent = isIOS ? 'deviceorientation' : 'deviceorientationabsolute';
+
+    window.addEventListener(orientationEvent, function(event) {
         if (!window.arApples || window.arScore >= window.arTotalApples || !userCoords) return;
 
-        // Hämta kompassriktningen. webkitCompassHeading är för iOS, alpha är standard fallback.
-        let rawHeading = event.webkitCompassHeading;
-        if (rawHeading === undefined || rawHeading === null) {
-            rawHeading = Math.abs(event.alpha - 360); 
+        let rawHeading;
+        if (event.webkitCompassHeading !== undefined) {
+            // iOS ger oss kompassriktningen direkt här
+            rawHeading = event.webkitCompassHeading; 
+        } else if (event.alpha !== null) {
+            // Android (absolute): alpha roterar moturs, vi inverterar det för att 0 ska vara nord och öka medurs
+            rawHeading = 360 - event.alpha; 
+        } else {
+            return; // Inga sensorer tillgängliga
         }
+
+        // Kompensera för skärmens rotation (om användaren håller telefonen i landscape)
+        let screenOrientation = window.orientation || 0;
+        rawHeading = (rawHeading + screenOrientation) % 360;
+        if (rawHeading < 0) rawHeading += 360;
 
         let nextApple = window.arApples[window.arScore];
         let targetBearing = getBearing(userCoords[0], userCoords[1], nextApple.lat, nextApple.lng);
 
+        // Räkna ut skillnaden mellan målets bäring och vår nuvarande kompassriktning
         let arrowRotation = targetBearing - rawHeading;
         const arrowEl = document.getElementById('ar-direction-arrow');
         
