@@ -131,6 +131,30 @@ function initARScene() {
     camera.setAttribute('rotation-reader', '');
     scene.appendChild(camera);
 
+    // --- LÄGG TILL 3D-RIKTNINGSPIL I AR ---
+    const arrowPivot = document.createElement('a-entity');
+    arrowPivot.id = "ar-direction-arrow";
+    // Placera den 1.5 meter framför kameran och 0.5 meter ner i synfältet
+    arrowPivot.setAttribute('position', '0 -0.5 -1.5');
+    
+    const arrowhead = document.createElement('a-cone');
+    arrowhead.setAttribute('color', '#FFEB3B');
+    arrowhead.setAttribute('radius-bottom', '0.08');
+    arrowhead.setAttribute('height', '0.15');
+    arrowhead.setAttribute('position', '0 0.1 0');
+
+    const arrowBody = document.createElement('a-cylinder');
+    arrowBody.setAttribute('color', '#FFEB3B');
+    arrowBody.setAttribute('radius', '0.03');
+    arrowBody.setAttribute('height', '0.2');
+    arrowBody.setAttribute('position', '0 -0.05 0');
+
+    arrowPivot.appendChild(arrowhead);
+    arrowPivot.appendChild(arrowBody);
+    
+    // Fäst pilen i kameran så den svävar framför skärmen
+    camera.appendChild(arrowPivot);
+
     // --- LÄGG TILL START-SKYLT ---
     const startPoint = currentRouteCoords[0];
     const startText = document.createElement('a-text');
@@ -1247,6 +1271,34 @@ function handlePositionUpdate(pos) {
                 window.arGoalReached = true; 
                 alert(`🎉 You did it! Du kom fram till målet och samlade ${window.arScore} äpplen! Awesome!`);
             }
+        }
+        
+        // 5. Uppdatera den svävande 3D-kompasspilen
+        if (window.arScore < window.arTotalApples && userCoords) {
+            let nextApple = window.arApples[window.arScore];
+            let targetBearing = getBearing(userCoords[0], userCoords[1], nextApple.lat, nextApple.lng);
+
+            // Använd aktuell heading (antingen från geolocation pos eller fallback beräknat)
+            let myHeading = currentHeading || 0;
+            if (pos.coords.heading !== null && !isNaN(pos.coords.heading)) {
+                myHeading = pos.coords.heading;
+            } else if (lastUserCoordsForHeading && userCoords) {
+                const distForHeading = L.latLng(lastUserCoordsForHeading).distanceTo(userCoords);
+                if (distForHeading > 2) {
+                    myHeading = getBearing(lastUserCoordsForHeading[0], lastUserCoordsForHeading[1], userCoords[0], userCoords[1]);
+                }
+            }
+
+            let arrowRotation = targetBearing - myHeading;
+            const arrowEl = document.getElementById('ar-direction-arrow');
+            if (arrowEl) {
+                // I A-Frame är Z-rotation positiv moturs, så vi inverterar den för att matcha kompassen
+                arrowEl.setAttribute('rotation', `0 0 ${-arrowRotation}`);
+                arrowEl.setAttribute('visible', 'true');
+            }
+        } else {
+            const arrowEl = document.getElementById('ar-direction-arrow');
+            if (arrowEl) arrowEl.setAttribute('visible', 'false'); // Göm pilen i mål
         }
     }
     // ------------------------
