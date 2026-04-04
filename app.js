@@ -1,3 +1,106 @@
+// --- BETA & FEATURE FLAGS ---
+const appFeatures = {
+    beta_mode: { id: 'beta_active', name: 'Beta Mode', default: false }
+};
+
+function isFeatureOn(key) {
+    const val = localStorage.getItem('feat_' + appFeatures[key].id);
+    if (val === null) return appFeatures[key].default;
+    return val === 'true';
+}
+
+function toggleFeature(key) {
+    const current = isFeatureOn(key);
+    localStorage.setItem('feat_' + appFeatures[key].id, !current);
+    location.reload(); 
+}
+
+// --- AR TEST ENGINE ---
+function startARTest() {
+    playClickSound();
+    const btn = document.getElementById('beta-ar-btn');
+    if(btn) btn.innerText = "⏳ Laddar 3D-motor...";
+
+    // iOS 13+ Kräver användarens tillåtelse för att läsa rörelsesensorer
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission()
+            .then(permissionState => {
+                if (permissionState === 'granted') { loadARLibraries(); } 
+                else { alert("Rörelsesensorer måste tillåtas för att AR ska fungera."); if(btn) btn.innerText = "📷 TESTA AR"; }
+            })
+            .catch(console.error);
+    } else {
+        loadARLibraries();
+    }
+}
+
+function loadARLibraries() {
+    const loadScript = (src) => new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = src; s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+    });
+
+    // Ladda A-Frame först, sedan AR.js
+    loadScript("https://aframe.io/releases/1.3.0/aframe.min.js")
+        .then(() => loadScript("https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"))
+        .then(() => { initARScene(); })
+        .catch(err => {
+            alert("Kunde inte ladda AR. Kontrollera nätverket.");
+            const btn = document.getElementById('beta-ar-btn');
+            if(btn) btn.innerText = "📷 TESTA AR";
+        });
+}
+
+function initARScene() {
+    // Dölj vanliga app-gränssnittet
+    document.getElementById('game-page').style.display = 'none';
+    
+    // Räkna ut en punkt ca 20 meter norrut från där användaren står nu
+    const targetLat = userCoords[0] + 0.00018;
+    const targetLng = userCoords[1];
+
+    // Skapa A-Frame Scenen för AR.js
+    const scene = document.createElement('a-scene');
+    scene.id = "ar-scene";
+    scene.setAttribute('vr-mode-ui', 'enabled: false');
+    scene.setAttribute('arjs', 'sourceType: webcam; videoTexture: true; debugUIEnabled: false;');
+
+    // Skapa en GPS-kopplad kamera
+    const camera = document.createElement('a-camera');
+    camera.setAttribute('gps-camera', '');
+    camera.setAttribute('rotation-reader', '');
+    scene.appendChild(camera);
+
+    // Skapa ett rött "äpple" i 3D
+    const apple = document.createElement('a-sphere');
+    apple.setAttribute('color', '#ff3333');
+    apple.setAttribute('radius', '1.5'); // Väldigt stort för att synas bra utomhus
+    apple.setAttribute('gps-entity-place', `latitude: ${targetLat}; longitude: ${targetLng}`);
+    apple.id = 'ar-test-apple';
+    
+    // Ge äpplet en grön stjälk
+    const stem = document.createElement('a-cylinder');
+    stem.setAttribute('color', '#4CAF50');
+    stem.setAttribute('radius', '0.1');
+    stem.setAttribute('height', '1');
+    stem.setAttribute('position', '0 1.5 0');
+    apple.appendChild(stem);
+
+    scene.appendChild(apple);
+    document.body.appendChild(scene);
+
+    // Skapa en stäng-knapp för att komma tillbaka till appen
+    const closeBtn = document.createElement('button');
+    closeBtn.innerText = "✖ STÄNG AR-KAMERAN";
+    closeBtn.style.cssText = "position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 9999999; background: #f44336; color: white; padding: 15px 25px; border-radius: 15px; font-weight: bold; border: none; box-shadow: 0 5px 15px rgba(0,0,0,0.4); font-size: 1rem;";
+    closeBtn.onclick = () => { window.location.reload(); };
+    document.body.appendChild(closeBtn);
+
+    // Spara GPS-målet globalt så att vår uppdateringsloop kan mäta avståndet till det
+    window.arTestAppleCoords = [targetLat, targetLng];
+}
+
 // --- LANGUAGE / TRANSLATIONS ENGINE ---
 function getDeviceLanguage() {
     const lang = navigator.language || navigator.userLanguage;
@@ -946,6 +1049,23 @@ function checkRestoreGame() {
 
 function handlePositionUpdate(pos) {
     if (isLiveReceiver) return; userCoords = [pos.coords.latitude, pos.coords.longitude];
+    
+    // --- AR DISTANCE CHECK ---
+    if (window.arTestAppleCoords) {
+        // Kontrollera om användaren är inom 10 meter från AR-äpplet
+        const distToApple = L.latLng(userCoords).distanceTo(window.arTestAppleCoords);
+        if (distToApple < 10) {
+            const apple = document.getElementById('ar-test-apple');
+            if (apple) {
+                apple.setAttribute('animation', 'property: scale; to: 0 0 0; dur: 500; easing: easeInOutQuad');
+                setTimeout(() => apple.remove(), 500);
+                alert("🎉 Snyggt jobbat! Du hittade AR-äpplet!");
+                window.arTestAppleCoords = null; // Stoppa framtida checkar
+            }
+        }
+    }
+    // ------------------------
+
     if (pos.coords.heading !== null && !isNaN(pos.coords.heading)) { currentHeading = pos.coords.heading; } 
     else if (lastUserCoordsForHeading) { const dist = L.latLng(lastUserCoordsForHeading).distanceTo(userCoords); if (dist > 2) { currentHeading = getBearing(lastUserCoordsForHeading[0], lastUserCoordsForHeading[1], userCoords[0], userCoords[1]); } }
     if (!lastUserCoordsForHeading || L.latLng(lastUserCoordsForHeading).distanceTo(userCoords) > 2) { lastUserCoordsForHeading = [...userCoords]; }
@@ -1138,6 +1258,44 @@ function startVoiceSearch() {
     recognition.start();
 }
 
+function updateBetaDistances() {
+    if (!isFeatureOn('beta_mode') || gameState !== 'GAME') return;
+
+    let f = modes[travelMode].factor;
+    let rMeters = 0;
+    let hasRemainder = false;
+
+    if (gameDynamicFactor === 0) {
+        const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', '');
+        const totalDistanceKm = parseFloat(distStr) || 1;
+        const r = totalDistanceKm % f;
+        
+        if (r > 0.05) {
+            hasRemainder = true;
+            rMeters = Math.round(r * 1000);
+        }
+    }
+
+    for (let i = 0; i < initialTotalKm - 1; i++) {
+        const label = document.getElementById(`beta-dist-${i}`);
+        if (!label) continue;
+
+        let currentDistMeters = 0;
+        if (gameDynamicFactor > 0) {
+            currentDistMeters = Math.round(gameDynamicFactor);
+        } else {
+            if (hasRemainder && i === 0) {
+                currentDistMeters = rMeters;
+            } else {
+                currentDistMeters = Math.round(f * 1000);
+            }
+        }
+
+        let text = currentDistMeters >= 1000 ? (currentDistMeters / 1000).toFixed(1) + 'km' : currentDistMeters + 'm';
+        label.innerText = `➔ ${text}`;
+    }
+}
+
 function startGame(isRestoring = false, restoreData = null) {
     if (!currentTargetCoords) return;
     if (!isLiveReceiver && !userCoords && !fixedStartCoords) return; 
@@ -1170,13 +1328,52 @@ function startGame(isRestoring = false, restoreData = null) {
 
     if (!isRestoring && !isLiveReceiver && travelMode === 2 && currentRouteCoords.length > 0) { let distToTarget = 0; let splitIndex = 0; let minD = Infinity; currentRouteCoords.forEach((c, i) => { const d = L.latLng(c).distanceTo(currentTargetCoords); if (d < minD) { minD = d; splitIndex = i; } }); for (let i = 0; i < splitIndex; i++) { distToTarget += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]); } const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', ''); const totalDistanceKm = parseFloat(distStr) || 1; const f = modes[travelMode].factor; const r = totalDistanceKm % f; const tKm = distToTarget / 1000; midpointStepIndex = r > 0.05 ? (tKm < r ? 0 : Math.floor((tKm - r) / f) + 1) : Math.floor(tKm / f); }
     
+    // --- LÄGG TILL AR-KNAPP OM BETA ÄR PÅ ---
+    if (isFeatureOn('beta_mode') && !isLiveReceiver) {
+        let arBtn = document.getElementById('beta-ar-btn');
+        if (!arBtn) {
+            arBtn = document.createElement('button');
+            arBtn.id = 'beta-ar-btn';
+            arBtn.innerText = "📷 TESTA AR";
+            arBtn.style.cssText = "background: #9C27B0; color: white; border-radius: 20px; padding: 6px 15px; font-size: 0.75rem; font-weight: bold; border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: pointer;";
+            arBtn.onclick = startARTest;
+            
+            // Hitta top-baren i spelet och tryck in knappen
+            const topBar = document.getElementById('cancel-game-btn').parentNode;
+            if (topBar) topBar.insertBefore(arBtn, document.getElementById('cancel-game-btn'));
+        }
+    }
+    // ----------------------------------------
+
     for (let i = 0; i < initialTotalKm; i++) {
         const step = document.createElement('div'); step.className = 'step'; step.id = `step-${i}`;
         if (i === initialTotalKm - 1) { step.innerHTML = activeTheme.target; } else if (i === midpointStepIndex) { step.innerHTML = activeTheme.target; } else { step.innerHTML = activeTheme.path; }
         if (isRestoring && i < maxStepsReached) step.classList.add('eat-animation');
+        
+        if (isFeatureOn('beta_mode') && i < initialTotalKm - 1) {
+            const distLabel = document.createElement('span');
+            distLabel.className = 'beta-dist-label';
+            distLabel.id = `beta-dist-${i}`;
+            distLabel.style.position = 'absolute';
+            distLabel.style.bottom = '-12px';
+            distLabel.style.left = '50%';
+            distLabel.style.transform = 'translateX(-50%)';
+            distLabel.style.fontSize = '0.5rem';
+            distLabel.style.color = '#333';
+            distLabel.style.whiteSpace = 'nowrap';
+            distLabel.style.fontWeight = 'bold';
+            step.style.position = 'relative';
+            step.appendChild(distLabel);
+        }
+
         els.pathGrid.appendChild(step);
     }
-    setTimeout(() => moveMouse(isLiveReceiver ? maxStepsReached : (isRestoring ? maxStepsReached : 0)), 100); if(!isLiveReceiver) broadcastLiveState();
+    
+    setTimeout(() => { 
+        moveMouse(isLiveReceiver ? maxStepsReached : (isRestoring ? maxStepsReached : 0)); 
+        updateBetaDistances(); 
+    }, 100); 
+    if(!isLiveReceiver) broadcastLiveState();
     if (!isLiveReceiver && !isRestoring) saveSession();
 }
 
@@ -1307,6 +1504,7 @@ async function performReRoute() {
             lastRouteIndex = 0; 
             lastReRouteTime = Date.now();
             saveSession();
+            updateBetaDistances();
         }
     } catch (e) {
         console.error("Re-route error", e);
@@ -1541,6 +1739,25 @@ function openDeveloperMode() {
     menu.style.maxHeight = '80vh'; menu.style.overflowY = 'auto';
 
     const title = document.createElement('h3'); title.innerText = t('devTitle'); title.style.margin = '0 0 10px 0'; title.style.textAlign = 'center'; title.style.letterSpacing = '2px'; menu.appendChild(title);
+
+    // --- BETA MODE TOGGLE ---
+    const betaHeader = document.createElement('h4');
+    betaHeader.innerText = "🧪 BETA & FUNKTIONER";
+    betaHeader.style.margin = "10px 0 5px 0";
+    betaHeader.style.textAlign = "center";
+    menu.appendChild(betaHeader);
+
+    Object.keys(appFeatures).forEach(key => {
+        const active = isFeatureOn(key);
+        const btn = document.createElement('button');
+        btn.innerText = `${appFeatures[key].name}: ${active ? 'PÅ ✅' : 'AV ❌'}`;
+        btn.style.padding = '10px'; btn.style.borderRadius = '10px'; btn.style.border = 'none';
+        btn.style.marginBottom = '15px';
+        btn.style.background = active ? '#4CAF50' : '#444';
+        btn.style.color = 'white'; btn.style.fontWeight = 'bold'; btn.style.cursor = 'pointer';
+        btn.onclick = () => toggleFeature(key);
+        menu.appendChild(btn);
+    });
 
     // --- SPRÅKVAL ---
     const langTitle = document.createElement('h4'); langTitle.innerText = t('devLang'); langTitle.style.margin = '10px 0 5px 0'; langTitle.style.textAlign = 'center'; menu.appendChild(langTitle);
