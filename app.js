@@ -1163,7 +1163,7 @@ function handlePositionUpdate(pos) {
     // --- AR GAMEPLAY CHECK ---
     if (document.getElementById('ar-scene') && window.arApples) {
         
-        // 1. Beräkna smidig progress-sträcka längs ruttens linje
+        // 1. Beräkna enbart hur långt vi gått för Progress Baren (UI)
         let totalRouteDist = 0;
         for (let i = 0; i < currentRouteCoords.length - 1; i++) {
             totalRouteDist += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]);
@@ -1180,48 +1180,60 @@ function handlePositionUpdate(pos) {
         let progressPercent = totalRouteDist > 0 ? (traveledDist / totalRouteDist) * 100 : 0;
         progressPercent = Math.max(0, Math.min(100, progressPercent));
 
-        let applesToEat = totalRouteDist > 0 ? Math.floor((traveledDist / totalRouteDist) * window.arTotalApples) : 0;
-        if(isNaN(applesToEat)) applesToEat = 0;
-
-        if (gameState === 'FINISHED' || maxStepsReached >= initialTotalKm - 1) {
-            applesToEat = window.arTotalApples;
-            progressPercent = 100;
-        } else {
-            applesToEat = Math.min(applesToEat, window.arTotalApples);
-        }
-
+        // 2. Uppdatera poängställningen (STRICT PROXIMITY) - Inga genvägar!
         let oldScore = window.arScore;
 
-        // Öka scoren och synka UI om vi har tagit fler AR-äpplen
-        if (window.arScore !== applesToEat && applesToEat > window.arScore) {
-            window.arScore = applesToEat;
+        while (window.arScore < window.arTotalApples && userCoords) {
+            let nextApple = window.arApples[window.arScore];
+            let distToNext = map.distance(userCoords, [nextApple.lat, nextApple.lng]);
+            let eatThreshold = travelMode === 0 ? 50 : 25; // 50m för bil, 25m för promenad
+            
+            if (distToNext <= eatThreshold) {
+                window.arScore++; // Increment 1 by 1 - EXAKT rätt poäng!
+            } else {
+                break; // Du är inte tillräckligt nära nästa äpple än.
+            }
+        }
+
+        // Failsafe om 2D-spelet är i mål
+        if (gameState === 'FINISHED' || maxStepsReached >= initialTotalKm - 1) {
+            window.arScore = window.arTotalApples;
+            progressPercent = 100;
+        }
+
+        // 3. UI Uppdatering och borttagning av äpplen
+        if (window.arScore > oldScore) {
+            
+            // Uppdatera den grafiska poängställningen
             const scoreCard = document.getElementById('ar-score-card');
             if (scoreCard) scoreCard.innerHTML = `🍎 Äpplen: <b>${window.arScore} / ${window.arTotalApples}</b>`;
             playClickSound();
-        }
 
-        // 2. Animera bort de äpplen som blivit uppätna i kameran
-        let newlyEaten = false;
-        for(let i = oldScore; i < window.arScore; i++) {
-            if (window.arApples[i] && !window.arApples[i].collected) {
-                window.arApples[i].collected = true;
-                const appleEl = document.getElementById(`ar-apple-${i}`);
-                if (appleEl) {
-                    appleEl.setAttribute('animation', 'property: scale; to: 0 0 0; dur: 300; easing: easeInOutQuad');
-                    setTimeout(() => appleEl.remove(), 300);
+            let newlyEaten = false;
+            for(let i = oldScore; i < window.arScore; i++) {
+                if (window.arApples[i] && !window.arApples[i].collected) {
+                    window.arApples[i].collected = true;
+                    const appleEl = document.getElementById(`ar-apple-${i}`);
+                    if (appleEl) {
+                        appleEl.setAttribute('animation', 'property: scale; to: 0 0 0; dur: 300; easing: easeInOutQuad');
+                        setTimeout(() => {
+                            if (appleEl && appleEl.parentNode) appleEl.parentNode.removeChild(appleEl);
+                        }, 300);
+                    }
+                    newlyEaten = true;
                 }
-                newlyEaten = true;
             }
-        }
-        
-        // Rendera nästa äpple om vi åt något och det finns fler kvar
-        if (newlyEaten && window.arScore < window.arTotalApples) {
-            if (typeof window.renderARApple === 'function') {
-                window.renderARApple(window.arScore);
+            
+            // Rendera in nästa äpple smooth
+            if (newlyEaten && window.arScore < window.arTotalApples) {
+                setTimeout(() => {
+                    if (typeof window.renderARApple === 'function') {
+                        window.renderARApple(window.arScore);
+                    }
+                }, 400); 
             }
         }
 
-        // 3. Uppdatera Progress Bar (%) i AR
         const progressBar = document.getElementById('ar-progress-bar');
         const progressText = document.getElementById('ar-progress-text');
         if (progressBar && progressText) {
