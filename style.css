@@ -25,13 +25,23 @@ body {
     right: 10px;
     z-index: 10000;
     background: rgba(255, 255, 255, 0.4);
-    padding: 6px 24px;
-    border-radius: 30px;
-    font-size: 1.95rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.65rem;
     font-family: monospace;
     pointer-events: none;
     color: rgba(0, 0, 0, 0.5);
     font-weight: bold;
+}
+
+/* Denna osynliga box gör klickytan rejält mycket större åt alla håll */
+#version-tag::after {
+    content: '';
+    position: absolute;
+    top: -30px;
+    right: -30px;
+    bottom: -30px;
+    left: -30px;
 }
 
 #ios-install-prompt {
