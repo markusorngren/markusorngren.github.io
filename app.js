@@ -132,12 +132,21 @@ function initARScene() {
     scene.appendChild(camera);
 
     // --- LÄGG TILL 3D-RIKTNINGSPIL I AR ---
+    // Fix: Vi bygger en hierarki för att kunna isolera pitch (lutning) från yaw (kompassriktning)
+    const arrowContainer = document.createElement('a-entity');
+    arrowContainer.id = "ar-arrow-container";
+    // Placera den 1.5 meter framför kameran och 0.5 meter ner i synfältet
+    arrowContainer.setAttribute('position', '0 -0.5 -1.5');
+
+    // Denna wrapper ska alltid luta motsatt håll från kameran för att hållas platt mot marken
+    const pitchRollCompensator = document.createElement('a-entity');
+    pitchRollCompensator.id = "ar-pitch-roll-compensator";
+
+    // Denna sköter själva roterandet vänster/höger mot målet
     const arrowPivot = document.createElement('a-entity');
     arrowPivot.id = "ar-direction-arrow";
-    // Placera den 1.5 meter framför kameran och 0.5 meter ner i synfältet
-    arrowPivot.setAttribute('position', '0 -0.5 -1.5');
     
-    // NYTT: En inre wrapper för att fälla ner pilen så den pekar bortåt (in i skärmen) och blir parallell med marken
+    // En inre wrapper för att fälla ner pilen så den pekar bortåt (in i skärmen) och blir parallell med marken
     const arrowMesh = document.createElement('a-entity');
     arrowMesh.setAttribute('rotation', '-90 0 0'); 
 
@@ -157,8 +166,11 @@ function initARScene() {
     arrowMesh.appendChild(arrowBody);
     arrowPivot.appendChild(arrowMesh);
     
-    // Fäst pilen i kameran så den svävar framför skärmen
-    camera.appendChild(arrowPivot);
+    pitchRollCompensator.appendChild(arrowPivot);
+    arrowContainer.appendChild(pitchRollCompensator);
+
+    // Fäst behållaren i kameran så den svävar framför skärmen
+    camera.appendChild(arrowContainer);
 
     // --- LÄGG TILL START-SKYLT ---
     const startPoint = currentRouteCoords[0];
@@ -272,6 +284,24 @@ function initARScene() {
         if (arrowEl && arrowEl.getAttribute('visible') !== 'false') {
             arrowEl.setAttribute('rotation', `0 ${-arrowRotation} 0`);
         }
+
+        // NYTT: Kompensera för telefonens lutning framåt/bakåt så att pilen alltid är plan med marken
+        const compensatorEl = document.getElementById('ar-pitch-roll-compensator');
+        const camEl = document.querySelector('a-camera');
+        
+        if (compensatorEl && camEl && camEl.object3D) {
+            // Hämta kamerans nuvarande vinklar från ramverket (i radianer)
+            let pitch = camEl.object3D.rotation.x;
+            let roll = camEl.object3D.rotation.z;
+            
+            // Konvertera till grader och invertera för att motverka lutningen
+            let pitchDeg = -pitch * (180 / Math.PI);
+            let rollDeg = -roll * (180 / Math.PI);
+            
+            // Applicera mot-rotationen så pilen "ligger ner" oavsett hur telefonen lutar
+            compensatorEl.setAttribute('rotation', `${pitchDeg} 0 ${rollDeg}`);
+        }
+
     }, true);
 }
 
