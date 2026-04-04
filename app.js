@@ -137,6 +137,10 @@ function initARScene() {
     // Placera den 1.5 meter framför kameran och 0.5 meter ner i synfältet
     arrowPivot.setAttribute('position', '0 -0.5 -1.5');
     
+    // NYTT: En inre wrapper för att fälla ner pilen så den pekar bortåt (in i skärmen) och blir parallell med marken
+    const arrowMesh = document.createElement('a-entity');
+    arrowMesh.setAttribute('rotation', '-90 0 0'); 
+
     const arrowhead = document.createElement('a-cone');
     arrowhead.setAttribute('color', '#FFEB3B');
     arrowhead.setAttribute('radius-bottom', '0.08');
@@ -149,8 +153,9 @@ function initARScene() {
     arrowBody.setAttribute('height', '0.2');
     arrowBody.setAttribute('position', '0 -0.05 0');
 
-    arrowPivot.appendChild(arrowhead);
-    arrowPivot.appendChild(arrowBody);
+    arrowMesh.appendChild(arrowhead);
+    arrowMesh.appendChild(arrowBody);
+    arrowPivot.appendChild(arrowMesh);
     
     // Fäst pilen i kameran så den svävar framför skärmen
     camera.appendChild(arrowPivot);
@@ -1292,8 +1297,8 @@ function handlePositionUpdate(pos) {
             let arrowRotation = targetBearing - myHeading;
             const arrowEl = document.getElementById('ar-direction-arrow');
             if (arrowEl) {
-                // I A-Frame är Z-rotation positiv moturs, så vi inverterar den för att matcha kompassen
-                arrowEl.setAttribute('rotation', `0 0 ${-arrowRotation}`);
+                // Nu när pilen ligger ner, roterar vi den runt Y-axeln (Yaw) för att peka höger/vänster.
+                arrowEl.setAttribute('rotation', `0 ${-arrowRotation} 0`);
                 arrowEl.setAttribute('visible', 'true');
             }
         } else {
