@@ -125,9 +125,9 @@ function initARScene() {
     scene.setAttribute('vr-mode-ui', 'enabled: false');
     scene.setAttribute('arjs', 'sourceType: webcam; videoTexture: true; debugUIEnabled: false;');
 
-    // Skapa en GPS-kopplad kamera
+    // Skapa en GPS-kopplad kamera - FIX: Reducerar jitter!
     const camera = document.createElement('a-camera');
-    camera.setAttribute('gps-camera', '');
+    camera.setAttribute('gps-camera', 'gpsMinDistance: 2; positionMinAccuracy: 100;');
     camera.setAttribute('rotation-reader', '');
     scene.appendChild(camera);
 
@@ -238,6 +238,27 @@ function initARScene() {
     closeBtn.style.cssText = "position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 9999999; background: #f44336; color: white; padding: 15px 25px; border-radius: 15px; font-weight: bold; border: none; box-shadow: 0 5px 15px rgba(0,0,0,0.4); font-size: 1rem;";
     closeBtn.onclick = () => { window.location.reload(); };
     document.body.appendChild(closeBtn);
+
+    // --- FIX: Gör pilen extremt responsiv genom att lyssna direkt på enhetens rotation ---
+    window.addEventListener('deviceorientation', function(event) {
+        if (!window.arApples || window.arScore >= window.arTotalApples || !userCoords) return;
+
+        // Hämta kompassriktningen. webkitCompassHeading är för iOS, alpha är standard fallback.
+        let rawHeading = event.webkitCompassHeading;
+        if (rawHeading === undefined || rawHeading === null) {
+            rawHeading = Math.abs(event.alpha - 360); 
+        }
+
+        let nextApple = window.arApples[window.arScore];
+        let targetBearing = getBearing(userCoords[0], userCoords[1], nextApple.lat, nextApple.lng);
+
+        let arrowRotation = targetBearing - rawHeading;
+        const arrowEl = document.getElementById('ar-direction-arrow');
+        
+        if (arrowEl && arrowEl.getAttribute('visible') !== 'false') {
+            arrowEl.setAttribute('rotation', `0 ${-arrowRotation} 0`);
+        }
+    }, true);
 }
 
 // --- LANGUAGE / TRANSLATIONS ENGINE ---
@@ -930,7 +951,8 @@ function initMap() {
         }
 
         if (navigator.geolocation) {
-            navigator.geolocation.watchPosition(handlePositionUpdate, null, { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 });
+            // FIX: Snabbare GPS-uppdateringar för mindre lagg i pilen
+            navigator.geolocation.watchPosition(handlePositionUpdate, null, { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 });
         }
     }
 
@@ -1291,30 +1313,12 @@ function handlePositionUpdate(pos) {
                 alert(`🎉 You did it! Du kom fram till målet och samlade ${window.arScore} äpplen! Awesome!`);
             }
         }
-        
+
         // 5. Uppdatera den svävande 3D-kompasspilen
         if (window.arScore < window.arTotalApples && userCoords) {
-            let nextApple = window.arApples[window.arScore];
-            let targetBearing = getBearing(userCoords[0], userCoords[1], nextApple.lat, nextApple.lng);
-
-            // Använd aktuell heading (antingen från geolocation pos eller fallback beräknat)
-            let myHeading = currentHeading || 0;
-            if (pos.coords.heading !== null && !isNaN(pos.coords.heading)) {
-                myHeading = pos.coords.heading;
-            } else if (lastUserCoordsForHeading && userCoords) {
-                const distForHeading = L.latLng(lastUserCoordsForHeading).distanceTo(userCoords);
-                if (distForHeading > 2) {
-                    myHeading = getBearing(lastUserCoordsForHeading[0], lastUserCoordsForHeading[1], userCoords[0], userCoords[1]);
-                }
-            }
-
-            let arrowRotation = targetBearing - myHeading;
+            // Pilen uppdateras nu via deviceorientation-eventet i initARScene istället för här.
             const arrowEl = document.getElementById('ar-direction-arrow');
-            if (arrowEl) {
-                // Nu när pilen ligger ner, roterar vi den runt Y-axeln (Yaw) för att peka höger/vänster.
-                arrowEl.setAttribute('rotation', `0 ${-arrowRotation} 0`);
-                arrowEl.setAttribute('visible', 'true');
-            }
+            if (arrowEl) arrowEl.setAttribute('visible', 'true');
         } else {
             const arrowEl = document.getElementById('ar-direction-arrow');
             if (arrowEl) arrowEl.setAttribute('visible', 'false'); // Göm pilen i mål
