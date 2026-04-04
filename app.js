@@ -52,43 +52,26 @@ function loadARLibraries() {
         });
 }
 
-// Ny funktion för att generera EXAKT rätt antal punkter längs rutten så att AR synkar med 2D-spelet
-function getExactPointsAlongRoute(routeCoords, numPoints) {
+// Genererar punkter var 25:e (gående) eller 250:e (bil) meter längs rutten
+function getPointsByDistance(routeCoords, intervalMeters) {
     let points = [];
-    if (numPoints <= 0 || routeCoords.length < 2) return points;
+    let leftover = 0;
+    if(!routeCoords || routeCoords.length < 2) return points;
 
-    let totalDist = 0;
-    let segments = [];
     for (let i = 0; i < routeCoords.length - 1; i++) {
         let p1 = L.latLng(routeCoords[i]);
         let p2 = L.latLng(routeCoords[i+1]);
-        let d = p1.distanceTo(p2);
-        totalDist += d;
-        segments.push({p1: p1, p2: p2, d: d});
-    }
+        let segDist = p1.distanceTo(p2);
+        let currentDist = leftover;
 
-    let interval = totalDist / numPoints;
-    let currentDistTarget = interval; 
-
-    for (let i = 0; i < numPoints; i++) {
-        let traveled = 0;
-        let found = false;
-        for (let seg of segments) {
-            if (traveled + seg.d >= currentDistTarget) {
-                let ratio = (currentDistTarget - traveled) / seg.d;
-                let lat = seg.p1.lat + (seg.p2.lat - seg.p1.lat) * ratio;
-                let lng = seg.p1.lng + (seg.p2.lng - seg.p1.lng) * ratio;
-                points.push({ lat: lat, lng: lng, collected: false });
-                found = true;
-                break;
-            }
-            traveled += seg.d;
+        while (currentDist + intervalMeters <= segDist) {
+            currentDist += intervalMeters;
+            let ratio = currentDist / segDist;
+            let lat = p1.lat + (p2.lat - p1.lat) * ratio;
+            let lng = p1.lng + (p2.lng - p1.lng) * ratio;
+            points.push({ lat: lat, lng: lng, collected: false });
         }
-        if (!found && segments.length > 0) {
-            let lastSeg = segments[segments.length - 1];
-            points.push({ lat: lastSeg.p2.lat, lng: lastSeg.p2.lng, collected: false });
-        }
-        currentDistTarget += interval;
+        leftover = segDist - currentDist;
     }
     return points;
 }
@@ -104,14 +87,38 @@ function initARScene() {
     // Dölj vanliga app-gränssnittet
     document.getElementById('game-page').style.display = 'none';
 
-    // Bestäm exakt antal äpplen baserat på spelets logik (initialTotalKm minus målet)
-    window.arTotalApples = initialTotalKm > 1 ? initialTotalKm - 1 : 0;
-    window.arScore = maxStepsReached || 0; // Börja på rätt poäng ifall vi startar AR mitt i rutten
+    // Bestäm intervall baserat på färdsätt (0 = bil, annars gående)
+    const intervalMeters = travelMode === 0 ? 250 : 25;
+
+    // Generera äpplen längs rutten
+    window.arApples = getPointsByDistance(currentRouteCoords, intervalMeters);
+    window.arTotalApples = window.arApples.length;
+
+    // Om rutten är extremt kort, lägg till ett vid målet åtminstone
+    if(window.arTotalApples === 0 && currentRouteCoords.length > 0) {
+        let lastPoint = currentRouteCoords[currentRouteCoords.length - 1];
+        window.arApples.push({lat: lastPoint[0], lng: lastPoint[1], collected: false});
+        window.arTotalApples = 1;
+    }
+
+    // Synka start-score så du får poäng för det du redan gått
+    let totalRouteDist = 0;
+    for (let i = 0; i < currentRouteCoords.length - 1; i++) {
+        totalRouteDist += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]);
+    }
+    
+    let traveledDist = 0;
+    for (let i = 0; i < lastRouteIndex; i++) {
+        traveledDist += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]);
+    }
+    if (lastRouteIndex < currentRouteCoords.length - 1 && userCoords) {
+        traveledDist += map.distance(currentRouteCoords[lastRouteIndex], userCoords);
+    }
+
+    window.arScore = totalRouteDist > 0 ? Math.floor((traveledDist / totalRouteDist) * window.arTotalApples) : 0;
+    if(isNaN(window.arScore) || window.arScore < 0) window.arScore = 0;
     window.arGoalReached = false;
     
-    // Generera exakt antal äpplen längs rutten
-    window.arApples = getExactPointsAlongRoute(currentRouteCoords, window.arTotalApples);
-
     // Skapa A-Frame Scenen för AR.js
     const scene = document.createElement('a-scene');
     scene.id = "ar-scene";
@@ -135,13 +142,12 @@ function initARScene() {
     startText.setAttribute('position', '0 3 0'); // Höj upp den lite i luften
     scene.appendChild(startText);
 
-    // --- LÄGG TILL ÄPPLEN ---
-    window.arApples.forEach((apple, index) => {
-        // Om vi redan har tagit äpplet enligt 2D-spelet, skippa att rendera det
-        if(index < window.arScore) {
-            apple.collected = true;
-            return; 
-        }
+    // --- FUNKTION FÖR ATT RENDERA ENDAST NÄSTA ÄPPLE ---
+    window.renderARApple = function(index) {
+        if (index >= window.arTotalApples) return;
+        const apple = window.arApples[index];
+        const currentScene = document.getElementById('ar-scene');
+        if (!currentScene || document.getElementById(`ar-apple-${index}`)) return;
 
         const appleEl = document.createElement('a-sphere');
         appleEl.setAttribute('color', '#ff3333');
@@ -156,10 +162,15 @@ function initARScene() {
         stem.setAttribute('position', '0 1 0');
         appleEl.appendChild(stem);
 
-        scene.appendChild(appleEl);
-    });
+        currentScene.appendChild(appleEl);
+    };
 
     document.body.appendChild(scene);
+
+    // Rendera initialt enbart det första ännu ej tagna äpplet
+    if (window.arScore < window.arTotalApples) {
+        window.renderARApple(window.arScore);
+    }
 
     // --- BYGG UI FÖR AR (Score & Progress) ---
     const uiContainer = document.createElement('div');
@@ -395,7 +406,7 @@ const i18n = {
         kmLeft: "осталось {dist} км",
         swipeHint: "👈 Свайп к карте 👉",
         iosInstall: "Установите приложение для полного экрана!",
-        iosClose: "ВозВозможно позже",
+        iosClose: "Возможно позже",
         devTitle: "🛠 РЕЖИМ РАЗРАБОТЧИКА",
         devLang: "🌐 Я ЯЗЫК / LANGUAGE",
         devTheme: "🎨 ТЕМЫ / THEMES",
@@ -1152,19 +1163,46 @@ function handlePositionUpdate(pos) {
     // --- AR GAMEPLAY CHECK ---
     if (document.getElementById('ar-scene') && window.arApples) {
         
-        // 1. Synka poäng med 2D-spelet istället för lokal radie-beräkning!
-        // Då blir det garanterat alltid rätt antal tagna äpplen i AR vs 2D.
-        let applesToEat = Math.min(maxStepsReached, window.arTotalApples);
-        
-        if (window.arScore !== applesToEat) {
+        // 1. Beräkna smidig progress-sträcka längs ruttens linje
+        let totalRouteDist = 0;
+        for (let i = 0; i < currentRouteCoords.length - 1; i++) {
+            totalRouteDist += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]);
+        }
+
+        let traveledDist = 0;
+        for (let i = 0; i < lastRouteIndex; i++) {
+            traveledDist += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]);
+        }
+        if (lastRouteIndex < currentRouteCoords.length - 1 && userCoords) {
+             traveledDist += map.distance(currentRouteCoords[lastRouteIndex], userCoords);
+        }
+
+        let progressPercent = totalRouteDist > 0 ? (traveledDist / totalRouteDist) * 100 : 0;
+        progressPercent = Math.max(0, Math.min(100, progressPercent));
+
+        let applesToEat = totalRouteDist > 0 ? Math.floor((traveledDist / totalRouteDist) * window.arTotalApples) : 0;
+        if(isNaN(applesToEat)) applesToEat = 0;
+
+        if (gameState === 'FINISHED' || maxStepsReached >= initialTotalKm - 1) {
+            applesToEat = window.arTotalApples;
+            progressPercent = 100;
+        } else {
+            applesToEat = Math.min(applesToEat, window.arTotalApples);
+        }
+
+        let oldScore = window.arScore;
+
+        // Öka scoren och synka UI om vi har tagit fler AR-äpplen
+        if (window.arScore !== applesToEat && applesToEat > window.arScore) {
             window.arScore = applesToEat;
             const scoreCard = document.getElementById('ar-score-card');
             if (scoreCard) scoreCard.innerHTML = `🍎 Äpplen: <b>${window.arScore} / ${window.arTotalApples}</b>`;
             playClickSound();
         }
 
-        // 2. Animera bort de äpplen som blivit uppätna i spelet
-        for(let i = 0; i < applesToEat; i++) {
+        // 2. Animera bort de äpplen som blivit uppätna i kameran
+        let newlyEaten = false;
+        for(let i = oldScore; i < window.arScore; i++) {
             if (window.arApples[i] && !window.arApples[i].collected) {
                 window.arApples[i].collected = true;
                 const appleEl = document.getElementById(`ar-apple-${i}`);
@@ -1172,23 +1210,18 @@ function handlePositionUpdate(pos) {
                     appleEl.setAttribute('animation', 'property: scale; to: 0 0 0; dur: 300; easing: easeInOutQuad');
                     setTimeout(() => appleEl.remove(), 300);
                 }
+                newlyEaten = true;
+            }
+        }
+        
+        // Rendera nästa äpple om vi åt något och det finns fler kvar
+        if (newlyEaten && window.arScore < window.arTotalApples) {
+            if (typeof window.renderARApple === 'function') {
+                window.renderARApple(window.arScore);
             }
         }
 
-        // 3. Uppdatera Progress Bar (%) baserat på färdväg
-        let totalRouteDist = 0; 
-        for (let i = 0; i < currentRouteCoords.length - 1; i++) { 
-            totalRouteDist += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]); 
-        }
-
-        let traveledDist = 0; 
-        for (let i = 0; i < lastRouteIndex; i++) { 
-            traveledDist += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]); 
-        }
-        
-        let progressPercent = (traveledDist / totalRouteDist) * 100;
-        progressPercent = Math.max(0, Math.min(100, progressPercent)); 
-
+        // 3. Uppdatera Progress Bar (%) i AR
         const progressBar = document.getElementById('ar-progress-bar');
         const progressText = document.getElementById('ar-progress-text');
         if (progressBar && progressText) {
@@ -1196,7 +1229,7 @@ function handlePositionUpdate(pos) {
             progressText.innerHTML = `${Math.round(progressPercent)}%`;
         }
 
-        // 4. Kolla om vi är i mål
+        // 4. Kolla om vi är framme
         if (progressPercent >= 99 && window.arScore >= window.arTotalApples) {
             if(!window.arGoalReached) {
                 window.arGoalReached = true; 
