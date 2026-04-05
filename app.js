@@ -183,7 +183,7 @@ function initARScene() {
         signBox.setAttribute('position', '0 2.5 0'); // Höj upp
 
         const signText = document.createElement('a-text');
-        signText.setAttribute('value', 'START');
+        signText.setAttribute('value', 'STARTA HÄR');
         signText.setAttribute('color', '#FFFFFF');
         signText.setAttribute('align', 'center');
         signText.setAttribute('position', '0 0 0.11'); // Precis framför lådan
@@ -1293,7 +1293,7 @@ function handlePositionUpdate(pos) {
         // 0. Kolla om vi nått startpunkten (om vi inte redan startat)
         if (!window.arHasStarted && userCoords && currentRouteCoords.length > 0) {
             let distToStart = map.distance(userCoords, [currentRouteCoords[0][0], currentRouteCoords[0][1]]);
-            let startThreshold = travelMode === 0 ? 50 : 25;
+            let startThreshold = travelMode === 0 ? 50 : 10;
             
             if (distToStart <= startThreshold) {
                 window.arHasStarted = true;
@@ -1342,7 +1342,7 @@ function handlePositionUpdate(pos) {
             while (window.arScore < window.arTotalApples && userCoords) {
                 let nextApple = window.arApples[window.arScore];
                 let distToNext = map.distance(userCoords, [nextApple.lat, nextApple.lng]);
-                let eatThreshold = travelMode === 0 ? 50 : 25; // 50m för bil, 25m för promenad
+                let eatThreshold = travelMode === 0 ? 50 : 10; // 50m för bil, 10m för promenad
                 
                 if (distToNext <= eatThreshold) {
                     window.arScore++; // Increment 1 by 1 - EXAKT rätt poäng!
