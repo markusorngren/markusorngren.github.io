@@ -119,6 +119,9 @@ function initARScene() {
     if(isNaN(window.arScore) || window.arScore < 0) window.arScore = 0;
     window.arGoalReached = false;
     
+    // Kolla om vi redan plockat poäng och därmed passerat start
+    window.arHasStarted = window.arScore > 0;
+
     // Skapa A-Frame Scenen för AR.js
     const scene = document.createElement('a-scene');
     scene.id = "ar-scene";
@@ -132,21 +135,16 @@ function initARScene() {
     scene.appendChild(camera);
 
     // --- LÄGG TILL 3D-RIKTNINGSPIL I AR ---
-    // Fix: Vi bygger en hierarki för att kunna isolera pitch (lutning) från yaw (kompassriktning)
     const arrowContainer = document.createElement('a-entity');
     arrowContainer.id = "ar-arrow-container";
-    // Placera den 1.5 meter framför kameran och 0.5 meter ner i synfältet
     arrowContainer.setAttribute('position', '0 -0.5 -1.5');
 
-    // Denna wrapper ska alltid luta motsatt håll från kameran för att hållas platt mot marken
     const pitchRollCompensator = document.createElement('a-entity');
     pitchRollCompensator.id = "ar-pitch-roll-compensator";
 
-    // Denna sköter själva roterandet vänster/höger mot målet
     const arrowPivot = document.createElement('a-entity');
     arrowPivot.id = "ar-direction-arrow";
     
-    // En inre wrapper för att fälla ner pilen så den pekar bortåt (in i skärmen) och blir parallell med marken
     const arrowMesh = document.createElement('a-entity');
     arrowMesh.setAttribute('rotation', '-90 0 0'); 
 
@@ -168,20 +166,40 @@ function initARScene() {
     
     pitchRollCompensator.appendChild(arrowPivot);
     arrowContainer.appendChild(pitchRollCompensator);
-
-    // Fäst behållaren i kameran så den svävar framför skärmen
     camera.appendChild(arrowContainer);
 
-    // --- LÄGG TILL START-SKYLT ---
-    const startPoint = currentRouteCoords[0];
-    const startText = document.createElement('a-text');
-    startText.setAttribute('value', 'START');
-    startText.setAttribute('color', '#FFEB3B'); // Gul färg
-    startText.setAttribute('scale', '5 5 5'); // Gör den stor
-    startText.setAttribute('look-at', '[gps-camera]'); 
-    startText.setAttribute('gps-entity-place', `latitude: ${startPoint[0]}; longitude: ${startPoint[1]}`);
-    startText.setAttribute('position', '0 3 0'); // Höj upp den lite i luften
-    scene.appendChild(startText);
+    // --- LÄGG TILL START-SKYLT (Awesome 3D-skylt) ---
+    if (!window.arHasStarted) {
+        const startPoint = currentRouteCoords[0];
+        const startSignEl = document.createElement('a-entity');
+        startSignEl.setAttribute('gps-entity-place', `latitude: ${startPoint[0]}; longitude: ${startPoint[1]}`);
+        startSignEl.id = 'ar-start-sign';
+
+        const signBox = document.createElement('a-box');
+        signBox.setAttribute('color', '#2196F3'); // Snygg blå färg likt ruttlinjen
+        signBox.setAttribute('width', '2.0');
+        signBox.setAttribute('height', '1.0');
+        signBox.setAttribute('depth', '0.2');
+        signBox.setAttribute('position', '0 2.5 0'); // Höj upp
+
+        const signText = document.createElement('a-text');
+        signText.setAttribute('value', 'START');
+        signText.setAttribute('color', '#FFFFFF');
+        signText.setAttribute('align', 'center');
+        signText.setAttribute('position', '0 0 0.11'); // Precis framför lådan
+        signText.setAttribute('scale', '4 4 4'); // Gör texten stor
+
+        const signPole = document.createElement('a-cylinder');
+        signPole.setAttribute('color', '#757575'); // Grå stolpe
+        signPole.setAttribute('radius', '0.1');
+        signPole.setAttribute('height', '2');
+        signPole.setAttribute('position', '0 1 0'); // Hälften av längden
+
+        signBox.appendChild(signText);
+        startSignEl.appendChild(signPole);
+        startSignEl.appendChild(signBox);
+        scene.appendChild(startSignEl);
+    }
 
     // --- FUNKTION FÖR ATT RENDERA ENDAST NÄSTA ÄPPLE ---
     window.renderARApple = function(index) {
@@ -208,8 +226,8 @@ function initARScene() {
 
     document.body.appendChild(scene);
 
-    // Rendera initialt enbart det första ännu ej tagna äpplet
-    if (window.arScore < window.arTotalApples) {
+    // Rendera initialt enbart det första ännu ej tagna äpplet OM vi har startat
+    if (window.arHasStarted && window.arScore < window.arTotalApples) {
         window.renderARApple(window.arScore);
     }
 
@@ -260,24 +278,28 @@ function initARScene() {
 
         let rawHeading;
         if (event.webkitCompassHeading !== undefined) {
-            // iOS ger oss kompassriktningen direkt här
             rawHeading = event.webkitCompassHeading; 
         } else if (event.alpha !== null) {
-            // Android (absolute): alpha roterar moturs, vi inverterar det för att 0 ska vara nord och öka medurs
             rawHeading = 360 - event.alpha; 
         } else {
-            return; // Inga sensorer tillgängliga
+            return; 
         }
 
-        // Kompensera för skärmens rotation (om användaren håller telefonen i landscape)
         let screenOrientation = window.orientation || 0;
         rawHeading = (rawHeading + screenOrientation) % 360;
         if (rawHeading < 0) rawHeading += 360;
 
-        let nextApple = window.arApples[window.arScore];
-        let targetBearing = getBearing(userCoords[0], userCoords[1], nextApple.lat, nextApple.lng);
+        let targetBearing;
+        
+        // Peka mot startskylten om vi inte startat, annars nästa äpple
+        if (!window.arHasStarted) {
+            let startPoint = currentRouteCoords[0];
+            targetBearing = getBearing(userCoords[0], userCoords[1], startPoint[0], startPoint[1]);
+        } else {
+            let nextApple = window.arApples[window.arScore];
+            targetBearing = getBearing(userCoords[0], userCoords[1], nextApple.lat, nextApple.lng);
+        }
 
-        // Räkna ut skillnaden mellan målets bäring och vår nuvarande kompassriktning
         let arrowRotation = targetBearing - rawHeading;
         const arrowEl = document.getElementById('ar-direction-arrow');
         
@@ -285,20 +307,16 @@ function initARScene() {
             arrowEl.setAttribute('rotation', `0 ${-arrowRotation} 0`);
         }
 
-        // NYTT: Kompensera för telefonens lutning framåt/bakåt så att pilen alltid är plan med marken
         const compensatorEl = document.getElementById('ar-pitch-roll-compensator');
         const camEl = document.querySelector('a-camera');
         
         if (compensatorEl && camEl && camEl.object3D) {
-            // Hämta kamerans nuvarande vinklar från ramverket (i radianer)
             let pitch = camEl.object3D.rotation.x;
             let roll = camEl.object3D.rotation.z;
             
-            // Konvertera till grader och invertera för att motverka lutningen
             let pitchDeg = -pitch * (180 / Math.PI);
             let rollDeg = -roll * (180 / Math.PI);
             
-            // Applicera mot-rotationen så pilen "ligger ner" oavsett hur telefonen lutar
             compensatorEl.setAttribute('rotation', `${pitchDeg} 0 ${rollDeg}`);
         }
 
@@ -1272,6 +1290,34 @@ function handlePositionUpdate(pos) {
     // --- AR GAMEPLAY CHECK ---
     if (document.getElementById('ar-scene') && window.arApples) {
         
+        // 0. Kolla om vi nått startpunkten (om vi inte redan startat)
+        if (!window.arHasStarted && userCoords && currentRouteCoords.length > 0) {
+            let distToStart = map.distance(userCoords, [currentRouteCoords[0][0], currentRouteCoords[0][1]]);
+            let startThreshold = travelMode === 0 ? 50 : 25;
+            
+            if (distToStart <= startThreshold) {
+                window.arHasStarted = true;
+                if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // Awesome vibration när man når starten
+                
+                const startSign = document.getElementById('ar-start-sign');
+                if (startSign) {
+                    startSign.setAttribute('animation', 'property: scale; to: 0 0 0; dur: 300; easing: easeInOutQuad');
+                    setTimeout(() => {
+                        if (startSign.parentNode) startSign.parentNode.removeChild(startSign);
+                    }, 300);
+                }
+                
+                // Triggermomentet: När starten är nådd, dyker första äpplet upp
+                if (window.arScore < window.arTotalApples) {
+                    setTimeout(() => {
+                        if (typeof window.renderARApple === 'function') {
+                            window.renderARApple(window.arScore);
+                        }
+                    }, 400); 
+                }
+            }
+        }
+
         // 1. Beräkna enbart hur långt vi gått för Progress Baren (UI)
         let totalRouteDist = 0;
         for (let i = 0; i < currentRouteCoords.length - 1; i++) {
@@ -1292,15 +1338,18 @@ function handlePositionUpdate(pos) {
         // 2. Uppdatera poängställningen (STRICT PROXIMITY) - Inga genvägar!
         let oldScore = window.arScore;
 
-        while (window.arScore < window.arTotalApples && userCoords) {
-            let nextApple = window.arApples[window.arScore];
-            let distToNext = map.distance(userCoords, [nextApple.lat, nextApple.lng]);
-            let eatThreshold = travelMode === 0 ? 50 : 25; // 50m för bil, 25m för promenad
-            
-            if (distToNext <= eatThreshold) {
-                window.arScore++; // Increment 1 by 1 - EXAKT rätt poäng!
-            } else {
-                break; // Du är inte tillräckligt nära nästa äpple än.
+        if (window.arHasStarted) {
+            while (window.arScore < window.arTotalApples && userCoords) {
+                let nextApple = window.arApples[window.arScore];
+                let distToNext = map.distance(userCoords, [nextApple.lat, nextApple.lng]);
+                let eatThreshold = travelMode === 0 ? 50 : 25; // 50m för bil, 25m för promenad
+                
+                if (distToNext <= eatThreshold) {
+                    window.arScore++; // Increment 1 by 1 - EXAKT rätt poäng!
+                    if (navigator.vibrate) navigator.vibrate(100); // Liten *smooth* vibration per äpple!
+                } else {
+                    break; // Du är inte tillräckligt nära nästa äpple än.
+                }
             }
         }
 
@@ -1360,7 +1409,6 @@ function handlePositionUpdate(pos) {
 
         // 5. Uppdatera den svävande 3D-kompasspilen
         if (window.arScore < window.arTotalApples && userCoords) {
-            // Pilen uppdateras nu via deviceorientation-eventet i initARScene istället för här.
             const arrowEl = document.getElementById('ar-direction-arrow');
             if (arrowEl) arrowEl.setAttribute('visible', 'true');
         } else {
