@@ -183,7 +183,7 @@ function initARScene() {
         signBox.setAttribute('position', '0 2.5 0'); // Höj upp
 
         const signText = document.createElement('a-text');
-        signText.setAttribute('value', 'STARTA HÄR');
+        signText.setAttribute('value', 'START'); // Ändrat till START
         signText.setAttribute('color', '#FFFFFF');
         signText.setAttribute('align', 'center');
         signText.setAttribute('position', '0 0 0.11'); // Precis framför lådan
@@ -199,6 +199,39 @@ function initARScene() {
         startSignEl.appendChild(signPole);
         startSignEl.appendChild(signBox);
         scene.appendChild(startSignEl);
+    }
+    
+    // --- LÄGG TILL MÅL-SKYLT (Awesome 3D-skylt) ---
+    if (currentRouteCoords.length > 0) {
+        const endPoint = currentRouteCoords[currentRouteCoords.length - 1];
+        const endSignEl = document.createElement('a-entity');
+        endSignEl.setAttribute('gps-entity-place', `latitude: ${endPoint[0]}; longitude: ${endPoint[1]}`);
+        endSignEl.id = 'ar-end-sign';
+
+        const endSignBox = document.createElement('a-box');
+        endSignBox.setAttribute('color', '#4CAF50'); // Snygg grön färg för mål
+        endSignBox.setAttribute('width', '2.0');
+        endSignBox.setAttribute('height', '1.0');
+        endSignBox.setAttribute('depth', '0.2');
+        endSignBox.setAttribute('position', '0 2.5 0'); 
+
+        const endSignText = document.createElement('a-text');
+        endSignText.setAttribute('value', 'MÅL');
+        endSignText.setAttribute('color', '#FFFFFF');
+        endSignText.setAttribute('align', 'center');
+        endSignText.setAttribute('position', '0 0 0.11'); 
+        endSignText.setAttribute('scale', '4 4 4'); 
+
+        const endSignPole = document.createElement('a-cylinder');
+        endSignPole.setAttribute('color', '#757575'); 
+        endSignPole.setAttribute('radius', '0.1');
+        endSignPole.setAttribute('height', '2');
+        endSignPole.setAttribute('position', '0 1 0'); 
+
+        endSignBox.appendChild(endSignText);
+        endSignEl.appendChild(endSignPole);
+        endSignEl.appendChild(endSignBox);
+        scene.appendChild(endSignEl);
     }
 
     // --- FUNKTION FÖR ATT RENDERA ENDAST NÄSTA ÄPPLE ---
@@ -1404,6 +1437,15 @@ function handlePositionUpdate(pos) {
             if(!window.arGoalReached) {
                 window.arGoalReached = true; 
                 alert(`🎉 You did it! Du kom fram till målet och samlade ${window.arScore} äpplen! Awesome!`);
+                
+                // Gömmer målskylten snyggt när vi är framme
+                const endSign = document.getElementById('ar-end-sign');
+                if (endSign) {
+                    endSign.setAttribute('animation', 'property: scale; to: 0 0 0; dur: 300; easing: easeInOutQuad');
+                    setTimeout(() => {
+                        if (endSign.parentNode) endSign.parentNode.removeChild(endSign);
+                    }, 300);
+                }
             }
         }
 
@@ -1869,7 +1911,8 @@ function updateGameLogic() {
     const goal = (travelMode === 2) ? (fixedStartCoords || startCoords) : currentTargetCoords; 
     const distToFinal = map.distance(userCoords, goal);
     
-    if (!hasReachedMidpoint && travelMode === 2) { const distToTarget = map.distance(userCoords, currentTargetCoords); if (distToTarget < 40) { triggerTurnAroundDance(); return; } }
+    // Ändrat från 40 till 10 meter för vändpunkten
+    if (!hasReachedMidpoint && travelMode === 2) { const distToTarget = map.distance(userCoords, currentTargetCoords); if (distToTarget < 10) { triggerTurnAroundDance(); return; } }
 
     let minD = Infinity; let idx = lastRouteIndex; let searchLimit = (travelMode !== 2 || hasReachedMidpoint) ? currentRouteCoords.length : Math.floor(currentRouteCoords.length * 0.6); 
     
@@ -1914,8 +1957,11 @@ function updateGameLogic() {
     
     for (let i = 0; i < initialTotalKm - 1; i++) { const s = document.getElementById(`step-${i}`); if (s) i < maxStepsReached ? s.classList.add('eat-animation') : s.classList.remove('eat-animation'); }
     
-    if (travelMode === 2) { if (hasReachedMidpoint && distToFinal < 40 && maxStepsReached > (initialTotalKm * 0.8)) { moveMouse(initialTotalKm - 1); finishGame(); } else { moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 2))); } } 
-    else { if (distToFinal < 40) { moveMouse(initialTotalKm - 1); finishGame(); } else { moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 2))); } }
+    // 40 meter för bil (0), annars 10 meter för promenad (1 & 2)
+    const finalLimit = (travelMode === 0) ? 40 : 10;
+    
+    if (travelMode === 2) { if (hasReachedMidpoint && distToFinal < finalLimit && maxStepsReached > (initialTotalKm * 0.8)) { moveMouse(initialTotalKm - 1); finishGame(); } else { moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 2))); } } 
+    else { if (distToFinal < finalLimit) { moveMouse(initialTotalKm - 1); finishGame(); } else { moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 2))); } }
     
     if (isGameMapVisible) { updateGameMapView(false); }
 }
