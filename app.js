@@ -671,11 +671,24 @@ function initMap() {
     let incomingShare = sharedText || sharedTitle || sharedUrl;
 
     if (incomingShare) {
-        incomingShare = incomingShare.replace(/(?:https?|ftp):\/\/[\n\S]+/g, '').trim();
+        // Ta bort URL:er för att rensa texten
+        let searchQuery = incomingShare.replace(/(?:https?|ftp):\/\/[\n\S]+/g, '').trim();
         
-        if (incomingShare.length > 0) {
+        // --- SMART ROUTE PARSER ---
+        // Google Maps delar ofta rutter som: "Delad rutt\nFrån [Start] till [Mål] via [Väg]."
+        // Vi letar efter ordet "till" (eller "to") och tar texten efter det.
+        const routeMatch = searchQuery.match(/(?:till|to)\s+([^.\n]+)/i);
+        if (routeMatch && routeMatch[1]) {
+            // Fiska ut målet och städa bort eventuellt "via..."
+            searchQuery = routeMatch[1].replace(/via.*/i, '').trim();
+        } else {
+            // Om det inte är en "Från/Till" rutt, ta bara första raden
+            searchQuery = searchQuery.split('\n')[0].trim();
+        }
+
+        if (searchQuery.length > 0) {
             els.searchContainer.classList.remove('hidden');
-            els.searchInput.value = incomingShare;
+            els.searchInput.value = searchQuery;
             setTimeout(() => {
                 executeTextSearch();
                 window.history.replaceState({}, document.title, window.location.pathname);
