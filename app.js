@@ -662,6 +662,28 @@ function initMap() {
 
     const urlParams = new URLSearchParams(window.location.search);
     const liveId = urlParams.get('live');
+
+    // --- NY KOD: Hantera inkommande delningar (Share Target) ---
+    const sharedText = urlParams.get('text');
+    const sharedUrl = urlParams.get('url');
+    const sharedTitle = urlParams.get('title');
+
+    let incomingShare = sharedText || sharedTitle || sharedUrl;
+
+    if (incomingShare) {
+        incomingShare = incomingShare.replace(/(?:https?|ftp):\/\/[\n\S]+/g, '').trim();
+        
+        if (incomingShare.length > 0) {
+            els.searchContainer.classList.remove('hidden');
+            els.searchInput.value = incomingShare;
+            setTimeout(() => {
+                executeTextSearch();
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }, 500); 
+        }
+    }
+    // --- SLUT PÅ NY KOD ---
+
     if (liveId) {
         isLiveReceiver = true; liveSessionId = liveId;
         els.welcomeOverlay.classList.add('hidden'); els.actionContainer.classList.add('hidden');
@@ -1536,6 +1558,9 @@ async function executeTextSearch() {
             if (!isNaN(firstPart)) { currentTargetName = (d[0].address && d[0].address.road) ? (d[0].address.road + ' ' + firstPart) : firstPart; } 
             else { if (d[0].address && d[0].address.road && firstPart === d[0].address.road) { currentTargetName = d[0].address.road + (d[0].address.house_number ? ' ' + d[0].address.house_number : ''); } else { currentTargetName = firstPart; } }
             setTarget({lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon)}, true, true, true); map.flyTo(currentTargetCoords, 18); els.searchContainer.classList.add('hidden');
+        } else {
+            alert("Kunde tyvärr inte hitta platsen! Om du delade från en annan app kan informationen vara svår att tyda. Prova att söka manuellt istället.");
+            els.searchInput.value = "";
         }
     } catch (e) { alert("Sökningen fungerar tyvärr inte när du är offline. Använd kartan eller sparade platser istället!"); }
 }
