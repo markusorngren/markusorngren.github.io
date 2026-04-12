@@ -638,6 +638,8 @@ function getBearing(lat1, lng1, lat2, lng2) {
 function initMap() {
     applyThemeUI(); 
     checkInstallState();
+	
+	if (els.modeBtn) els.modeBtn.innerText = modes[travelMode].icon;
     
     if (!currentTargetCoords && !isLiveReceiver) { els.distInfo.innerHTML = getWhereToText(); }
 
