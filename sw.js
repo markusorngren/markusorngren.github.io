@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mouse-tracker-v28'; // Uppdaterad version
+const CACHE_NAME = 'mouse-tracker-v29'; // Uppdaterad version
 const MAP_CACHE = 'mouse-map-tiles-v1'; 
 const ASSETS = [
   './',
@@ -7,6 +7,10 @@ const ASSETS = [
   './ar.js',
   './app.js',
   './manifest.json',
+  './manifest-en.json',
+  './manifest-ru.json',
+  './manifest-am.json',
+  './manifest-ar.json',
   './icon.png',
   './icon-192.png',
   './icon-512.png',

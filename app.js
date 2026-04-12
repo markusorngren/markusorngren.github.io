@@ -451,6 +451,10 @@ function getCurrentTheme() {
 let activeTheme = themes[localStorage.getItem('app_theme_override')] || getCurrentTheme(); 
 
 function applyTranslations() {
+    // Sätt dynamisk titel på fliken
+    const appTitles = { 'sv': 'Hur långt?', 'en': 'How far?', 'ru': 'Как далеко?', 'am': 'ምን ያህል ይርቃል?', 'ar': 'كم تبعد؟' };
+    document.title = appTitles[currentLang] || appTitles['en'];
+
     const wt = document.getElementById('welcome-title'); if(wt) wt.innerHTML = t('welcome', {player: activeTheme.player});
     const wd = document.getElementById('welcome-desc'); if(wd) wd.innerHTML = t('helpFind', {name: getThemeName(), targetName: getThemeTarget()});
     
@@ -1631,7 +1635,10 @@ function resumeLiveSharing() {
 
 function shareOnlyApp() {
     let shareUrl = window.location.origin + window.location.pathname;
-    const d = {title: 'Marcus Mouse & Cheese Tracker', text: `Kolla in den här appen! 🐭🧀`, url: shareUrl}; 
+    const appTitles = { 'sv': 'Hur långt?', 'en': 'How far?', 'ru': 'Как далеко?', 'am': 'ምን ያህል ይርቃል?', 'ar': 'كم تبعد؟' };
+    const appName = appTitles[currentLang] || appTitles['en'];
+    
+    const d = {title: appName, text: `Kolla in den här appen! 🗺️`, url: shareUrl}; 
     if(navigator.share) { navigator.share(d).catch(e => console.log("Delning avbruten")); } else { prompt("Kopiera länken för att dela appen:", shareUrl); }
 }
 

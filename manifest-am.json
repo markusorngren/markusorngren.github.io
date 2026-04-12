@@ -1,7 +1,7 @@
 {
-  "name": "Hur långt?",
-  "short_name": "Hur långt",
-  "description": "Se hur långt det är till målet på ett enkelt sätt!",
+  "name": "ምን ያህል ይርቃል?",
+  "short_name": "ምን ያህል",
+  "description": "ወደ መድረሻዎ ምን ያህል ርቀት እንዳለ በቀላሉ ይመልከቱ!",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#fdf6e3",
