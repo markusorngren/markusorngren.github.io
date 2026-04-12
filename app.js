@@ -1453,7 +1453,8 @@ function updateGameLogic() {
         if (d < minD) { minD = d; idx = i; } 
     }
     
-    if (minD > 300 && minD !== Infinity && !isReRouting && (Date.now() - lastReRouteTime > 30000)) {
+    const reRouteThreshold = (travelMode === 0) ? 300 : 50;
+    if (minD > reRouteThreshold && minD !== Infinity && !isReRouting && (Date.now() - lastReRouteTime > 30000)) {
         performReRoute();
         return; 
     }
