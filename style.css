@@ -252,25 +252,3 @@ button:active { transform: scale(0.95); }
     padding: 10px 15px; border-radius: 10px; font-size: 0.9rem;
     color: white; font-weight: bold; white-space: nowrap;
 }
-
-#swipe-hint {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.75);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 20px;
-    font-size: 0.95rem;
-    z-index: 10005;
-    pointer-events: none;
-    white-space: nowrap;
-    font-weight: bold;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    opacity: 0;
-    transition: opacity 0.5s ease;
-}
-#swipe-hint.show-hint {
-    opacity: 1;
-}

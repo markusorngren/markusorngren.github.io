@@ -76,22 +76,22 @@ const i18n = {
         waypointHem: "🏁 På vägen tillbaka",
         addWaypoint: "🏁 Lägg till via-punkt",
         kmLeft: "{dist} km kvar",
-        swipeHint: "👈 Swipa för karta 👉",
         iosInstall: "Installera appen för att få fullskärm och snabb åtkomst!",
         iosClose: "Kanske senare",
+        btnMap: "🗺️ KARTA",
         devTitle: "🛠 DEV MODE",
         devLang: "🌐 SPRÅK / LANGUAGE",
         devTheme: "🎨 TEMA / THEMES",
         devClose: "Stäng",
         devReset: "🔄 Återställ Inställningar",
         themes: {
-            default: { name: 'musen', targetName: 'osten' },
-            easter: { name: 'påskharen', targetName: 'påskägget' },
-            midsummer: { name: 'grodan', targetName: 'jordgubben' },
-            halloween: { name: 'spöket', targetName: 'pumpan' },
-            christmas: { name: 'tomten', targetName: 'julklappen' },
-            newyear: { name: 'raketen', targetName: 'fyrverkeriet' },
-            birthday: { name: 'födelsedagsbarnet', targetName: 'tårtan' }
+            default: { name: 'musen', targetName: 'osten', pathName: 'ÄPPLEN' },
+            easter: { name: 'påskharen', targetName: 'påskägget', pathName: 'GODIS' },
+            midsummer: { name: 'grodan', targetName: 'jordgubben', pathName: 'BLOMMOR' },
+            halloween: { name: 'spöket', targetName: 'pumpan', pathName: 'FLADDERMÖSS' },
+            christmas: { name: 'tomten', targetName: 'julklappen', pathName: 'KAKOR' },
+            newyear: { name: 'raketen', targetName: 'fyrverkeriet', pathName: 'STJÄRNOR' },
+            birthday: { name: 'födelsedagsbarnet', targetName: 'tårtan', pathName: 'BALLONGER' }
         }
     },
     en: {
@@ -142,22 +142,22 @@ const i18n = {
         waypointHem: "🏁 On the way back",
         addWaypoint: "🏁 Add waypoint",
         kmLeft: "{dist} km left",
-        swipeHint: "👈 Swipe for map 👉",
         iosInstall: "Install the app for full screen and quick access!",
         iosClose: "Maybe later",
+        btnMap: "🗺️ MAP",
         devTitle: "🛠 DEV MODE",
         devLang: "🌐 LANGUAGE",
         devTheme: "🎨 THEMES",
         devClose: "Close",
         devReset: "🔄 Reset Settings",
         themes: {
-            default: { name: 'the mouse', targetName: 'the cheese' },
-            easter: { name: 'the easter bunny', targetName: 'the egg' },
-            midsummer: { name: 'the frog', targetName: 'the strawberry' },
-            halloween: { name: 'the ghost', targetName: 'the pumpkin' },
-            christmas: { name: 'Santa', targetName: 'the present' },
-            newyear: { name: 'the rocket', targetName: 'the fireworks' },
-            birthday: { name: 'the birthday kid', targetName: 'the cake' }
+            default: { name: 'the mouse', targetName: 'the cheese', pathName: 'APPLES' },
+            easter: { name: 'the easter bunny', targetName: 'the egg', pathName: 'CANDY' },
+            midsummer: { name: 'the frog', targetName: 'the strawberry', pathName: 'FLOWERS' },
+            halloween: { name: 'the ghost', targetName: 'the pumpkin', pathName: 'BATS' },
+            christmas: { name: 'Santa', targetName: 'the present', pathName: 'COOKIES' },
+            newyear: { name: 'the rocket', targetName: 'the fireworks', pathName: 'STARS' },
+            birthday: { name: 'the birthday kid', targetName: 'the cake', pathName: 'BALLOONS' }
         }
     },
     ru: {
@@ -208,22 +208,22 @@ const i18n = {
         waypointHem: "🏁 По пути обратно",
         addWaypoint: "🏁 Добавить путевую точку",
         kmLeft: "осталось {dist} км",
-        swipeHint: "👈 Свайп к карте 👉",
         iosInstall: "Установите приложение для полного экрана!",
         iosClose: "Возможно позже",
+        btnMap: "🗺️ КАРТА",
         devTitle: "🛠 РЕЖИМ РАЗРАБОТЧИКА",
         devLang: "🌐 Я ЯЗЫК / LANGUAGE",
         devTheme: "🎨 ТЕМЫ / THEMES",
         devClose: "Закрыть",
         devReset: "🔄 Сброс настроек",
         themes: {
-            default: { name: 'мыши', targetName: 'сыр' },
-            easter: { name: 'пасхальному кролику', targetName: 'пасхальное яйцо' },
-            midsummer: { name: 'лягушке', targetName: 'клубнику' },
-            halloween: { name: 'призраку', targetName: 'тыкву' },
-            christmas: { name: 'Санте', targetName: 'подарок' },
-            newyear: { name: 'ракете', targetName: 'фейерверк' },
-            birthday: { name: 'имениннику', targetName: 'торт' }
+            default: { name: 'мыши', targetName: 'сыр', pathName: 'ЯБЛОКИ' },
+            easter: { name: 'пасхальному кролику', targetName: 'пасхальное яйцо', pathName: 'КОНФЕТЫ' },
+            midsummer: { name: 'лягушке', targetName: 'клубнику', pathName: 'ЦВЕТЫ' },
+            halloween: { name: 'призраку', targetName: 'тыкву', pathName: 'ЛЕТУЧИЕ МЫШИ' },
+            christmas: { name: 'Санте', targetName: 'подарок', pathName: 'ПЕЧЕНЬЕ' },
+            newyear: { name: 'ракете', targetName: 'фейерверк', pathName: 'ЗВЕЗДЫ' },
+            birthday: { name: 'имениннику', targetName: 'торт', pathName: 'ШАРИКИ' }
         }
     },
     am: {
@@ -274,22 +274,22 @@ const i18n = {
         waypointHem: "🏁 በመመለሻው መንገድ ላይ",
         addWaypoint: "🏁 የማቆሚያ ነጥብ ያክሉ",
         kmLeft: "{dist} ኪ.ሜ ቀርቷል",
-        swipeHint: "👈 ለካርታ ያንሸራትቱ 👉",
         iosInstall: "ሙሉ ስክሪን ለማግኘት መተግበሪያውን ይጫኑ!",
         iosClose: "ምናልባት በኋላ",
+        btnMap: "🗺️ ካርታ",
         devTitle: "🛠 DEV MODE",
         devLang: "🌐 ቋንቋ / LANGUAGE",
         devTheme: "🎨 ገጽታዎች / THEMES",
         devClose: "ዝጋ",
         devReset: "🔄 ዳግም አስጀምር",
         themes: {
-            default: { name: 'አይጥ', targetName: 'አይብ' },
-            easter: { name: 'የፋሲካ ጥንቸል', targetName: 'እንቁላል' },
-            midsummer: { name: 'እንቁራሪት', targetName: 'እንጆሪ' },
-            halloween: { name: 'መንፈስ', targetName: 'ዱባ' },
-            christmas: { name: 'ሳንታ', targetName: 'ስጦታ' },
-            newyear: { name: 'ሮኬት', targetName: 'ርችት' },
-            birthday: { name: 'የልደት ልጅ', targetName: 'ኬክ' }
+            default: { name: 'አይጥ', targetName: 'አይብ', pathName: 'ፖም' },
+            easter: { name: 'የፋሲካ ጥንቸል', targetName: 'እንቁላል', pathName: 'ከረሜላ' },
+            midsummer: { name: 'እንቁራሪት', targetName: 'እንጆሪ', pathName: 'አበቦች' },
+            halloween: { name: 'መንፈስ', targetName: 'ዱባ', pathName: 'የሌሊት ወፎች' },
+            christmas: { name: 'ሳንታ', targetName: 'ስጦታ', pathName: 'ብስኩቶች' },
+            newyear: { name: 'ሮኬት', targetName: 'ርችት', pathName: 'ከዋክብት' },
+            birthday: { name: 'የልደት ልጅ', targetName: 'ኬክ', pathName: 'ፊኛዎች' }
         }
     },
     ar: {
@@ -340,22 +340,22 @@ const i18n = {
         waypointHem: "🏁 في طريق العودة",
         addWaypoint: "🏁 إضافة نقطة طريق",
         kmLeft: "متبقي {dist} كم",
-        swipeHint: "👈 اسحب للخريطة 👉",
         iosInstall: "قم بتثبيت التطبيق للحصول على شاشة كاملة ووصول سريع!",
         iosClose: "ربما لاحقاً",
+        btnMap: "🗺️ خريطة",
         devTitle: "🛠 وضع المطور",
         devLang: "🌐 اللغة / LANGUAGE",
         devTheme: "🎨 السمات / THEMES",
         devClose: "إغلاق",
         devReset: "🔄 إعادة ضبط الإعدادات",
         themes: {
-            default: { name: 'الفأر', targetName: 'الجبن' },
-            easter: { name: 'أرنب عيد الفصح', targetName: 'بيضة الفصح' },
-            midsummer: { name: 'الضفدع', targetName: 'الفراولة' },
-            halloween: { name: 'الشبح', targetName: 'اليقطين' },
-            christmas: { name: 'سانتا', targetName: 'الهدية' },
-            newyear: { name: 'الصاروخ', targetName: 'الألعاب النارية' },
-            birthday: { name: 'صاحب عيد الميلاد', targetName: 'الكعكة' }
+            default: { name: 'الفأر', targetName: 'الجبن', pathName: 'تفاح' },
+            easter: { name: 'أرنب عيد الفصح', targetName: 'بيضة الفصح', pathName: 'حلوى' },
+            midsummer: { name: 'الضفدع', targetName: 'الفراولة', pathName: 'زهور' },
+            halloween: { name: 'الشبح', targetName: 'اليقطين', pathName: 'خفافيش' },
+            christmas: { name: 'سانتا', targetName: 'الهدية', pathName: 'بسكويت' },
+            newyear: { name: 'الصاروخ', targetName: 'الألعاب النارية', pathName: 'نجوم' },
+            birthday: { name: 'صاحب عيد الميلاد', targetName: 'الكعكة', pathName: 'بالونات' }
         }
     }
 };
@@ -368,6 +368,7 @@ function t(key, params = {}) {
 
 function getThemeName() { return i18n[currentLang]?.themes?.[activeTheme.id]?.name || activeTheme.name; }
 function getThemeTarget() { return i18n[currentLang]?.themes?.[activeTheme.id]?.targetName || activeTheme.targetName; }
+function getThemePathName() { return i18n[currentLang]?.themes?.[activeTheme.id]?.pathName || "APPLES"; }
 function getWhereToText() { return t(travelMode === 0 ? 'whereToDrive' : 'whereToWalk', {player: activeTheme.player}); }
 
 if ('serviceWorker' in navigator) {
@@ -477,8 +478,10 @@ function applyTranslations() {
     const cancelBtn = document.getElementById('cancel-game-btn');
     if(cancelBtn) cancelBtn.innerHTML = t('cancel');
 
-    const swipeHint = document.getElementById('swipe-hint');
-    if (swipeHint) swipeHint.innerHTML = t('swipeHint');
+    const toggleGameBtn = document.getElementById('toggle-game-view-btn');
+    if (toggleGameBtn) {
+        toggleGameBtn.innerText = isGameMapVisible ? `${activeTheme.path} ${getThemePathName()}` : t('btnMap');
+    }
 
     const iosDesc = document.getElementById('ios-desc'); if(iosDesc) iosDesc.innerHTML = t('iosInstall');
     const iosClose = document.getElementById('ios-close'); if(iosClose) iosClose.innerHTML = t('iosClose');
@@ -526,9 +529,10 @@ let isShowingUser = true; let isTracking = false;
 let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
 let wakeLock = null; let currentRouteCoords = []; let ignoreClick = false; let confettiInterval = null;
 let maxStepsReached = 0; let lastRouteIndex = 0; let hasReachedMidpoint = false; 
-let midpointStepIndex = -1; let isCelebratingTurn = false; let swipeHintShown = false; 
+let midpointStepIndex = -1; let isCelebratingTurn = false; 
 let gameMap = null; let gameRouteLine = null, gameUserMarker = null;
-let isGameMapVisible = false; let swipeStartX = 0;
+let isGameMapVisible = false;
+let isGameMapZoomedOut = false;
 
 let travelMode = 0; 
 const modes = [
@@ -568,7 +572,6 @@ if (sessionRaw && (Date.now() - sessionRaw.timestamp < 10800000)) {
     travelMode = sessionRaw.travelMode || 0;
     waypointsDit = (sessionRaw.waypointsDit || []).map(p => L.latLng(p.lat, p.lng));
     waypointsHem = (sessionRaw.waypointsHem || []).map(p => L.latLng(p.lat, p.lng));
-    swipeHintShown = sessionRaw.swipeHintShown || false;
     if (sessionRaw.startCoords) { fixedStartCoords = sessionRaw.startCoords; }
     
     savedGameState = sessionRaw.gameState || 'MAP';
@@ -746,7 +749,7 @@ function initMap() {
     map.on('movestart', (e) => { if (!e.hard) isTracking = false; });
     
     if (!isLiveReceiver) { setupInteractions(); }
-    updateButtonUI(); handleOrientationLayout(); window.addEventListener('resize', handleOrientationLayout); setupSwipeListener(); 
+    updateButtonUI(); handleOrientationLayout(); window.addEventListener('resize', handleOrientationLayout);
 }
 
 function showMapContextMenu(e) {
@@ -869,18 +872,43 @@ function clearMapData() {
     updateLocateBtnText(); saveSession(); broadcastLiveState();
 }
 
-function setupSwipeListener() {
-    els.gamePage.addEventListener('touchstart', e => { swipeStartX = e.changedTouches[0].screenX; }, {passive: true});
-    els.gamePage.addEventListener('touchend', e => { let swipeEndX = e.changedTouches[0].screenX; if (gameState === 'GAME' && Math.abs(swipeEndX - swipeStartX) > 60) { toggleGameMap(); } }, {passive: true});
-}
-
 function toggleGameMap() {
-    isGameMapVisible = !isGameMapVisible; const distDisplay = document.getElementById('game-distance-display');
+    isGameMapVisible = !isGameMapVisible; 
+    const distDisplay = document.getElementById('game-distance-display');
+    const toggleBtn = document.getElementById('toggle-game-view-btn');
+
     if (isGameMapVisible) {
-        els.pathGrid.classList.add('hidden'); els.gameMapWrapper.classList.remove('hidden'); if (distDisplay) distDisplay.classList.remove('hidden');
-        if (!gameMap) { gameMap = L.map('game-map', { zoomControl: false, attributionControl: false, dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false }).setView(userCoords || [59.3, 14.1], 15); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(gameMap); }
+        els.pathGrid.classList.add('hidden'); 
+        els.gameMapWrapper.classList.remove('hidden'); 
+        if (distDisplay) distDisplay.classList.remove('hidden');
+        if (toggleBtn) toggleBtn.innerText = `${activeTheme.path} ${getThemePathName()}`;
+        
+        if (!gameMap) { 
+            gameMap = L.map('game-map', { 
+                zoomControl: false, 
+                attributionControl: false, 
+                dragging: true, 
+                touchZoom: true, 
+                scrollWheelZoom: true, 
+                doubleClickZoom: false 
+            }).setView(userCoords || [59.3, 14.1], 15); 
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(gameMap); 
+            
+            gameMap.on('dblclick', () => {
+                isGameMapZoomedOut = !isGameMapZoomedOut;
+                updateGameMapView(true);
+            });
+        }
+        
+        isGameMapZoomedOut = false;
         setTimeout(() => { gameMap.invalidateSize(true); updateGameMapView(true); }, 250);
-    } else { els.gameMapWrapper.classList.add('hidden'); els.pathGrid.classList.remove('hidden'); if (distDisplay) distDisplay.classList.add('hidden'); }
+    } else { 
+        els.gameMapWrapper.classList.add('hidden'); 
+        els.pathGrid.classList.remove('hidden'); 
+        if (distDisplay) distDisplay.classList.add('hidden'); 
+        if (toggleBtn) toggleBtn.innerText = t('btnMap');
+    }
 }
 
 function updateGameMapView(forceCenter = false) {
@@ -898,17 +926,30 @@ function updateGameMapView(forceCenter = false) {
         gameUserMarker.setLatLng(userCoords); 
     }
     
-    gameMap.setView(userCoords, 16);
-    if (currentHeading !== null) { 
-        if (els.gameMapElement) { 
-            let currentRot = renderedHeading % 360; 
-            if (currentRot < 0) currentRot += 360; 
-            let diff = currentHeading - currentRot; 
-            if (diff > 180) diff -= 360; 
-            if (diff < -180) diff += 360; 
-            renderedHeading += diff; 
-            els.gameMapElement.style.transform = `translateZ(0) rotate(${-renderedHeading}deg)`; 
-        } 
+    if (isGameMapZoomedOut) {
+        if (currentRouteCoords && currentRouteCoords.length > 0) {
+            const bounds = L.latLngBounds(currentRouteCoords);
+            bounds.extend(userCoords);
+            gameMap.fitBounds(bounds, { padding: [30, 30] });
+        }
+        
+        if (els.gameMapElement) {
+            els.gameMapElement.style.transform = `translateZ(0) rotate(0deg)`;
+        }
+    } else {
+        gameMap.setView(userCoords, 16);
+        
+        if (currentHeading !== null) { 
+            if (els.gameMapElement) { 
+                let currentRot = renderedHeading % 360; 
+                if (currentRot < 0) currentRot += 360; 
+                let diff = currentHeading - currentRot; 
+                if (diff > 180) diff -= 360; 
+                if (diff < -180) diff += 360; 
+                renderedHeading += diff; 
+                els.gameMapElement.style.transform = `translateZ(0) rotate(${-renderedHeading}deg)`; 
+            } 
+        }
     }
 }
 
@@ -922,7 +963,6 @@ function saveSession() {
         waypointsDit: waypointsDit.map(wp => ({lat: wp.lat, lng: wp.lng})), 
         waypointsHem: waypointsHem.map(wp => ({lat: wp.lat, lng: wp.lng})), 
         timestamp: Date.now(), 
-        swipeHintShown: swipeHintShown,
         gameState: gameState,
         initialTotalKm: initialTotalKm,
         maxStepsReached: maxStepsReached,
@@ -1245,7 +1285,8 @@ function startGame(isRestoring = false, restoreData = null) {
     els.mapPage.classList.add('hidden'); els.gamePage.classList.remove('hidden'); if(!isLiveReceiver) els.shareBtn.classList.add('hidden');
     requestWakeLock(); els.pathGrid.innerHTML = `<div id="the-mouse">${activeTheme.player}</div>`;
 
-    if (!swipeHintShown && !isLiveReceiver) { const hint = document.getElementById('swipe-hint'); if (hint) { hint.classList.remove('hidden'); setTimeout(() => hint.classList.add('show-hint'), 50); setTimeout(() => { hint.classList.remove('show-hint'); setTimeout(() => hint.classList.add('hidden'), 500); }, 4000); } swipeHintShown = true; saveSession(); }
+    const toggleBtn = document.getElementById('toggle-game-view-btn');
+    if (toggleBtn) toggleBtn.innerText = t('btnMap');
 
     if (!isRestoring && !isLiveReceiver && travelMode === 2 && currentRouteCoords.length > 0) { let distToTarget = 0; let splitIndex = 0; let minD = Infinity; currentRouteCoords.forEach((c, i) => { const d = L.latLng(c).distanceTo(currentTargetCoords); if (d < minD) { minD = d; splitIndex = i; } }); for (let i = 0; i < splitIndex; i++) { distToTarget += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]); } const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', ''); const totalDistanceKm = parseFloat(distStr) || 1; const f = modes[travelMode].factor; const r = totalDistanceKm % f; const tKm = distToTarget / 1000; midpointStepIndex = r > 0.05 ? (tKm < r ? 0 : Math.floor((tKm - r) / f) + 1) : Math.floor(tKm / f); }
     

@@ -103,9 +103,9 @@
 </div>
 
 <div id="game-page" class="hidden">
-    <div id="swipe-hint" class="hidden"></div>
     <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: 10px; z-index: 10000; position: relative; width: 100%;">
         <div id="game-distance-display" class="hidden" style="font-weight: bold; font-size: 0.9rem; background: rgba(255,255,255,0.9); padding: 5px 12px; border-radius: 20px; color: #333;"></div>
+        <button id="toggle-game-view-btn" style="background:#2196F3; color:white; border-radius: 20px; padding: 6px 15px; font-size: 0.75rem; font-weight: bold; border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2);" onclick="toggleGameMap()">🗺️ KARTA</button>
         <button id="cancel-game-btn" style="background:#ff4444; color:white; border-radius: 20px; padding: 6px 15px; font-size: 0.75rem;" onclick="stopGame()"></button>
     </div>
     <div class="apple-grid" id="path"><div id="the-mouse">🐭</div></div>
