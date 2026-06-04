@@ -561,6 +561,30 @@ const els = {
     gameMapWrapper: document.getElementById('game-map-wrapper')
 };
 
+// --- SCROLL PAUSE FEATURE ---
+let isUserScrolling = false;
+let scrollResumeTimeout = null;
+
+function pauseAutoScroll() {
+    isUserScrolling = true;
+    clearTimeout(scrollResumeTimeout);
+    
+    // Pausa auto-scrollen i 4 sekunder efter senaste touchen
+    scrollResumeTimeout = setTimeout(() => {
+        isUserScrolling = false;
+        
+        // Tvinga koden att scrolla tillbaka till musen när pausen är över
+        if (gameState === 'GAME') {
+            moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 2)));
+        }
+    }, 4000); 
+}
+
+// Lyssna på när användaren försöker scrolla manuellt
+els.pathGrid.addEventListener('touchstart', pauseAutoScroll, { passive: true });
+els.pathGrid.addEventListener('wheel', pauseAutoScroll, { passive: true });
+els.pathGrid.addEventListener('mousedown', pauseAutoScroll, { passive: true });
+
 let sessionRaw = JSON.parse(localStorage.getItem('mouse_session'));
 let lastTarget = null;
 let savedGameBaseSteps = 0;
@@ -1573,8 +1597,24 @@ function triggerTurnAroundDance() {
 }
 
 function moveMouse(index) {
-    const m = document.getElementById('the-mouse'); const s = document.getElementById(`step-${index}`); const container = els.pathGrid;
-    if (s && container) { m.style.left = s.offsetLeft + "px"; m.style.top = s.offsetTop + "px"; let targetScroll = s.offsetTop - (container.clientHeight * 0.2); if (targetScroll < 0) { targetScroll = 0; } container.scrollTo({ top: targetScroll, behavior: 'smooth' }); }
+    const m = document.getElementById('the-mouse'); 
+    const s = document.getElementById(`step-${index}`); 
+    const container = els.pathGrid;
+    
+    if (s && container) { 
+        // Flytta alltid musen visuellt
+        m.style.left = s.offsetLeft + "px"; 
+        m.style.top = s.offsetTop + "px"; 
+        
+        // Auto-scrolla BARA om användaren inte kollar runt manuellt
+        if (!isUserScrolling) {
+            let targetScroll = s.offsetTop - (container.clientHeight * 0.2); 
+            if (targetScroll < 0) { 
+                targetScroll = 0; 
+            } 
+            container.scrollTo({ top: targetScroll, behavior: 'smooth' }); 
+        }
+    }
 }
 
 function finishGame() {
