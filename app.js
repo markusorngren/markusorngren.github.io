@@ -900,13 +900,11 @@ function clearMapData() {
 
 function toggleGameMap() {
     isGameMapVisible = !isGameMapVisible; 
-    const distDisplay = document.getElementById('game-distance-display');
     const toggleBtn = document.getElementById('toggle-game-view-btn');
 
     if (isGameMapVisible) {
         els.pathGrid.classList.add('hidden'); 
         els.gameMapWrapper.classList.remove('hidden'); 
-        if (distDisplay) distDisplay.classList.remove('hidden');
         if (toggleBtn) toggleBtn.innerText = `${activeTheme.path} ${getThemePathName()}`;
         
         if (!gameMap) { 
@@ -963,7 +961,6 @@ function toggleGameMap() {
     } else { 
         els.gameMapWrapper.classList.add('hidden'); 
         els.pathGrid.classList.remove('hidden'); 
-        if (distDisplay) distDisplay.classList.add('hidden'); 
         if (toggleBtn) toggleBtn.innerText = t('btnMap');
     }
 }
@@ -1343,7 +1340,7 @@ function startGame(isRestoring = false, restoreData = null) {
         if (!isLiveReceiver) { const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', ''); const totalDistanceKm = parseFloat(distStr) || 1; const f = modes[travelMode].factor; const r = totalDistanceKm % f; initialTotalKm = Math.max(1, Math.floor(totalDistanceKm / f) + (r > 0.05 ? 2 : 1)); }
     }
 
-    isGameMapVisible = false; els.gameMapWrapper.classList.add('hidden'); const distDisplay = document.getElementById('game-distance-display'); if (distDisplay) distDisplay.classList.add('hidden');
+    isGameMapVisible = false; els.gameMapWrapper.classList.add('hidden'); const distDisplay = document.getElementById('game-distance-display'); if (distDisplay) distDisplay.classList.remove('hidden');
     els.pathGrid.classList.remove('hidden');
     els.mapPage.classList.add('hidden'); els.gamePage.classList.remove('hidden'); if(!isLiveReceiver) els.shareBtn.classList.add('hidden');
     requestWakeLock(); els.pathGrid.innerHTML = `<div id="the-mouse">${activeTheme.player}</div>`;
