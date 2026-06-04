@@ -533,6 +533,8 @@ let midpointStepIndex = -1; let isCelebratingTurn = false;
 let gameMap = null; let gameRouteLine = null, gameUserMarker = null;
 let isGameMapVisible = false;
 let isGameMapZoomedOut = false;
+let gameMapAutoCenter = true;   // Känner av om vi ska följa användaren
+let isProgrammaticMove = false; // Ser skillnad på användar-zoom och system-zoom
 
 let travelMode = 0; 
 const modes = [
@@ -895,12 +897,34 @@ function toggleGameMap() {
             
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(gameMap); 
             
+            // Pausa auto-centrering om användaren drar i kartan
+            gameMap.on('dragstart', () => { 
+                gameMapAutoCenter = false; 
+                isGameMapZoomedOut = false; 
+            });
+            
+            // Pausa auto-centrering om användaren zoomar manuelt (ej via systemet)
+            gameMap.on('zoomstart', () => {
+                if (!isProgrammaticMove) {
+                    gameMapAutoCenter = false;
+                    isGameMapZoomedOut = false;
+                }
+            });
+
             gameMap.on('dblclick', () => {
-                isGameMapZoomedOut = !isGameMapZoomedOut;
+                if (!gameMapAutoCenter) {
+                    // Återuppta centrering
+                    gameMapAutoCenter = true;
+                    isGameMapZoomedOut = false;
+                } else {
+                    // Om vi redan centrerar, zooma ut för att se hela rutten
+                    isGameMapZoomedOut = !isGameMapZoomedOut;
+                }
                 updateGameMapView(true);
             });
         }
         
+        gameMapAutoCenter = true; // Alltid auto-centrera när vi öppnar kartan första gången
         isGameMapZoomedOut = false;
         setTimeout(() => { gameMap.invalidateSize(true); updateGameMapView(true); }, 250);
     } else { 
@@ -926,6 +950,8 @@ function updateGameMapView(forceCenter = false) {
         gameUserMarker.setLatLng(userCoords); 
     }
     
+    isProgrammaticMove = true; // Dölj den här rörelsen för zoom-lyssnaren
+    
     if (isGameMapZoomedOut) {
         if (currentRouteCoords && currentRouteCoords.length > 0) {
             const bounds = L.latLngBounds(currentRouteCoords);
@@ -936,8 +962,10 @@ function updateGameMapView(forceCenter = false) {
         if (els.gameMapElement) {
             els.gameMapElement.style.transform = `translateZ(0) rotate(0deg)`;
         }
-    } else {
-        gameMap.setView(userCoords, 16);
+    } else if (gameMapAutoCenter || forceCenter) {
+        // Behåll användarens egna zoomnivå, annars 16
+        let targetZoom = forceCenter ? 16 : (gameMap.getZoom() || 16);
+        gameMap.setView(userCoords, targetZoom);
         
         if (currentHeading !== null) { 
             if (els.gameMapElement) { 
@@ -951,6 +979,8 @@ function updateGameMapView(forceCenter = false) {
             } 
         }
     }
+    
+    setTimeout(() => { isProgrammaticMove = false; }, 100);
 }
 
 function saveSession() {
