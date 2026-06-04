@@ -925,6 +925,15 @@ function toggleGameMap() {
             gameMap.on('dragstart', () => { 
                 gameMapAutoCenter = false; 
                 isGameMapZoomedOut = false; 
+
+                // Nollställ CSS-rotationen direkt så touch-drag stämmer överens med fingret
+                if (els.gameMapElement) {
+                    els.gameMapElement.style.transform = `translateZ(0) rotate(0deg)`;
+                    
+                    // VIKTIGT: Vi nollar även din interna variabel, annars kan 
+                    // kartan snurra ett helt varv nästa gång den auto-centrerar!
+                    renderedHeading = 0; 
+                }
             });
             
             // Pausa auto-centrering om användaren zoomar manuelt (ej via systemet)
