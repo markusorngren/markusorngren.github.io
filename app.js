@@ -527,7 +527,7 @@ let waypointsDit = []; let waypointsHem = []; let waypointMarkers = [];
 let startCoords = null; let currentTargetName = "MÅLET"; let initialZoomPerformed = false; 
 let isShowingUser = true; let isTracking = false; 
 let savedLocations = JSON.parse(localStorage.getItem('mouse_favs')) || [null, null, null, null];
-let wakeLock = null; let currentRouteCoords = []; let ignoreClick = false; let confettiInterval = null;
+let wakeLock = null; let currentRouteCoords = []; let historicalRouteCoords = []; let ignoreClick = false; let confettiInterval = null;
 let maxStepsReached = 0; let lastRouteIndex = 0; let hasReachedMidpoint = false; 
 let midpointStepIndex = -1; let isCelebratingTurn = false; 
 let gameMap = null; let gameRouteLine = null, gameUserMarker = null;
@@ -611,6 +611,7 @@ if (sessionRaw && (Date.now() - sessionRaw.timestamp < 10800000)) {
     savedGameDynamicFactor = sessionRaw.gameDynamicFactor || 0;
     savedGameVirtualDistOffset = sessionRaw.gameVirtualDistOffset || 0;
     originalPois = sessionRaw.originalPois || [];
+    historicalRouteCoords = sessionRaw.historicalRouteCoords || [];
     savedWayPointsIndices = sessionRaw.savedWayPointsIndices || [];
     savedLiveSessionId = sessionRaw.liveSessionId || null;
     savedIsLiveSharing = sessionRaw.isLiveSharing || false;
@@ -892,7 +893,7 @@ function clearMapData() {
     if (connectionLineReturn) { map.removeLayer(connectionLineReturn); connectionLineReturn = null; }
     waypointsDit = []; waypointsHem = []; waypointMarkers.forEach(m => map.removeLayer(m)); waypointMarkers = [];
     if (manualStartMarker) { map.removeLayer(manualStartMarker); manualStartMarker = null; } fixedStartCoords = null;
-    originalPois = []; savedWayPointsIndices = [];
+    originalPois = []; savedWayPointsIndices = []; historicalRouteCoords = [];
     els.distInfo.innerHTML = getWhereToText(); els.startBtn.classList.add('hidden');
     if (userCoords) { zoomToUser(); isShowingUser = false; isTracking = true; }
     updateLocateBtnText(); saveSession(); broadcastLiveState();
@@ -968,10 +969,14 @@ function toggleGameMap() {
 function updateGameMapView(forceCenter = false) {
     if (!isGameMapVisible || gameState !== 'GAME' || !gameMap || !userCoords) return;
     
-    if (!gameRouteLine && currentRouteCoords.length > 0) { 
-        gameRouteLine = L.polyline(currentRouteCoords, {color: '#007bff', weight: 4, opacity: 0.5}).addTo(gameMap); 
+    const fullVisualRoute = (typeof historicalRouteCoords !== 'undefined' && historicalRouteCoords.length > 0)
+        ? [...historicalRouteCoords, ...currentRouteCoords]
+        : currentRouteCoords;
+
+    if (!gameRouteLine && fullVisualRoute.length > 0) { 
+        gameRouteLine = L.polyline(fullVisualRoute, {color: '#007bff', weight: 4, opacity: 0.5}).addTo(gameMap); 
     } else if (gameRouteLine) { 
-        gameRouteLine.setLatLngs(currentRouteCoords); 
+        gameRouteLine.setLatLngs(fullVisualRoute); 
     }
     
     if (!gameUserMarker) { 
@@ -1033,6 +1038,7 @@ function saveSession() {
         gameBaseSteps: gameBaseSteps,
         gameDynamicFactor: gameDynamicFactor,
         gameVirtualDistOffset: gameVirtualDistOffset,
+        historicalRouteCoords: historicalRouteCoords,
         originalPois: originalPois,
         savedWayPointsIndices: savedWayPointsIndices,
         liveSessionId: liveSessionId,
@@ -1235,7 +1241,7 @@ function fallbackDist() {
 
 function setTarget(latlng, shouldSave, clearWaypoints = true, updateStart = true) {
     if (updateStart && !manualStartMarker) { if (userCoords) fixedStartCoords = [...userCoords]; else fixedStartCoords = null; }
-    if (clearWaypoints) { waypointsDit = []; waypointsHem = []; waypointMarkers.forEach(m => map.removeLayer(m)); waypointMarkers = []; originalPois = []; savedWayPointsIndices = []; }
+    if (clearWaypoints) { waypointsDit = []; waypointsHem = []; waypointMarkers.forEach(m => map.removeLayer(m)); waypointMarkers = []; originalPois = []; savedWayPointsIndices = []; historicalRouteCoords = []; }
     if (connectionLine) { map.removeLayer(connectionLine); connectionLine = null; }
     if (connectionLineReturn) { map.removeLayer(connectionLineReturn); connectionLineReturn = null; }
     currentTargetCoords = latlng;
@@ -1476,6 +1482,10 @@ async function performReRoute() {
 
         if (data.features && data.features.length > 0) {
             const route = data.features[0];
+            
+            const historyPart = currentRouteCoords.slice(0, lastRouteIndex);
+            historicalRouteCoords = historicalRouteCoords.concat(historyPart);
+            
             currentRouteCoords = route.geometry.coordinates.map(c => [c[1], c[0]]);
             
             if (originalPois && originalPois.length > 0) {
@@ -1487,23 +1497,25 @@ async function performReRoute() {
                 savedWayPointsIndices = route.properties.way_points || [];
             }
 
+            const fullVisualRoute = [...historicalRouteCoords, ...currentRouteCoords];
+
             if (travelMode === 2 && !hasReachedMidpoint) {
                 let splitIndex = currentRouteCoords.length - 1;
                 let minD = Infinity;
                 currentRouteCoords.forEach((c, i) => { const d = L.latLng(c).distanceTo(currentTargetCoords); if (d < minD) { minD = d; splitIndex = i; } });
                 const coordsDit = currentRouteCoords.slice(0, splitIndex + 1);
                 const coordsRetur = currentRouteCoords.slice(splitIndex);
-                if (connectionLine) connectionLine.setLatLngs(coordsDit);
+                if (connectionLine) connectionLine.setLatLngs([...historicalRouteCoords, ...coordsDit]);
                 if (connectionLineReturn) connectionLineReturn.setLatLngs(coordsRetur);
             } else {
-                if (connectionLine) connectionLine.setLatLngs(currentRouteCoords);
+                if (connectionLine) connectionLine.setLatLngs(fullVisualRoute);
                 if (travelMode === 2 && hasReachedMidpoint) {
-                    if (connectionLineReturn) connectionLineReturn.setLatLngs(currentRouteCoords);
-                    if (connectionLine) connectionLine.setLatLngs([]); 
+                    if (connectionLineReturn) connectionLineReturn.setLatLngs(fullVisualRoute);
+                    if (connectionLine) connectionLine.setLatLngs([...historicalRouteCoords]); 
                 }
             }
 
-            if (gameRouteLine) gameRouteLine.setLatLngs(currentRouteCoords);
+            if (gameRouteLine) gameRouteLine.setLatLngs(fullVisualRoute);
 
             gameBaseSteps = maxStepsReached;
             let stepsLeft = initialTotalKm - 1 - gameBaseSteps;
