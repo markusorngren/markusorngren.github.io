@@ -1026,12 +1026,11 @@ function updateGameMapView(forceCenter = false) {
     isProgrammaticMove = true; // Dölj den här rörelsen för zoom-lyssnaren
     
     if (isGameMapZoomedOut) {
-        // FIX: Använd fullVisualRoute istället för bara currentRouteCoords, 
-        // och öka padding så hela linjen garanterat ryms i fönstret
         if (fullVisualRoute && fullVisualRoute.length > 0) {
             const bounds = L.latLngBounds(fullVisualRoute);
             bounds.extend(userCoords);
-            gameMap.fitBounds(bounds, { padding: [60, 60] });
+            // Justerad padding: [x, y] -> 40px på sidorna, 140px uppe/nere för att kompensera för UI-knappar
+            gameMap.fitBounds(bounds, { padding: [40, 140] });
         }
         
         if (els.gameMapElement) {
