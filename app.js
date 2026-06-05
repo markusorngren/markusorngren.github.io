@@ -1392,6 +1392,9 @@ function startGame(isRestoring = false, restoreData = null) {
     const toggleBtn = document.getElementById('toggle-game-view-btn');
     if (toggleBtn) toggleBtn.innerText = t('btnMap');
 
+    const zoomBtn = document.getElementById('zoom-toggle-btn');
+    if (zoomBtn) zoomBtn.classList.add('hidden');
+
     if (!isRestoring && !isLiveReceiver && travelMode === 2 && currentRouteCoords.length > 0) { let distToTarget = 0; let splitIndex = 0; let minD = Infinity; currentRouteCoords.forEach((c, i) => { const d = L.latLng(c).distanceTo(currentTargetCoords); if (d < minD) { minD = d; splitIndex = i; } }); for (let i = 0; i < splitIndex; i++) { distToTarget += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]); } const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', ''); const totalDistanceKm = parseFloat(distStr) || 1; const f = modes[travelMode].factor; const r = totalDistanceKm % f; const tKm = distToTarget / 1000; midpointStepIndex = r > 0.05 ? (tKm < r ? 0 : Math.floor((tKm - r) / f) + 1) : Math.floor(tKm / f); }
     
     // --- LÄGG TILL AR-KNAPP OM BETA ÄR PÅ ---
@@ -1685,7 +1688,12 @@ function stopGame() {
     gameState = 'MAP'; if (!isLiveReceiver) fixedStartCoords = null; clearInterval(confettiInterval);
     gameBaseSteps = 0; gameDynamicFactor = 0; gameVirtualDistOffset = 0; isReRouting = false;
     isGameMapVisible = false; els.gameMapWrapper.classList.add('hidden'); const distDisplay = document.getElementById('game-distance-display'); if (distDisplay) distDisplay.classList.add('hidden');
+    const zoomBtn = document.getElementById('zoom-toggle-btn'); if (zoomBtn) zoomBtn.classList.add('hidden');
     els.pathGrid.classList.remove('hidden'); const m = document.getElementById('the-mouse');
+    
+    const toggleBtn = document.getElementById('toggle-game-view-btn');
+    if (toggleBtn) toggleBtn.innerText = t('btnMap');
+    
     m.classList.remove('victory'); m.classList.remove('turn-dance'); m.innerHTML = activeTheme.player;
     document.querySelectorAll('.confetti').forEach(c => c.remove()); els.gamePage.classList.add('hidden'); els.mapPage.classList.remove('hidden'); 
     if(!isLiveReceiver) els.shareBtn.classList.remove('hidden'); releaseWakeLock(); if(!isLiveReceiver) saveSession();
