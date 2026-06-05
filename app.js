@@ -71,6 +71,9 @@ const i18n = {
         shareLive: "Dela LIVE 🔴",
         shareAppBtn: "Dela appen 📱",
         btnCancel: "Avbryt",
+        btnZoomOut: "🔍 ZOOMA UT",
+        btnZoomIn: "🔍 ZOOMA IN",
+        btnCenter: "🔍 CENTRERA",
         setStartPoint: "📍 Sätt som startpunkt",
         waypointDit: "🏁 På vägen dit",
         waypointHem: "🏁 På vägen tillbaka",
@@ -137,6 +140,9 @@ const i18n = {
         shareLive: "Share LIVE 🔴",
         shareAppBtn: "Share app 📱",
         btnCancel: "Cancel",
+        btnZoomOut: "🔍 ZOOM OUT",
+        btnZoomIn: "🔍 ZOOM IN",
+        btnCenter: "🔍 CENTER",
         setStartPoint: "📍 Set as starting point",
         waypointDit: "🏁 On the way there",
         waypointHem: "🏁 On the way back",
@@ -203,6 +209,9 @@ const i18n = {
         shareLive: "Поделиться LIVE 🔴",
         shareAppBtn: "Поделиться приложением 📱",
         btnCancel: "Отмена",
+        btnZoomOut: "🔍 ОТДАЛИТЬ",
+        btnZoomIn: "🔍 ПРИБЛИЗИТЬ",
+        btnCenter: "🔍 В ЦЕНТР",
         setStartPoint: "📍 Установить как точку старта",
         waypointDit: "🏁 По пути туда",
         waypointHem: "🏁 По пути обратно",
@@ -269,6 +278,9 @@ const i18n = {
         shareLive: "በቀጥታ አጋራ 🔴",
         shareAppBtn: "መተግበሪያ አጋራ 📱",
         btnCancel: "ሰርዝ",
+        btnZoomOut: "🔍 አሳንስ",
+        btnZoomIn: "🔍 አጉላ",
+        btnCenter: "🔍 ማዕከል",
         setStartPoint: "📍 እንደ መነሻ ነጥብ ያድርጉ",
         waypointDit: "🏁 በመሄጃው መንገድ ላይ",
         waypointHem: "🏁 በመመለሻው መንገድ ላይ",
@@ -335,6 +347,9 @@ const i18n = {
         shareLive: "مشاركة مباشر 🔴",
         shareAppBtn: "مشاركة التطبيق 📱",
         btnCancel: "إلغاء",
+        btnZoomOut: "🔍 تصغير",
+        btnZoomIn: "🔍 تكبير",
+        btnCenter: "🔍 تمركز",
         setStartPoint: "📍 تعيين كنقطة بداية",
         waypointDit: "🏁 في الطريق إلى هناك",
         waypointHem: "🏁 في طريق العودة",
@@ -481,6 +496,15 @@ function applyTranslations() {
     const toggleGameBtn = document.getElementById('toggle-game-view-btn');
     if (toggleGameBtn) {
         toggleGameBtn.innerText = isGameMapVisible ? `${activeTheme.path} ${getThemePathName()}` : t('btnMap');
+    }
+
+    const zoomBtn = document.getElementById('zoom-toggle-btn');
+    if (zoomBtn && isGameMapVisible) {
+        if (!gameMapAutoCenter && !isGameMapZoomedOut) {
+            zoomBtn.innerText = t('btnCenter');
+        } else {
+            zoomBtn.innerText = isGameMapZoomedOut ? t('btnZoomIn') : t('btnZoomOut');
+        }
     }
 
     const iosDesc = document.getElementById('ios-desc'); if(iosDesc) iosDesc.innerHTML = t('iosInstall');
@@ -899,14 +923,37 @@ function clearMapData() {
     updateLocateBtnText(); saveSession(); broadcastLiveState();
 }
 
+function toggleGameZoom() {
+    if (!gameMapAutoCenter) {
+        // Återuppta centrering
+        gameMapAutoCenter = true;
+        isGameMapZoomedOut = false;
+    } else {
+        // Växla zoom-nivå
+        isGameMapZoomedOut = !isGameMapZoomedOut;
+    }
+    
+    const zoomBtn = document.getElementById('zoom-toggle-btn');
+    if (zoomBtn) {
+        zoomBtn.innerText = isGameMapZoomedOut ? t('btnZoomIn') : t('btnZoomOut');
+    }
+    updateGameMapView(true);
+}
+
 function toggleGameMap() {
     isGameMapVisible = !isGameMapVisible; 
     const toggleBtn = document.getElementById('toggle-game-view-btn');
+    const zoomBtn = document.getElementById('zoom-toggle-btn');
 
     if (isGameMapVisible) {
         els.pathGrid.classList.add('hidden'); 
         els.gameMapWrapper.classList.remove('hidden'); 
         if (toggleBtn) toggleBtn.innerText = `${activeTheme.path} ${getThemePathName()}`;
+        
+        if (zoomBtn) {
+            zoomBtn.classList.remove('hidden');
+            zoomBtn.innerText = isGameMapZoomedOut ? t('btnZoomIn') : t('btnZoomOut');
+        }
         
         if (!gameMap) { 
             gameMap = L.map('game-map', { 
@@ -924,13 +971,12 @@ function toggleGameMap() {
             gameMap.on('dragstart', () => { 
                 gameMapAutoCenter = false; 
                 isGameMapZoomedOut = false; 
+                
+                if (zoomBtn) zoomBtn.innerText = t('btnCenter');
 
                 // Nollställ CSS-rotationen direkt så touch-drag stämmer överens med fingret
                 if (els.gameMapElement) {
                     els.gameMapElement.style.transform = `translateZ(0) rotate(0deg)`;
-                    
-                    // VIKTIGT: Vi nollar även din interna variabel, annars kan 
-                    // kartan snurra ett helt varv nästa gång den auto-centrerar!
                     renderedHeading = 0; 
                 }
             });
@@ -940,29 +986,21 @@ function toggleGameMap() {
                 if (!isProgrammaticMove) {
                     gameMapAutoCenter = false;
                     isGameMapZoomedOut = false;
+                    if (zoomBtn) zoomBtn.innerText = t('btnCenter');
                 }
-            });
-
-            gameMap.on('dblclick', () => {
-                if (!gameMapAutoCenter) {
-                    // Återuppta centrering
-                    gameMapAutoCenter = true;
-                    isGameMapZoomedOut = false;
-                } else {
-                    // Om vi redan centrerar, zooma ut för att se hela rutten
-                    isGameMapZoomedOut = !isGameMapZoomedOut;
-                }
-                updateGameMapView(true);
             });
         }
         
-        gameMapAutoCenter = true; // Alltid auto-centrera när vi öppnar kartan första gången
+        gameMapAutoCenter = true; 
         isGameMapZoomedOut = false;
+        if (zoomBtn) zoomBtn.innerText = t('btnZoomOut');
+        
         setTimeout(() => { gameMap.invalidateSize(true); updateGameMapView(true); }, 250);
     } else { 
         els.gameMapWrapper.classList.add('hidden'); 
         els.pathGrid.classList.remove('hidden'); 
         if (toggleBtn) toggleBtn.innerText = t('btnMap');
+        if (zoomBtn) zoomBtn.classList.add('hidden');
     }
 }
 
