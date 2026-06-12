@@ -1,3 +1,5 @@
+const APP_VERSION = APP_CURRENT_VERSION; 
+
 // --- BETA & FEATURE FLAGS ---
 const appFeatures = {
     beta_mode: { id: 'beta_active', name: 'Beta Mode', default: false }
@@ -29,13 +31,31 @@ let currentLang = localStorage.getItem('app_lang') || getDeviceLanguage();
 
 const i18n = {
     sv: {
+        welcomeTitle: "Välkommen till spelet! 🐭",
+        welcomeDesc2: "Redo att starta resan och hjälpa {name} hitta {targetName}?",
+        dontShowAgain: "Visa inte igen",
+        btnSkip: "Jag har koll! Let's go!",
+        btnTutorial: "Visa mig hur man gör",
+        tut1: "Här kan du byta mellan bil och gång! 🚗🚶",
+        tut2: "Planerar du en rutt? Långtryck på kartan för att välja en egen startpunkt! 📍",
+        tut3: "Sök efter ditt mål med röst, text, eller klicka direkt på kartan! 🔍",
+        tut4: "När du valt mål kan du långtrycka på kartan igen för att lägga till via-punkter längs vägen! 💡",
+        tut11: "Blev rutten fel? Tryck på Rensa här nere för att börja om! 🗑️",
+        tut5: "Vill du spara rutten? Långtryck på en av dessa knappar för att spara! 💾",
+        tut6: "När rutten är klar, tryck här för att starta spelet! 🚀",
+        tut7: "Det finns olika sätt att dela! 🔗",
+        tut8: "Här kan du dela rutten så andra kan öppna den i sin telefon! 🗺️",
+        tut9: "Med Live-delning kan dina vänner följa din resa på kartan i realtid! 🔴",
+        tut10: "Och här kan du snabbt tipsa om själva appen till en kompis! 📱",
+        tut12: "Här ser du hur många {pathName} du har kvar att samla! 🍎",
+        tut13: "Klicka här för att byta till kartvyn och se var du är på vägen! 🗺️",
+        tut14: "Här kan du snabbt zooma ut för att se hela rutten, eller centrera på dig själv! 🔍",
+        tut15: "Du kan också zooma och panera med fingrarna direkt på kartan, precis som vanligt! ✌️",
+        tut16: "När du når målet firar vi med konfetti och segerdans! 🎉",
+        btnNext: "Nästa ➔",
+        btnFinish: "Okej, jag fattar!",
         welcome: "Hej! {player}",
         helpFind: "Hjälp {name} att hitta {targetName}!",
-        instr1: "🚗🚶↔️ <b>Välj färdsätt</b>",
-        instr2: "📍 <b>Välj resmål</b> Klicka på kartan eller sök",
-        instr3: "💡 <b>Via-punkter</b> långtryck för att lägga till eller ta bort",
-        instr4: "💾 <b>Spara favoriter</b> långtryck på en spara-knapp",
-        instr5: "🚀 <b>STARTA</b>",
         okGotIt: "Okej! Jag förstår!",
         searchingGps: "Söker din GPS... 📍",
         whereToDrive: "Vart ska vi åka? {player}",
@@ -98,13 +118,31 @@ const i18n = {
         }
     },
     en: {
+        welcomeTitle: "Welcome to the game! 🐭",
+        welcomeDesc2: "Ready to start the journey and help {name} find {targetName}?",
+        dontShowAgain: "Do not show again for this version",
+        btnSkip: "I know how it works! Let's go!",
+        btnTutorial: "Show me how",
+        tut1: "Here you can switch between driving and walking! 🚗🚶",
+        tut2: "Planning a route? Long-press on the map to set a custom starting point! 📍",
+        tut3: "Search for your destination using voice, text, or tap directly on the map! 🔍",
+        tut4: "Once you have a destination, long-press the map to add waypoints! 💡",
+        tut11: "Did the route go wrong? Tap Clear down here to start over! 🗑️",
+        tut5: "Want to save the route? Long-press one of these buttons! 💾",
+        tut7: "Share the route in advance, or share Live so friends can follow along! 🔴",
+        tut8: "Share a static link to your route so others can see it! 🗺️",
+        tut9: "With Live-sharing, friends can follow your movement on the map in real time! 🔴",
+        tut10: "Share a link to the app itself with a friend! 📱",
+        tut6: "When your route is ready, tap here to start the game! 🚀",
+        tut12: "Here you can see how many {pathName} you have left to collect! 🍎",
+        tut13: "Click here to switch to the map view and see where you are! 🗺️",
+        tut14: "Here you can quick-zoom out to see the full route, or center back on yourself! 🔍",
+        tut15: "You can also pinch to zoom and pan directly on the map, just like normal! ✌️",
+        tut16: "When you reach the goal, we celebrate with confetti and a victory dance! 🎉",
+        btnNext: "Next ➔",
+        btnFinish: "Got it!",
         welcome: "Hello! {player}",
         helpFind: "Help {name} find {targetName}!",
-        instr1: "🚗🚶↔️ <b>Choose transport</b>",
-        instr2: "📍 <b>Choose destination</b> Click on map or search",
-        instr3: "💡 <b>Waypoints</b> long-press to add or remove",
-        instr4: "💾 <b>Save favorites</b> long-press a save button",
-        instr5: "🚀 <b>START</b>",
         okGotIt: "Okay! I understand!",
         searchingGps: "Searching GPS... 📍",
         whereToDrive: "Where are we driving? {player}",
@@ -167,13 +205,31 @@ const i18n = {
         }
     },
     ru: {
+        welcomeTitle: "Welcome to the game! 🐭",
+        welcomeDesc2: "Ready to start the journey and help {name} find {targetName}?",
+        dontShowAgain: "Больше не показывать для этой версии",
+        btnSkip: "I know how it works! Let's go!",
+        btnTutorial: "Show me how",
+        tut1: "Here you can switch between driving and walking! 🚗🚶",
+        tut2: "Planning a route? Long-press on the map to set a custom starting point! 📍",
+        tut3: "Search for your destination using voice, text, or tap directly on the map! 🔍",
+        tut4: "Once you have a destination, long-press the map to add waypoints! 💡",
+        tut11: "Маршрут неверный? Нажмите Очистить, чтобы начать заново! 🗑️",
+        tut5: "Want to save the route? Long-press one of these buttons! 💾",
+        tut7: "Share the route in advance, or share Live so friends can follow along! 🔴",
+        tut8: "Share a static link to your route so others can see it! 🗺️",
+        tut9: "With Live-sharing, friends can follow your movement on the map in real time! 🔴",
+        tut10: "Share a link to the app itself with a friend! 📱",
+        tut6: "When your route is ready, tap here to start the game! 🚀",
+        tut12: "Здесь вы видите, сколько {pathName} осталось собрать! 🍎",
+        tut13: "Нажмите здесь, чтобы переключиться на карту и узнать, где вы! 🗺️",
+        tut14: "Здесь вы можете отдалить или центрировать карту! 🔍",
+        tut15: "Вы также можете масштабировать карту пальцами! ✌️",
+        tut16: "Когда вы достигнете цели, будет победный танец и конфетти! 🎉",
+        btnNext: "Next ➔",
+        btnFinish: "Got it!",
         welcome: "Привет! {player}",
         helpFind: "Помогите {name} найти {targetName}!",
-        instr1: "🚗🚶↔️ <b>Выберите транспорт</b>",
-        instr2: "📍 <b>Пункт назначения</b> Нажмите на карту или ищите",
-        instr3: "💡 <b>Путевые точки</b> долгое нажатие для доб/удаления",
-        instr4: "💾 <b>Сохранить</b> долгое нажатие кнопки",
-        instr5: "🚀 <b>СТАРТ</b>",
         okGotIt: "Понятно!",
         searchingGps: "Поиск GPS... 📍",
         whereToDrive: "Куда едем? {player}",
@@ -236,13 +292,31 @@ const i18n = {
         }
     },
     am: {
+        welcomeTitle: "Welcome to the game! 🐭",
+        welcomeDesc2: "Ready to start the journey and help {name} find {targetName}?",
+        dontShowAgain: "ለዚህ ስሪት እንደገና አታሳይ",
+        btnSkip: "I know how it works! Let's go!",
+        btnTutorial: "Show me how",
+        tut1: "Here you can switch between driving and walking! 🚗🚶",
+        tut2: "Planning a route? Long-press on the map to set a custom starting point! 📍",
+        tut3: "Search for your destination using voice, text, or tap directly on the map! 🔍",
+        tut4: "Once you have a destination, long-press the map to add waypoints! 💡",
+        tut11: "መንገዱ ተሳስቷል? ካርታውን ለማጽዳት እና እንደገና ለመጀመር አጽዳን ይጫኑ! 🗑️",
+        tut5: "Want to save the route? Long-press one of these buttons! 💾",
+        tut7: "Share the route in advance, or share Live so friends can follow along! 🔴",
+        tut8: "Share a static link to your route so others can see it! 🗺️",
+        tut9: "With Live-sharing, friends can follow your movement on the map in real time! 🔴",
+        tut10: "Share a link to the app itself with a friend! 📱",
+        tut6: "When your route is ready, tap here to start the game! 🚀",
+        tut12: "ምን ያህል {pathName} እንደሚቀርዎ እዚህ ማየት ይችላሉ! 🍎",
+        tut13: "ወደ ካርታ እይታ ለመቀየር እና የት እንዳሉ ለማየት እዚህ ጠቅ ያድርጉ! 🗺️",
+        tut14: "ካርታውን ለማሳነስ ወይም መሃል ለማድረግ እዚህ መጫን ይችላሉ! 🔍",
+        tut15: "በጣትዎም ካርታውን ማጉላት እና ማሳነስ ይችላሉ! ✌️",
+        tut16: "ግቡ ላይ ሲደርሱ የድል ጭፈራ እና ኮንፈቲ ይኖራል! 🎉",
+        btnNext: "Next ➔",
+        btnFinish: "Got it!",
         welcome: "ሰላም! {player}",
         helpFind: "{name} {targetName} እንዲያገኝ እርዱት!",
-        instr1: "🚗🚶↔️ <b>የመጓጓዣ አይነት ይምረጡ</b>",
-        instr2: "📍 <b>መድረሻ ይምረጡ</b> ካርታ ላይ ይጫኑ ወይም ይፈልጉ",
-        instr3: "💡 <b>የማቆሚያ ነጥቦች</b> ለመጨመር/ለማጥፋት በረጅሙ ይጫኑ",
-        instr4: "💾 <b>ተወዳጅ ያስቀምጡ</b> የማስቀመጫ ቁልፍን በረጅሙ ይጫኑ",
-        instr5: "🚀 <b>ጀምር</b>",
         okGotIt: "እሺ! ገባኝ!",
         searchingGps: "ጂፒኤስ በመፈለግ ላይ... 📍",
         whereToDrive: "ወደ የት እንጓዝ? {player}",
@@ -305,13 +379,31 @@ const i18n = {
         }
     },
     ar: {
+        welcomeTitle: "Welcome to the game! 🐭",
+        welcomeDesc2: "Ready to start the journey and help {name} find {targetName}?",
+        dontShowAgain: "لا تظهر مرة أخرى لهذا الإصدار",
+        btnSkip: "I know how it works! Let's go!",
+        btnTutorial: "Show me how",
+        tut1: "Here you can switch between driving and walking! 🚗🚶",
+        tut2: "Planning a route? Long-press on the map to set a custom starting point! 📍",
+        tut3: "Search for your destination using voice, text, or tap directly on the map! 🔍",
+        tut4: "Once you have a destination, long-press the map to add waypoints! 💡",
+        tut11: "هل المسار خاطئ؟ اضغط على مسح لتنظيف الخريطة والبدء من جديد! 🗑️",
+        tut5: "Want to save the route? Long-press one of these buttons! 💾",
+        tut7: "Share the route in advance, or share Live so friends can follow along! 🔴",
+        tut8: "Share a static link to your route so others can see it! 🗺️",
+        tut9: "With Live-sharing, friends can follow your movement on the map in real time! 🔴",
+        tut10: "Share a link to the app itself with a friend! 📱",
+        tut6: "When your route is ready, tap here to start the game! 🚀",
+        tut12: "هنا يمكنك رؤية عدد {pathName} المتبقية لجمعها! 🍎",
+        tut13: "انقر هنا للتبديل إلى عرض الخريطة ورؤية موقعك! 🗺️",
+        tut14: "هنا يمكنك تصغير الخريطة أو توسيطها! 🔍",
+        tut15: "يمكنك أيضًا التكبير بأصابعك مباشرة على الخريطة! ✌️",
+        tut16: "عندما تصل إلى الهدف، ستكون هناك رقصة النصر وقصاصات الورق الملونة! 🎉",
+        btnNext: "Next ➔",
+        btnFinish: "Got it!",
         welcome: "مرحباً! {player}",
         helpFind: "ساعد {name} في العثور على {targetName}!",
-        instr1: "🚗🚶↔️ <b>اختر وسيلة النقل</b>",
-        instr2: "📍 <b>اختر الوجهة</b> انقر على الخريطة أو ابحث",
-        instr3: "💡 <b>نقاط الطريق</b> اضغط مطولاً للإضافة أو الإزالة",
-        instr4: "💾 <b>حفظ المفضلة</b> اضغط مطولاً على زر الحفظ",
-        instr5: "🚀 <b>ابدأ</b>",
         okGotIt: "حسناً! فهمت!",
         searchingGps: "جاري البحث عن GPS... 📍",
         whereToDrive: "إلى أين سنذهب بالسيارة؟ {player}",
@@ -467,20 +559,14 @@ function getCurrentTheme() {
 let activeTheme = themes[localStorage.getItem('app_theme_override')] || getCurrentTheme(); 
 
 function applyTranslations() {
-    // Sätt dynamisk titel på fliken
     const appTitles = { 'sv': 'Hur långt?', 'en': 'How far?', 'ru': 'Как далеко?', 'am': 'ምን ያህል ይርቃል?', 'ar': 'كم تبعد؟' };
     document.title = appTitles[currentLang] || appTitles['en'];
 
-    const wt = document.getElementById('welcome-title'); if(wt) wt.innerHTML = t('welcome', {player: activeTheme.player});
-    const wd = document.getElementById('welcome-desc'); if(wd) wd.innerHTML = t('helpFind', {name: getThemeName(), targetName: getThemeTarget()});
-    
-    const i1 = document.getElementById('instr-1'); if(i1) i1.innerHTML = t('instr1');
-    const i2 = document.getElementById('instr-2'); if(i2) i2.innerHTML = t('instr2');
-    const i3 = document.getElementById('instr-3'); if(i3) i3.innerHTML = t('instr3');
-    const i4 = document.getElementById('instr-4'); if(i4) i4.innerHTML = t('instr4');
-    const i5 = document.getElementById('instr-5'); if(i5) i5.innerHTML = t('instr5');
-    
-    const ok = document.getElementById('welcome-ok-btn'); if(ok) ok.innerHTML = t('okGotIt');
+    const wt = document.getElementById('welcome-title'); if(wt) wt.innerHTML = t('welcomeTitle');
+    const wd = document.getElementById('welcome-desc2'); if(wd) wd.innerHTML = t('welcomeDesc2', {name: getThemeName(), targetName: getThemeTarget()});
+    const dsaLbl = document.getElementById('dont-show-again-lbl'); if(dsaLbl) dsaLbl.innerHTML = t('dontShowAgain');
+    const wsb = document.getElementById('welcome-skip-btn'); if(wsb) wsb.innerHTML = t('btnSkip');
+    const wtb = document.getElementById('welcome-tut-btn'); if(wtb) wtb.innerHTML = t('btnTutorial');
     
     const searchInput = document.getElementById('text-search-input');
     if(searchInput) searchInput.placeholder = t('searchPlaceholder');
@@ -557,8 +643,8 @@ let midpointStepIndex = -1; let isCelebratingTurn = false;
 let gameMap = null; let gameRouteLine = null, gameUserMarker = null;
 let isGameMapVisible = false;
 let isGameMapZoomedOut = false;
-let gameMapAutoCenter = true;   // Känner av om vi ska följa användaren
-let isProgrammaticMove = false; // Ser skillnad på användar-zoom och system-zoom
+let gameMapAutoCenter = true;   
+let isProgrammaticMove = false; 
 
 let travelMode = 0; 
 const modes = [
@@ -585,6 +671,270 @@ const els = {
     gameMapWrapper: document.getElementById('game-map-wrapper')
 };
 
+// --- WELCOME & TUTORIAL LOGIC ---
+function saveWelcomeState() {
+    const chk = document.getElementById('dont-show-again-chk');
+    const isChecked = chk ? chk.checked : false;
+    const data = {
+        timestamp: Date.now(),
+        dontShowAgain: isChecked,
+        version: APP_VERSION
+    };
+    localStorage.setItem('welcome_overlay_data', JSON.stringify(data));
+}
+
+let currentTutorialStep = 0;
+const tutorialSteps = [
+    { target: 'mode-btn', textKey: 'tut1', pos: 'top' },
+    { target: 'map', textKey: 'tut2', pos: 'center' },
+    { target: '.action-container', textKey: 'tut3', pos: 'top' },
+    { target: 'map', textKey: 'tut4', pos: 'center' },
+    { target: 'clear-map-btn', textKey: 'tut11', pos: 'top' },
+    { target: '.save-btn-container', textKey: 'tut5', pos: 'top' },
+    { target: 'share-btn', textKey: 'tut7', pos: 'bottom' },
+    { target: 'share-btn-static', textKey: 'tut8', pos: 'bottom', action: 'open_share' },
+    { target: 'share-btn-live', textKey: 'tut9', pos: 'bottom', action: 'open_share' },
+    { target: 'share-btn-app', textKey: 'tut10', pos: 'bottom', action: 'open_share' },
+    { target: 'start-btn', textKey: 'tut6', pos: 'top' },
+    { target: 'path', textKey: 'tut12', pos: 'center', action: 'start_dummy_game' },
+    { target: 'toggle-game-view-btn', textKey: 'tut13', pos: 'bottom' },
+    { target: 'zoom-toggle-btn', textKey: 'tut14', pos: 'bottom', action: 'show_dummy_map' },
+    { target: 'game-map-wrapper', textKey: 'tut15', pos: 'center' },
+    { target: 'path', textKey: 'tut16', pos: 'center', action: 'show_victory_dance' }
+];
+
+function startTutorial() {
+    saveWelcomeState();
+    els.welcomeOverlay.classList.add('hidden');
+    currentTutorialStep = 0;
+    document.getElementById('tutorial-overlay').classList.remove('hidden');
+    showTutorialStep(currentTutorialStep);
+}
+
+function skipTutorial() {
+    if (!els.welcomeOverlay.classList.contains('hidden')) {
+        saveWelcomeState();
+    }
+    
+    els.welcomeOverlay.classList.add('hidden');
+    const tutOverlay = document.getElementById('tutorial-overlay');
+    if (tutOverlay) tutOverlay.classList.add('hidden');
+    
+    if (els.startBtn && !currentTargetCoords) els.startBtn.classList.add('hidden');
+
+    const shareMenu = document.getElementById('share-menu');
+    if (shareMenu) shareMenu.remove();
+
+    // --- Städning för victory dance i tutorial ---
+    clearInterval(window.tutorialConfettiInterval);
+    window.tutorialConfettiInterval = null;
+    document.querySelectorAll('.confetti').forEach(c => c.remove());
+    const m = document.getElementById('the-mouse');
+    if (m) {
+        m.classList.remove('victory');
+        m.innerHTML = activeTheme.player;
+    }
+    document.getElementById('tutorial-spotlight').style.display = 'block'; 
+    // ------------------------------------------------
+
+    // Revert till kartsidan om vi avslutar under dummy-spelet
+    if (els.gamePage && !els.gamePage.classList.contains('hidden')) {
+        els.gamePage.classList.add('hidden');
+        els.mapPage.classList.remove('hidden');
+        els.pathGrid.innerHTML = '';
+        els.pathGrid.classList.remove('hidden');
+        els.gameMapWrapper.classList.add('hidden');
+        
+        const toggleBtn = document.getElementById('toggle-game-view-btn');
+        if (toggleBtn) toggleBtn.innerText = t('btnMap');
+
+        if (map) {
+            setTimeout(() => map.invalidateSize(), 100);
+        }
+    }
+}
+
+function nextTutorialStep() {
+    currentTutorialStep++;
+    if (currentTutorialStep >= tutorialSteps.length) {
+        skipTutorial();
+    } else {
+        showTutorialStep(currentTutorialStep);
+    }
+}
+
+function showTutorialStep(index) {
+    const step = tutorialSteps[index];
+
+    // Återställ spotlight display om den var gömd under victory dance
+    document.getElementById('tutorial-spotlight').style.display = 'block';
+
+    // --- Hantera Actions (Share och Dummy Game) ---
+    if (step.action === 'open_share') {
+        if (!document.getElementById('share-menu')) {
+            shareApp({}); 
+        }
+    } else if (step.action === 'start_dummy_game') {
+        const openMenu = document.getElementById('share-menu');
+        if (openMenu) openMenu.remove();
+
+        els.mapPage.classList.add('hidden');
+        els.gamePage.classList.remove('hidden');
+        els.pathGrid.classList.remove('hidden');
+        els.gameMapWrapper.classList.add('hidden');
+
+        els.pathGrid.innerHTML = `<div id="the-mouse">${activeTheme.player}</div>`;
+        for (let i = 0; i < 25; i++) {
+            const stepEl = document.createElement('div');
+            stepEl.className = 'step';
+            stepEl.id = `dummy-step-${i}`;
+            stepEl.innerHTML = (i === 24) ? activeTheme.target : activeTheme.path;
+            els.pathGrid.appendChild(stepEl);
+        }
+    } else if (step.action === 'show_dummy_map') {
+        els.pathGrid.classList.add('hidden');
+        els.gameMapWrapper.classList.remove('hidden');
+
+        const toggleBtn = document.getElementById('toggle-game-view-btn');
+        if (toggleBtn) toggleBtn.innerText = `${activeTheme.path} ${getThemePathName()}`;
+
+        // Ensure zoom button is visible so the tutorial can attach to it
+        const zoomBtn = document.getElementById('zoom-toggle-btn');
+        if (zoomBtn) {
+            zoomBtn.classList.remove('hidden');
+            zoomBtn.innerText = t('btnZoomOut');
+        }
+
+        if (!gameMap) {
+            gameMap = L.map('game-map', {zoomControl: false}).setView([59.3, 14.1], 15);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(gameMap);
+        }
+        setTimeout(() => { if (gameMap) gameMap.invalidateSize(true); }, 250);
+    } else if (step.action === 'show_victory_dance') {
+        els.gameMapWrapper.classList.add('hidden');
+        els.pathGrid.classList.remove('hidden');
+        
+        // Göm spotlight så att konfettin och skärmen inte blir nermörkad
+        document.getElementById('tutorial-spotlight').style.display = 'none';
+
+        const m = document.getElementById('the-mouse');
+        if (m) {
+            m.innerHTML = activeTheme.player + activeTheme.target;
+            m.classList.add('victory');
+        }
+        createConfettiBurst();
+        if (!window.tutorialConfettiInterval) {
+            window.tutorialConfettiInterval = setInterval(createConfettiBurst, 800);
+        }
+    } else {
+        const openMenu = document.getElementById('share-menu');
+        if (openMenu) openMenu.remove();
+    }
+    // -----------------------------------------------
+
+    const targetEl = step.target.startsWith('.') ? document.querySelector(step.target) : document.getElementById(step.target);
+    
+    if (step.target === 'start-btn' && targetEl) {
+        targetEl.classList.remove('hidden');
+    } else if (els.startBtn && !currentTargetCoords) {
+        els.startBtn.classList.add('hidden');
+    }
+
+    const spotlight = document.getElementById('tutorial-spotlight');
+    const tooltip = document.getElementById('tutorial-tooltip');
+    const textEl = document.getElementById('tutorial-text');
+    const nextBtn = document.getElementById('tutorial-next');
+
+    // Infogar pathName för game view stegen
+    textEl.innerHTML = t(step.textKey, { pathName: getThemePathName().toLowerCase() });
+    
+    if (index === tutorialSteps.length - 1) {
+        nextBtn.innerHTML = t('btnFinish');
+    } else {
+        nextBtn.innerHTML = t('btnNext');
+    }
+
+    if (targetEl) {
+        let rect = targetEl.getBoundingClientRect();
+        
+        // --- LOGIK FÖR SPARA-KNAPPARNA (Bara de 4 knapparna) ---
+        if (step.target === '.save-btn-container') {
+            const slotBtns = targetEl.querySelectorAll('.slot-btn');
+            if (slotBtns.length > 0) {
+                let minTop = Infinity, minLeft = Infinity, maxBottom = -Infinity, maxRight = -Infinity;
+                slotBtns.forEach(btn => {
+                    const r = btn.getBoundingClientRect();
+                    if(r.top < minTop) minTop = r.top;
+                    if(r.left < minLeft) minLeft = r.left;
+                    if(r.bottom > maxBottom) maxBottom = r.bottom;
+                    if(r.right > maxRight) maxRight = r.right;
+                });
+                rect = {
+                    top: minTop, left: minLeft, bottom: maxBottom, right: maxRight,
+                    width: maxRight - minLeft, height: maxBottom - minTop
+                };
+            }
+        }
+        // --- LOGIK FÖR SÖK-KNAPPARNA (Bara Text och Röst) ---
+        else if (step.target === '.action-container') {
+            const textBtn = document.getElementById('text-btn');
+            const voiceBtn = document.getElementById('voice-btn');
+            if (textBtn && voiceBtn) {
+                const r1 = textBtn.getBoundingClientRect();
+                const r2 = voiceBtn.getBoundingClientRect();
+                
+                const minTop = Math.min(r1.top, r2.top);
+                const minLeft = Math.min(r1.left, r2.left);
+                const maxBottom = Math.max(r1.bottom, r2.bottom);
+                const maxRight = Math.max(r1.right, r2.right);
+                
+                rect = {
+                    top: minTop, left: minLeft, bottom: maxBottom, right: maxRight,
+                    width: maxRight - minLeft, height: maxBottom - minTop
+                };
+            }
+        }
+        // --------------------------------------------------------
+
+        let centerLeft = rect.left + rect.width / 2;
+        
+        if (step.target === 'map' || step.target === 'path' || step.target === 'game-map-wrapper') {
+            spotlight.style.top = rect.top + 'px';
+            spotlight.style.left = rect.left + 'px';
+            spotlight.style.width = rect.width + 'px';
+            spotlight.style.height = rect.height + 'px';
+            
+            tooltip.style.top = '30%';
+            tooltip.style.left = '50%';
+            tooltip.style.transform = 'translate(-50%, -50%)';
+        } else {
+            const pad = 5;
+            spotlight.style.top = (rect.top - pad) + 'px';
+            spotlight.style.left = (rect.left - pad) + 'px';
+            spotlight.style.width = (rect.width + pad * 2) + 'px';
+            spotlight.style.height = (rect.height + pad * 2) + 'px';
+
+            let safeLeft = Math.max(150, Math.min(window.innerWidth - 150, centerLeft));
+            tooltip.style.left = safeLeft + 'px';
+
+            if (step.pos === 'top') {
+                let topPos = rect.top - 15;
+                if (topPos < 100) {
+                    tooltip.style.top = '50%';
+                    tooltip.style.transform = 'translate(-50%, -50%)';
+                } else {
+                    tooltip.style.top = topPos + 'px';
+                    tooltip.style.transform = 'translate(-50%, -100%)';
+                }
+            } else if (step.pos === 'bottom') {
+                tooltip.style.top = (rect.bottom + 15) + 'px';
+                tooltip.style.transform = 'translate(-50%, 0)';
+            }
+        }
+    }
+}
+// --- SLUT TUTORIAL LOGIC ---
+
 // --- SCROLL PAUSE FEATURE ---
 let isUserScrolling = false;
 let scrollResumeTimeout = null;
@@ -593,18 +943,14 @@ function pauseAutoScroll() {
     isUserScrolling = true;
     clearTimeout(scrollResumeTimeout);
     
-    // Pausa auto-scrollen i 4 sekunder efter senaste touchen
     scrollResumeTimeout = setTimeout(() => {
         isUserScrolling = false;
-        
-        // Tvinga koden att scrolla tillbaka till musen när pausen är över
         if (gameState === 'GAME') {
             moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 2)));
         }
     }, 4000); 
 }
 
-// Lyssna på när användaren försöker scrolla manuellt
 els.pathGrid.addEventListener('touchstart', pauseAutoScroll, { passive: true });
 els.pathGrid.addEventListener('wheel', pauseAutoScroll, { passive: true });
 els.pathGrid.addEventListener('mousedown', pauseAutoScroll, { passive: true });
@@ -692,6 +1038,34 @@ function getBearing(lat1, lng1, lat2, lng2) {
 function initMap() {
     applyThemeUI(); 
     checkInstallState();
+
+    let shouldShowWelcome = true;
+    const welcomeDataStr = localStorage.getItem('welcome_overlay_data');
+    if (welcomeDataStr) {
+        try {
+            const welcomeData = JSON.parse(welcomeDataStr);
+            const hoursSinceLastSeen = (Date.now() - welcomeData.timestamp) / (1000 * 60 * 60);
+
+            if (welcomeData.dontShowAgain && welcomeData.version === APP_VERSION) {
+                shouldShowWelcome = false;
+            } else if (!welcomeData.dontShowAgain && hoursSinceLastSeen < 3) {
+                shouldShowWelcome = false;
+            }
+        } catch(e) {}
+    } else if (localStorage.getItem('tutorial_done') === 'true') {
+        // Fallback om the precis uppdaterat från gammal version, men vi vill tvinga fram den en gång
+        shouldShowWelcome = true; 
+    }
+
+    if (isFeatureOn('beta_mode')) {
+        shouldShowWelcome = true;
+    }
+
+    if (!shouldShowWelcome) {
+        els.welcomeOverlay.classList.add('hidden');
+    } else {
+        els.welcomeOverlay.classList.remove('hidden');
+    }
 	
 	if (els.modeBtn) els.modeBtn.innerText = modes[travelMode].icon;
     
@@ -703,6 +1077,7 @@ function initMap() {
     const clearControl = L.control({position: 'bottomright'});
     clearControl.onAdd = function () {
         const btn = L.DomUtil.create('button', '');
+        btn.id = 'clear-map-btn';
         btn.innerHTML = t('clear');
         btn.style.background = 'rgba(255, 255, 255, 0.6)';
         btn.style.border = '2px solid rgba(0,0,0,0.1)';
@@ -800,7 +1175,13 @@ function initMap() {
     map.on('movestart', (e) => { if (!e.hard) isTracking = false; });
     
     if (!isLiveReceiver) { setupInteractions(); }
-    updateButtonUI(); handleOrientationLayout(); window.addEventListener('resize', handleOrientationLayout);
+    updateButtonUI(); handleOrientationLayout(); 
+    window.addEventListener('resize', () => {
+        handleOrientationLayout();
+        if (!document.getElementById('tutorial-overlay').classList.contains('hidden')) {
+            showTutorialStep(currentTutorialStep);
+        }
+    });
 }
 
 function showMapContextMenu(e) {
@@ -925,11 +1306,9 @@ function clearMapData() {
 
 function toggleGameZoom() {
     if (!gameMapAutoCenter) {
-        // Återuppta centrering
         gameMapAutoCenter = true;
         isGameMapZoomedOut = false;
     } else {
-        // Växla zoom-nivå
         isGameMapZoomedOut = !isGameMapZoomedOut;
     }
     
@@ -967,21 +1346,18 @@ function toggleGameMap() {
             
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(gameMap); 
             
-            // Pausa auto-centrering om användaren drar i kartan
             gameMap.on('dragstart', () => { 
                 gameMapAutoCenter = false; 
                 isGameMapZoomedOut = false; 
                 
                 if (zoomBtn) zoomBtn.innerText = t('btnCenter');
 
-                // Nollställ CSS-rotationen direkt så touch-drag stämmer överens med fingret
                 if (els.gameMapElement) {
                     els.gameMapElement.style.transform = `translateZ(0) rotate(0deg)`;
                     renderedHeading = 0; 
                 }
             });
             
-            // Pausa auto-centrering om användaren zoomar manuelt (ej via systemet)
             gameMap.on('zoomstart', () => {
                 if (!isProgrammaticMove) {
                     gameMapAutoCenter = false;
@@ -1023,13 +1399,12 @@ function updateGameMapView(forceCenter = false) {
         gameUserMarker.setLatLng(userCoords); 
     }
     
-    isProgrammaticMove = true; // Dölj den här rörelsen för zoom-lyssnaren
+    isProgrammaticMove = true; 
     
     if (isGameMapZoomedOut) {
         if (fullVisualRoute && fullVisualRoute.length > 0) {
             const bounds = L.latLngBounds(fullVisualRoute);
             bounds.extend(userCoords);
-            // Justerad padding: [x, y] -> 40px på sidorna, 140px uppe/nere för att kompensera för UI-knappar
             gameMap.fitBounds(bounds, { padding: [40, 140] });
         }
         
@@ -1037,7 +1412,6 @@ function updateGameMapView(forceCenter = false) {
             els.gameMapElement.style.transform = `translateZ(0) rotate(0deg)`;
         }
     } else if (gameMapAutoCenter || forceCenter) {
-        // Behåll användarens egna zoomnivå, annars 16
         let targetZoom = forceCenter ? 16 : (gameMap.getZoom() || 16);
         gameMap.setView(userCoords, targetZoom);
         
@@ -1126,11 +1500,9 @@ function checkRestoreGame() {
 function handlePositionUpdate(pos) {
     if (isLiveReceiver) return; userCoords = [pos.coords.latitude, pos.coords.longitude];
     
-    // --- LÄNK TILL AR-UPPDATERING (körs om AR.js är aktivt) ---
     if (typeof window.handleARPositionUpdate === 'function') {
         window.handleARPositionUpdate();
     }
-    // --------------------------------------------------------
 
     if (pos.coords.heading !== null && !isNaN(pos.coords.heading)) { currentHeading = pos.coords.heading; } 
     else if (lastUserCoordsForHeading) { const dist = L.latLng(lastUserCoordsForHeading).distanceTo(userCoords); if (dist > 2) { currentHeading = getBearing(lastUserCoordsForHeading[0], lastUserCoordsForHeading[1], userCoords[0], userCoords[1]); } }
@@ -1398,7 +1770,6 @@ function startGame(isRestoring = false, restoreData = null) {
 
     if (!isRestoring && !isLiveReceiver && travelMode === 2 && currentRouteCoords.length > 0) { let distToTarget = 0; let splitIndex = 0; let minD = Infinity; currentRouteCoords.forEach((c, i) => { const d = L.latLng(c).distanceTo(currentTargetCoords); if (d < minD) { minD = d; splitIndex = i; } }); for (let i = 0; i < splitIndex; i++) { distToTarget += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]); } const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', ''); const totalDistanceKm = parseFloat(distStr) || 1; const f = modes[travelMode].factor; const r = totalDistanceKm % f; const tKm = distToTarget / 1000; midpointStepIndex = r > 0.05 ? (tKm < r ? 0 : Math.floor((tKm - r) / f) + 1) : Math.floor(tKm / f); }
     
-    // --- LÄGG TILL AR-KNAPP OM BETA ÄR PÅ ---
     if (isFeatureOn('beta_mode') && !isLiveReceiver) {
         let arBtn = document.getElementById('beta-ar-btn');
         if (!arBtn) {
@@ -1412,7 +1783,6 @@ function startGame(isRestoring = false, restoreData = null) {
             if (topBar) topBar.insertBefore(arBtn, document.getElementById('cancel-game-btn'));
         }
     }
-    // ----------------------------------------
 
     for (let i = 0; i < initialTotalKm; i++) {
         const step = document.createElement('div'); step.className = 'step'; step.id = `step-${i}`;
@@ -1593,7 +1963,6 @@ function updateGameLogic() {
     const goal = (travelMode === 2) ? (fixedStartCoords || startCoords) : currentTargetCoords; 
     const distToFinal = map.distance(userCoords, goal);
     
-    // Ändrat från 40 till 10 meter för vändpunkten
     if (!hasReachedMidpoint && travelMode === 2) { const distToTarget = map.distance(userCoords, currentTargetCoords); if (distToTarget < 10) { triggerTurnAroundDance(); return; } }
 
     let minD = Infinity; let idx = lastRouteIndex; let searchLimit = (travelMode !== 2 || hasReachedMidpoint) ? currentRouteCoords.length : Math.floor(currentRouteCoords.length * 0.6); 
@@ -1640,7 +2009,6 @@ function updateGameLogic() {
     
     for (let i = 0; i < initialTotalKm - 1; i++) { const s = document.getElementById(`step-${i}`); if (s) i < maxStepsReached ? s.classList.add('eat-animation') : s.classList.remove('eat-animation'); }
     
-    // 40 meter för bil (0), annars 10 meter för promenad (1 & 2)
     const finalLimit = (travelMode === 0) ? 40 : 10;
     
     if (travelMode === 2) { if (hasReachedMidpoint && distToFinal < finalLimit && maxStepsReached > (initialTotalKm * 0.8)) { moveMouse(initialTotalKm - 1); finishGame(); } else { moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 2))); } } 
@@ -1662,11 +2030,9 @@ function moveMouse(index) {
     const container = els.pathGrid;
     
     if (s && container) { 
-        // Flytta alltid musen visuellt
         m.style.left = s.offsetLeft + "px"; 
         m.style.top = s.offsetTop + "px"; 
         
-        // Auto-scrolla BARA om användaren inte kollar runt manuellt
         if (!isUserScrolling) {
             let targetScroll = s.offsetTop - (container.clientHeight * 0.2); 
             if (targetScroll < 0) { 
@@ -1755,7 +2121,6 @@ function saveCurrentPos(i) {
 
 function setupInteractions() { document.querySelectorAll('.slot-btn').forEach((b, i) => { let lastTriggerTime = 0; const triggerSave = (e) => { const now = Date.now(); if (now - lastTriggerTime < 7000) return; lastTriggerTime = now; if (e && typeof e.preventDefault === 'function') { e.preventDefault(); e.stopPropagation(); } saveCurrentPos(i); }; b.oncontextmenu = (e) => { triggerSave(e); return false; }; let pressTimer; b.addEventListener('touchstart', (e) => { pressTimer = setTimeout(() => triggerSave(e), 600); }, {passive: true}); b.addEventListener('touchend', () => clearTimeout(pressTimer)); }); }
 function playClickSound() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); const o = audioCtx.createOscillator(); o.type='triangle'; o.frequency.setValueAtTime(3000, audioCtx.currentTime); o.start(); o.stop(audioCtx.currentTime+0.1); }
-function closeInstructions() { els.welcomeOverlay.classList.add('hidden'); if(!isLiveReceiver) saveSession(); }
 
 function shareApp(e) { 
     if (isLiveReceiver) { alert(t('alreadyLive')); return; }
@@ -1764,20 +2129,20 @@ function shareApp(e) {
     const menu = document.createElement('div'); menu.id = 'share-menu';
     menu.style.position = 'fixed'; menu.style.top = '65px'; menu.style.left = '15px'; menu.style.zIndex = '10001'; menu.style.background = 'white'; menu.style.borderRadius = '15px'; menu.style.padding = '10px'; menu.style.boxShadow = '0 5px 20px rgba(0,0,0,0.3)'; menu.style.display = 'flex'; menu.style.flexDirection = 'column'; menu.style.gap = '8px'; menu.style.border = `2px solid var(--primary)`;
 
-    const btnNormal = document.createElement('button'); btnNormal.className = 'wp-menu-btn'; btnNormal.style.background = 'var(--blue)'; btnNormal.innerText = t('shareStatic');
+    const btnNormal = document.createElement('button'); btnNormal.id = 'share-btn-static'; btnNormal.className = 'wp-menu-btn'; btnNormal.style.background = 'var(--blue)'; btnNormal.innerText = t('shareStatic');
     btnNormal.onclick = () => { menu.remove(); shareNormal(); };
 
-    const btnLive = document.createElement('button'); btnLive.className = 'wp-menu-btn'; btnLive.style.background = '#ff4444'; btnLive.innerText = t('shareLive');
+    const btnLive = document.createElement('button'); btnLive.id = 'share-btn-live'; btnLive.className = 'wp-menu-btn'; btnLive.style.background = '#ff4444'; btnLive.innerText = t('shareLive');
     btnLive.onclick = () => { menu.remove(); startLiveSharing(); };
 
-    const btnShareApp = document.createElement('button'); btnShareApp.className = 'wp-menu-btn'; btnShareApp.style.background = 'var(--primary)'; btnShareApp.innerText = t('shareAppBtn');
+    const btnShareApp = document.createElement('button'); btnShareApp.id = 'share-btn-app'; btnShareApp.className = 'wp-menu-btn'; btnShareApp.style.background = 'var(--primary)'; btnShareApp.innerText = t('shareAppBtn');
     btnShareApp.onclick = () => { menu.remove(); shareOnlyApp(); };
 
-    const btnCancel = document.createElement('button'); btnCancel.innerText = t('btnCancel'); btnCancel.style.fontSize = '0.7rem'; btnCancel.style.background = 'none'; btnCancel.onclick = () => menu.remove();
+    const btnCancel = document.createElement('button'); btnCancel.id = 'share-btn-cancel'; btnCancel.innerText = t('btnCancel'); btnCancel.style.fontSize = '0.7rem'; btnCancel.style.background = 'none'; btnCancel.onclick = () => menu.remove();
 
     menu.appendChild(btnNormal); menu.appendChild(btnLive); menu.appendChild(btnShareApp); menu.appendChild(btnCancel); document.body.appendChild(menu);
 
-    setTimeout(() => { const close = (event) => { if (!menu.contains(event.target) && event.target.id !== 'share-btn') { menu.remove(); document.removeEventListener('click', close); } }; document.addEventListener('click', close); }, 100);
+    setTimeout(() => { const close = (event) => { if (!menu.contains(event.target) && event.target.id !== 'share-btn' && !event.target.closest('#tutorial-overlay')) { menu.remove(); document.removeEventListener('click', close); } }; document.addEventListener('click', close); }, 100);
 }
 
 function shareNormal() {

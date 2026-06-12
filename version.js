@@ -1,0 +1,1 @@
+const APP_CURRENT_VERSION = "v53";
