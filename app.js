@@ -1090,6 +1090,31 @@ function initMap() {
     };
     clearControl.addTo(map);
 
+    // --- RUND HJÄLPKNAPP (❓) SYMMETRISKT PLACERAD PÅ VÄNSTER KARTKANT ---
+    const helpControl = L.control({position: 'bottomleft'});
+    helpControl.onAdd = function () {
+        const btn = L.DomUtil.create('button', '');
+        btn.id = 'help-map-btn';
+        btn.innerHTML = '❓';
+        btn.style.background = 'white';
+        btn.style.border = 'none';
+        btn.style.borderRadius = '50%';
+        btn.style.width = '45px';
+        btn.style.height = '45px';
+        btn.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+        btn.style.fontSize = '1.2rem';
+        btn.style.cursor = 'pointer';
+        btn.style.display = 'flex';
+        btn.style.alignItems = 'center';
+        btn.style.justifyContent = 'center';
+        btn.style.marginBottom = '15px';
+        btn.style.marginLeft = '10px'; // Ger lite extra luft från kanten för symmetri
+        btn.onclick = function(e) { L.DomEvent.stopPropagation(e); startTutorial(); };
+        L.DomEvent.disableClickPropagation(btn); 
+        return btn;
+    };
+    helpControl.addTo(map);
+
     if (sessionRaw && sessionRaw.hasManualStart && fixedStartCoords) {
         manualStartMarker = L.circleMarker(fixedStartCoords, { radius: 8, fillColor: "#4CAF50", color: "#fff", weight: 2, fillOpacity: 1 }).addTo(map);
         manualStartMarker.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); removeManualStartPoint(); });
