@@ -47,6 +47,7 @@ const i18n = {
         tut8: "Här kan du dela rutten så andra kan öppna den i sin telefon! 🗺️",
         tut9: "Med Live-delning kan dina vänner följa din resa på kartan i realtid! 🔴",
         tut10: "Och här kan du snabbt tipsa om själva appen till en kompis! 📱",
+		tut17: "Dela din erfarenhet om appen i facebookgruppen. 👥",
         tut12: "Här ser du hur många {pathName} du har kvar att samla! 🍎",
         tut13: "Klicka här för att byta till kartvyn och se var du är på vägen! 🗺️",
         tut14: "Här kan du snabbt zooma ut för att se hela rutten, eller centrera på dig själv! 🔍",
@@ -54,6 +55,33 @@ const i18n = {
         tut16: "När du når målet firar vi med konfetti och segerdans! 🎉",
         btnNext: "Nästa ➔",
         btnFinish: "Okej, jag fattar!",
+        tutSkip: "Hoppa över",
+        iosFooter1: "Tryck på ",
+        iosFooter2: " och välj ",
+        iosAddHome: "Lägg till på hemskärmen",
+        installWarning: "⚠️ Öppna i Safari/Chrome för att spara appen!",
+        offlineSearch: "Sökningen fungerar tyvärr inte när du är offline. Använd kartan eller sparade platser istället!",
+        shareRouteTitle: "Häng med på äventyr!",
+        followRouteText: "Följ min rutt till {target}!",
+        copyRouteLink: "Kopiera länken för att dela rutt:",
+        followLiveTitle: "Följ mig live!",
+        followLiveText: "Följ jakten live! 🔴",
+        copyLiveLink: "Kopiera länken för att dela live-rutt:",
+        checkAppText: "Kolla in den här appen! 🗺️",
+        copyAppLink: "Kopiera länken för att dela appen:",
+        btnFacebookGroup: "Vår Facebookgrupp 👥",
+        devBetaTitle: "🧪 BETA & FUNKTIONER",
+        devOn: "PÅ ✅",
+        devOff: "AV ❌",
+        arLoading: "⏳ Laddar 3D-motor...",
+        arPermissionError: "Rörelsesensorer måste tillåtas för att AR ska fungera.",
+        arTestBtn: "📷 TESTA AR",
+        arNetworkError: "Kunde inte ladda AR. Kontrollera nätverket.",
+        arNoRouteError: "Du måste ha en aktiv rutt för att starta AR-spelet!",
+        arCloseBtn: "✖ STÄNG AR-KAMERAN",
+        arVictory: "🎉 Grymt jobbat! Du kom fram till målet och samlade {score} {pathName}! Awesome!",
+        arStartText: "START",
+        arGoalText: "MÅL",
         welcome: "Hej! {player}",
         helpFind: "Hjälp {name} att hitta {targetName}!",
         okGotIt: "Okej! Jag förstår!",
@@ -133,6 +161,7 @@ const i18n = {
         tut8: "Share a static link to your route so others can see it! 🗺️",
         tut9: "With Live-sharing, friends can follow your movement on the map in real time! 🔴",
         tut10: "Share a link to the app itself with a friend! 📱",
+        tut17: "Share your experience about the app in the Facebook group. 👥",
         tut6: "When your route is ready, tap here to start the game! 🚀",
         tut12: "Here you can see how many {pathName} you have left to collect! 🍎",
         tut13: "Click here to switch to the map view and see where you are! 🗺️",
@@ -141,6 +170,33 @@ const i18n = {
         tut16: "When you reach the goal, we celebrate with confetti and a victory dance! 🎉",
         btnNext: "Next ➔",
         btnFinish: "Got it!",
+        tutSkip: "Skip",
+        iosFooter1: "Tap ",
+        iosFooter2: " and choose ",
+        iosAddHome: "Add to Home Screen",
+        installWarning: "⚠️ Open in Safari/Chrome to save the app!",
+        offlineSearch: "Search doesn't work offline. Please use the map or saved locations instead!",
+        shareRouteTitle: "Join the adventure!",
+        followRouteText: "Follow my route to {target}!",
+        copyRouteLink: "Copy link to share route:",
+        followLiveTitle: "Follow me live!",
+        followLiveText: "Follow the hunt live! 🔴",
+        copyLiveLink: "Copy link to share live route:",
+        checkAppText: "Check out this app! 🗺️",
+        copyAppLink: "Copy link to share app:",
+        btnFacebookGroup: "Our Facebook Group 👥",
+        devBetaTitle: "🧪 BETA & FEATURES",
+        devOn: "ON ✅",
+        devOff: "OFF ❌",
+        arLoading: "⏳ Loading 3D engine...",
+        arPermissionError: "Motion sensors must be allowed for AR to work.",
+        arTestBtn: "📷 TEST AR",
+        arNetworkError: "Could not load AR. Check your network.",
+        arNoRouteError: "You must have an active route to start the AR game!",
+        arCloseBtn: "✖ CLOSE AR CAMERA",
+        arVictory: "🎉 Awesome! You reached the goal and collected {score} {pathName}! Great job!",
+        arStartText: "START",
+        arGoalText: "GOAL",
         welcome: "Hello! {player}",
         helpFind: "Help {name} find {targetName}!",
         okGotIt: "Okay! I understand!",
@@ -205,29 +261,57 @@ const i18n = {
         }
     },
     ru: {
-        welcomeTitle: "Welcome to the game! 🐭",
-        welcomeDesc2: "Ready to start the journey and help {name} find {targetName}?",
+        welcomeTitle: "Добро пожаловать в игру! 🐭",
+        welcomeDesc2: "Готовы начать путешествие и помочь {name} найти {targetName}?",
         dontShowAgain: "Больше не показывать для этой версии",
-        btnSkip: "I know how it works! Let's go!",
-        btnTutorial: "Show me how",
-        tut1: "Here you can switch between driving and walking! 🚗🚶",
-        tut2: "Planning a route? Long-press on the map to set a custom starting point! 📍",
-        tut3: "Search for your destination using voice, text, or tap directly on the map! 🔍",
-        tut4: "Once you have a destination, long-press the map to add waypoints! 💡",
+        btnSkip: "Я знаю, как это работает! Поехали!",
+        btnTutorial: "Покажите, как",
+        tut1: "Здесь вы можете переключаться между автомобилем и пешком! 🚗🚶",
+        tut2: "Планируете маршрут? Долгое нажатие на карту установит точку старта! 📍",
+        tut3: "Ищите пункт назначения голосом, текстом или нажатием на карту! 🔍",
+        tut4: "Указав цель, сделайте долгое нажатие на карту, чтобы добавить путевые точки! 💡",
         tut11: "Маршрут неверный? Нажмите Очистить, чтобы начать заново! 🗑️",
-        tut5: "Want to save the route? Long-press one of these buttons! 💾",
-        tut7: "Share the route in advance, or share Live so friends can follow along! 🔴",
-        tut8: "Share a static link to your route so others can see it! 🗺️",
-        tut9: "With Live-sharing, friends can follow your movement on the map in real time! 🔴",
-        tut10: "Share a link to the app itself with a friend! 📱",
-        tut6: "When your route is ready, tap here to start the game! 🚀",
+        tut5: "Хотите сохранить маршрут? Долгое нажатие на одну из этих кнопок! 💾",
+        tut7: "Поделитесь маршрутом заранее или в прямом эфире, чтобы друзья могли следить! 🔴",
+        tut8: "Поделитесь статической ссылкой на ваш маршрут! 🗺️",
+        tut9: "С Live-трансляцией друзья могут следить за вашим движением на карте в реальном времени! 🔴",
+        tut10: "Поделитесь ссылкой на само приложение с другом! 📱",
+        tut17: "Поделитесь своим опытом о приложении в группе Facebook. 👥",
+        tut6: "Когда маршрут готов, нажмите здесь, чтобы начать игру! 🚀",
         tut12: "Здесь вы видите, сколько {pathName} осталось собрать! 🍎",
         tut13: "Нажмите здесь, чтобы переключиться на карту и узнать, где вы! 🗺️",
         tut14: "Здесь вы можете отдалить или центрировать карту! 🔍",
         tut15: "Вы также можете масштабировать карту пальцами! ✌️",
         tut16: "Когда вы достигнете цели, будет победный танец и конфетти! 🎉",
-        btnNext: "Next ➔",
-        btnFinish: "Got it!",
+        btnNext: "Далее ➔",
+        btnFinish: "Понятно!",
+        tutSkip: "Пропустить",
+        iosFooter1: "Нажмите ",
+        iosFooter2: " и выберите ",
+        iosAddHome: "На экран Домой",
+        installWarning: "⚠️ Откройте в Safari/Chrome, чтобы сохранить приложение!",
+        offlineSearch: "Поиск не работает в автономном режиме. Используйте карту или сохраненные места!",
+        shareRouteTitle: "Присоединяйтесь к приключению!",
+        followRouteText: "Следуйте по моему маршруту в {target}!",
+        copyRouteLink: "Скопируйте ссылку, чтобы поделиться маршрутом:",
+        followLiveTitle: "Следите за мной в прямом эфире!",
+        followLiveText: "Следите за охотой в прямом эфире! 🔴",
+        copyLiveLink: "Скопируйте ссылку, чтобы поделиться живым маршрутом:",
+        checkAppText: "Зацените это приложение! 🗺️",
+        copyAppLink: "Скопируйте ссылку, чтобы поделиться приложением:",
+        btnFacebookGroup: "Наша группа в Facebook 👥",
+        devBetaTitle: "🧪 БЕТА И ФУНКЦИИ",
+        devOn: "ВКЛ ✅",
+        devOff: "ВЫКЛ ❌",
+        arLoading: "⏳ Загрузка 3D-движка...",
+        arPermissionError: "Датчики движения должны быть разрешены для работы AR.",
+        arTestBtn: "📷 ТЕСТ AR",
+        arNetworkError: "Не удалось загрузить AR. Проверьте сеть.",
+        arNoRouteError: "У вас должен быть активный маршрут, чтобы начать игру AR!",
+        arCloseBtn: "✖ ЗАКРЫТЬ КАМЕРУ AR",
+        arVictory: "🎉 Отлично! Вы достигли цели и собрали {score} {pathName}! Потрясающе!",
+        arStartText: "СТАРТ",
+        arGoalText: "ЦЕЛЬ",
         welcome: "Привет! {player}",
         helpFind: "Помогите {name} найти {targetName}!",
         okGotIt: "Понятно!",
@@ -277,7 +361,7 @@ const i18n = {
         iosClose: "Возможно позже",
         btnMap: "🗺️ КАРТА",
         devTitle: "🛠 РЕЖИМ РАЗРАБОТЧИКА",
-        devLang: "🌐 Я ЯЗЫК / LANGUAGE",
+        devLang: "🌐 ЯЗЫК / LANGUAGE",
         devTheme: "🎨 ТЕМЫ / THEMES",
         devClose: "Закрыть",
         devReset: "🔄 Сброс настроек",
@@ -292,29 +376,57 @@ const i18n = {
         }
     },
     am: {
-        welcomeTitle: "Welcome to the game! 🐭",
-        welcomeDesc2: "Ready to start the journey and help {name} find {targetName}?",
+        welcomeTitle: "ወደ ጨዋታው በደህና መጡ! 🐭",
+        welcomeDesc2: "ጉዞውን ለመጀመር እና {name} {targetName} እንዲያገኝ ለመርዳት ዝግጁ ነዎት?",
         dontShowAgain: "ለዚህ ስሪት እንደገና አታሳይ",
-        btnSkip: "I know how it works! Let's go!",
-        btnTutorial: "Show me how",
-        tut1: "Here you can switch between driving and walking! 🚗🚶",
-        tut2: "Planning a route? Long-press on the map to set a custom starting point! 📍",
-        tut3: "Search for your destination using voice, text, or tap directly on the map! 🔍",
-        tut4: "Once you have a destination, long-press the map to add waypoints! 💡",
+        btnSkip: "እንዴት እንደሚሰራ አውቃለሁ! እንሂድ!",
+        btnTutorial: "እንዴት እንደሆነ አሳየኝ",
+        tut1: "እዚህ በማሽከርከር እና በእግር መሄድ መካከል መቀየር ይችላሉ! 🚗🚶",
+        tut2: "መንገድ እያቀዱ ነው? መነሻ ነጥብ ለማዘጋጀት ካርታውን በረጅሙ ይጫኑ! 📍",
+        tut3: "ድምጽ፣ ጽሑፍ በመጠቀም ወይም በቀጥታ ካርታው ላይ በመጫን መድረሻዎን ይፈልጉ! 🔍",
+        tut4: "መድረሻ ካለዎት በኋላ የማቆሚያ ነጥቦችን ለማከል ካርታውን በረጅሙ ይጫኑ! 💡",
         tut11: "መንገዱ ተሳስቷል? ካርታውን ለማጽዳት እና እንደገና ለመጀመር አጽዳን ይጫኑ! 🗑️",
-        tut5: "Want to save the route? Long-press one of these buttons! 💾",
-        tut7: "Share the route in advance, or share Live so friends can follow along! 🔴",
-        tut8: "Share a static link to your route so others can see it! 🗺️",
-        tut9: "With Live-sharing, friends can follow your movement on the map in real time! 🔴",
-        tut10: "Share a link to the app itself with a friend! 📱",
-        tut6: "When your route is ready, tap here to start the game! 🚀",
+        tut5: "መንገዱን ማስቀመጥ ይፈልጋሉ? ከእነዚህ አዝራሮች ውስጥ አንዱን በረጅሙ ይጫኑ! 💾",
+        tut7: "መንገዱን አስቀድመው ያጋሩ፣ ወይም ጓደኞችዎ እንዲከታተሉዎት በቀጥታ ያጋሩ! 🔴",
+        tut8: "ሌሎች እንዲያዩት ቋሚ አገናኝ ያጋሩ! 🗺️",
+        tut9: "በቀጥታ ስርጭት ጓደኞችዎ እንቅስቃሴዎን በካርታው ላይ በቅጽበት መከታተል ይችላሉ! 🔴",
+        tut10: "የመተግበሪያውን አገናኝ ለጓደኛዎ ያጋሩ! 📱",
+        tut17: "ስለመተግበሪያው ያለዎትን ተሞክሮ በፌስቡክ ቡድን ውስጥ ያጋሩ። 👥",
+        tut6: "መንገድዎ ዝግጁ ሲሆን ጨዋታውን ለመጀመር እዚህ ይጫኑ! 🚀",
         tut12: "ምን ያህል {pathName} እንደሚቀርዎ እዚህ ማየት ይችላሉ! 🍎",
         tut13: "ወደ ካርታ እይታ ለመቀየር እና የት እንዳሉ ለማየት እዚህ ጠቅ ያድርጉ! 🗺️",
         tut14: "ካርታውን ለማሳነስ ወይም መሃል ለማድረግ እዚህ መጫን ይችላሉ! 🔍",
         tut15: "በጣትዎም ካርታውን ማጉላት እና ማሳነስ ይችላሉ! ✌️",
         tut16: "ግቡ ላይ ሲደርሱ የድል ጭፈራ እና ኮንፈቲ ይኖራል! 🎉",
-        btnNext: "Next ➔",
-        btnFinish: "Got it!",
+        btnNext: "ቀጣይ ➔",
+        btnFinish: "ገባኝ!",
+        tutSkip: "ዝለል",
+        iosFooter1: "ይጫኑ ",
+        iosFooter2: " እና ይምረጡ ",
+        iosAddHome: "ወደ መነሻ ማያ ገጽ አክል",
+        installWarning: "⚠️ መተግበሪያውን ለማስቀመጥ በ Safari/Chrome ይክፈቱ!",
+        offlineSearch: "ከመስመር ውጭ ሆነው ፍለጋ አይሰራም። እባክዎ ካርታውን ወይም የተቀመጡ ቦታዎችን ይጠቀሙ!",
+        shareRouteTitle: "ጀብዱውን ይቀላቀሉ!",
+        followRouteText: "መንገዴን ወደ {target} ይከተሉ!",
+        copyRouteLink: "መንገዱን ለማጋራት አገናኙን ይቅዱ፡",
+        followLiveTitle: "በቀጥታ ይከተሉኝ!",
+        followLiveText: "አደኑን በቀጥታ ይከተሉ! 🔴",
+        copyLiveLink: "የቀጥታ መንገዱን ለማጋራት አገናኙን ይቅዱ፡",
+        checkAppText: "ይህን መተግበሪያ ይመልከቱ! 🗺️",
+        copyAppLink: "መተግበሪያውን ለማጋራት አገናኙን ይቅዱ፡",
+        btnFacebookGroup: "የእኛ የፌስቡክ ቡድን 👥",
+        devBetaTitle: "🧪 ቤታ እና ባህሪዎች",
+        devOn: "በርቷል ✅",
+        devOff: "ጠፍቷል ❌",
+        arLoading: "⏳ የ 3D ሞተርን በመጫን ላይ...",
+        arPermissionError: "የኤአር(AR) እንዲሰራ የእንቅስቃሴ ዳሳሾች ሊፈቀዱ ይገባል።",
+        arTestBtn: "📷 ኤአር (AR) ሞክር",
+        arNetworkError: "ኤአር(AR) መጫን አልተቻለም። አውታረ መረብዎን ያረጋግጡ።",
+        arNoRouteError: "የኤአር(AR) ጨዋታ ለመጀመር ንቁ መንገድ ሊኖርዎት ይገባል!",
+        arCloseBtn: "✖ የኤአር(AR) ካሜራ ዝጋ",
+        arVictory: "🎉 አድርገውታል! ግቡ ላይ ደርሰው {score} {pathName} ሰብስበዋል! ምርጥ!",
+        arStartText: "ጀምር",
+        arGoalText: "ግም",
         welcome: "ሰላም! {player}",
         helpFind: "{name} {targetName} እንዲያገኝ እርዱት!",
         okGotIt: "እሺ! ገባኝ!",
@@ -379,29 +491,57 @@ const i18n = {
         }
     },
     ar: {
-        welcomeTitle: "Welcome to the game! 🐭",
-        welcomeDesc2: "Ready to start the journey and help {name} find {targetName}?",
+        welcomeTitle: "مرحبًا بك في اللعبة! 🐭",
+        welcomeDesc2: "هل أنت مستعد لبدء الرحلة ومساعدة {name} في العثور على {targetName}؟",
         dontShowAgain: "لا تظهر مرة أخرى لهذا الإصدار",
-        btnSkip: "I know how it works! Let's go!",
-        btnTutorial: "Show me how",
-        tut1: "Here you can switch between driving and walking! 🚗🚶",
-        tut2: "Planning a route? Long-press on the map to set a custom starting point! 📍",
-        tut3: "Search for your destination using voice, text, or tap directly on the map! 🔍",
-        tut4: "Once you have a destination, long-press the map to add waypoints! 💡",
+        btnSkip: "أعرف كيف يعمل! لننطلق!",
+        btnTutorial: "أرني كيف",
+        tut1: "هنا يمكنك التبديل بين القيادة والمشي! 🚗🚶",
+        tut2: "تخطط لمسار؟ اضغط مطولاً على الخريطة لتعيين نقطة بداية! 📍",
+        tut3: "ابحث عن وجهتك باستخدام الصوت أو النص أو النقر مباشرة على الخريطة! 🔍",
+        tut4: "بمجرد تحديد الوجهة، اضغط مطولاً على الخريطة لإضافة نقاط طريق! 💡",
         tut11: "هل المسار خاطئ؟ اضغط على مسح لتنظيف الخريطة والبدء من جديد! 🗑️",
-        tut5: "Want to save the route? Long-press one of these buttons! 💾",
-        tut7: "Share the route in advance, or share Live so friends can follow along! 🔴",
-        tut8: "Share a static link to your route so others can see it! 🗺️",
-        tut9: "With Live-sharing, friends can follow your movement on the map in real time! 🔴",
-        tut10: "Share a link to the app itself with a friend! 📱",
-        tut6: "When your route is ready, tap here to start the game! 🚀",
+        tut5: "هل تريد حفظ المسار؟ اضغط مطولاً على أحد هذه الأزرار! 💾",
+        tut7: "شارك المسار مسبقًا، أو شارك مباشرة ليتمكن الأصدقاء من المتابعة! 🔴",
+        tut8: "شارك رابطًا ثابتًا لمسارك ليتمكن الآخرون من رؤيته! 🗺️",
+        tut9: "من خلال المشاركة المباشرة، يمكن للأصدقاء متابعة حركتك على الخريطة في الوقت الفعلي! 🔴",
+        tut10: "شارك رابط التطبيق مع صديق! 📱",
+        tut17: "شارك تجربتك عن التطبيق في مجموعة الفيسبوك. 👥",
+        tut6: "عندما يكون مسارك جاهزًا، انقر هنا لبدء اللعبة! 🚀",
         tut12: "هنا يمكنك رؤية عدد {pathName} المتبقية لجمعها! 🍎",
         tut13: "انقر هنا للتبديل إلى عرض الخريطة ورؤية موقعك! 🗺️",
         tut14: "هنا يمكنك تصغير الخريطة أو توسيطها! 🔍",
         tut15: "يمكنك أيضًا التكبير بأصابعك مباشرة على الخريطة! ✌️",
-        tut16: "عندما تصل إلى الهدف، ستكون هناك رقصة النصر وقصاصات الورق الملونة! 🎉",
-        btnNext: "Next ➔",
-        btnFinish: "Got it!",
+        tut16: "عندما تصل إلى الهدف، سنحتفل بقصاصات الورق الملونة ورقصة النصر! 🎉",
+        btnNext: "التالي ➔",
+        btnFinish: "فهمت!",
+        tutSkip: "تخطي",
+        iosFooter1: "اضغط على ",
+        iosFooter2: " واختر ",
+        iosAddHome: "إضافة إلى الشاشة الرئيسية",
+        installWarning: "⚠️ افتح في Safari/Chrome لحفظ التطبيق!",
+        offlineSearch: "البحث لا يعمل عندما تكون غير متصل بالإنترنت. يرجى استخدام الخريطة أو المواقع المحفوظة بدلاً من ذلك!",
+        shareRouteTitle: "انضم إلى المغامرة!",
+        followRouteText: "اتبع مساري إلى {target}!",
+        copyRouteLink: "انسخ الرابط لمشاركة المسار:",
+        followLiveTitle: "اتبعني مباشرة!",
+        followLiveText: "اتبع المطاردة مباشرة! 🔴",
+        copyLiveLink: "انسخ الرابط لمشاركة المسار المباشر:",
+        checkAppText: "تحقق من هذا التطبيق! 🗺️",
+        copyAppLink: "انسخ الرابط لمشاركة التطبيق:",
+        btnFacebookGroup: "مجموعتنا على الفيسبوك 👥",
+        devBetaTitle: "🧪 تجريبي وميزات",
+        devOn: "تشغيل ✅",
+        devOff: "إيقاف ❌",
+        arLoading: "⏳ جاري تحميل المحرك ثلاثي الأبعاد...",
+        arPermissionError: "يجب السماح لأجهزة استشعار الحركة لكي يعمل الواقع المعزز.",
+        arTestBtn: "📷 اختبار الواقع المعزز",
+        arNetworkError: "تعذر تحميل الواقع المعزز. تحقق من الشبكة.",
+        arNoRouteError: "يجب أن يكون لديك مسار نشط لبدء لعبة الواقع المعزز!",
+        arCloseBtn: "✖ إغلاق كاميرا الواقع المعزز",
+        arVictory: "🎉 رائع! لقد وصلت إلى الهدف وجمعت {score} {pathName}! عمل رائع!",
+        arStartText: "ابدأ",
+        arGoalText: "الهدف",
         welcome: "مرحباً! {player}",
         helpFind: "ساعد {name} في العثور على {targetName}!",
         okGotIt: "حسناً! فهمت!",
@@ -427,7 +567,7 @@ const i18n = {
         voiceListening: "أستمع...",
         didIHearRight: "هل سمعت بشكل صحيح؟",
         voiceError: "خطأ 🛑",
-        micDenied: "يجب عليك السماح بالوصول إلى الميكروفون في متصفحك.",
+        micDenied: "يجب عليك السماح بالوصول إلى الميكروفون في متصفح متصفحك.",
         heardNothing: "لم أسمع شيئاً! {player} تحدث بصوت أعلى قليلاً.",
         voiceNoMatch: "لم أتمكن من فهم ما قلته. حاول مرة أخرى! {target}",
         voiceNotSupported: "عذراً، متصفحك لا يدعم البحث الصوتي.",
@@ -568,6 +708,8 @@ function applyTranslations() {
     const wsb = document.getElementById('welcome-skip-btn'); if(wsb) wsb.innerHTML = t('btnSkip');
     const wtb = document.getElementById('welcome-tut-btn'); if(wtb) wtb.innerHTML = t('btnTutorial');
     
+    const tutSkip = document.getElementById('tutorial-skip'); if(tutSkip) tutSkip.innerText = t('tutSkip');
+    
     const searchInput = document.getElementById('text-search-input');
     if(searchInput) searchInput.placeholder = t('searchPlaceholder');
     
@@ -595,6 +737,11 @@ function applyTranslations() {
 
     const iosDesc = document.getElementById('ios-desc'); if(iosDesc) iosDesc.innerHTML = t('iosInstall');
     const iosClose = document.getElementById('ios-close'); if(iosClose) iosClose.innerHTML = t('iosClose');
+    
+    const iosFooterTxt = document.getElementById('ios-footer-txt');
+    if (iosFooterTxt) {
+        iosFooterTxt.innerHTML = t('iosFooter1') + '<svg width="20" height="20" viewBox="0 0 50 50" style="margin: 0 5px; vertical-align: middle;"><path d="M30,35v10H10V15h10v-2H8v34h24V35H30z" fill="#007AFF"/><path d="M24,2v30h2V2.5l8,8l1.5-1.5L25,0L24,2z" fill="#007AFF"/></svg>' + t('iosFooter2') + '<b>"' + t('iosAddHome') + '"</b>.';
+    }
 }
 
 function applyThemeUI() {
@@ -695,7 +842,8 @@ const tutorialSteps = [
     { target: 'share-btn-static', textKey: 'tut8', pos: 'bottom', action: 'open_share' },
     { target: 'share-btn-live', textKey: 'tut9', pos: 'bottom', action: 'open_share' },
     { target: 'share-btn-app', textKey: 'tut10', pos: 'bottom', action: 'open_share' },
-    { target: 'start-btn', textKey: 'tut6', pos: 'top' },
+    { target: 'share-btn-facebook', textKey: 'tut17', pos: 'bottom', action: 'open_share' },
+	{ target: 'start-btn', textKey: 'tut6', pos: 'top' },
     { target: 'path', textKey: 'tut12', pos: 'center', action: 'start_dummy_game' },
     { target: 'toggle-game-view-btn', textKey: 'tut13', pos: 'bottom' },
     { target: 'zoom-toggle-btn', textKey: 'tut14', pos: 'bottom', action: 'show_dummy_map' },
@@ -999,7 +1147,7 @@ function checkInstallState() {
 
     if (isInApp) {
         if (els.distInfo) {
-            els.distInfo.innerHTML = "⚠️ Öppna i Safari/Chrome för att spara appen!";
+            els.distInfo.innerHTML = t('installWarning');
             els.distInfo.style.color = "#d32f2f"; 
         }
         return; 
@@ -1800,7 +1948,7 @@ function startGame(isRestoring = false, restoreData = null) {
         if (!arBtn) {
             arBtn = document.createElement('button');
             arBtn.id = 'beta-ar-btn';
-            arBtn.innerText = "📷 TESTA AR";
+            arBtn.innerText = t('arTestBtn');
             arBtn.style.cssText = "background: #9C27B0; color: white; border-radius: 20px; padding: 6px 15px; font-size: 0.75rem; font-weight: bold; border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: pointer;";
             arBtn.onclick = startARTest;
             
@@ -2111,7 +2259,7 @@ async function executeTextSearch() {
             else { if (d[0].address && d[0].address.road && firstPart === d[0].address.road) { currentTargetName = d[0].address.road + (d[0].address.house_number ? ' ' + d[0].address.house_number : ''); } else { currentTargetName = firstPart; } }
             setTarget({lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon)}, true, true, true); map.flyTo(currentTargetCoords, 18); els.searchContainer.classList.add('hidden');
         }
-    } catch (e) { alert("Sökningen fungerar tyvärr inte när du är offline. Använd kartan eller sparade platser istället!"); }
+    } catch (e) { alert(t('offlineSearch')); }
 }
 
 function updateButtonUI() {
@@ -2163,21 +2311,37 @@ function shareApp(e) {
     const btnShareApp = document.createElement('button'); btnShareApp.id = 'share-btn-app'; btnShareApp.className = 'wp-menu-btn'; btnShareApp.style.background = 'var(--primary)'; btnShareApp.innerText = t('shareAppBtn');
     btnShareApp.onclick = () => { menu.remove(); shareOnlyApp(); };
 
+    const btnFacebook = document.createElement('button'); 
+    btnFacebook.id = 'share-btn-facebook'; 
+    btnFacebook.className = 'wp-menu-btn'; 
+    btnFacebook.style.background = '#1877F2'; 
+    btnFacebook.innerText = t('btnFacebookGroup'); 
+    btnFacebook.onclick = () => { 
+        menu.remove(); 
+        window.open('https://www.facebook.com/groups/1821002065283654', '_blank'); 
+    };
+
     const btnCancel = document.createElement('button'); btnCancel.id = 'share-btn-cancel'; btnCancel.innerText = t('btnCancel'); btnCancel.style.fontSize = '0.7rem'; btnCancel.style.background = 'none'; btnCancel.onclick = () => menu.remove();
 
-    menu.appendChild(btnNormal); menu.appendChild(btnLive); menu.appendChild(btnShareApp); menu.appendChild(btnCancel); document.body.appendChild(menu);
+    menu.appendChild(btnNormal); 
+    menu.appendChild(btnLive); 
+    menu.appendChild(btnShareApp); 
+    menu.appendChild(btnFacebook); 
+    menu.appendChild(btnCancel); 
+    
+    document.body.appendChild(menu);
 
     setTimeout(() => { const close = (event) => { if (!menu.contains(event.target) && event.target.id !== 'share-btn' && !event.target.closest('#tutorial-overlay')) { menu.remove(); document.removeEventListener('click', close); } }; document.addEventListener('click', close); }, 100);
 }
 
 function shareNormal() {
-    let shareUrl = window.location.origin + window.location.pathname; let title = 'Tracker'; let text = `Häng med på äventyr!`;
+    let shareUrl = window.location.origin + window.location.pathname; let title = 'Tracker'; let text = t('shareRouteTitle');
     if (currentTargetCoords) {
         const data = { t: [currentTargetCoords.lat, currentTargetCoords.lng], m: travelMode, wd: waypointsDit.map(w => [w.lat, w.lng]), wh: waypointsHem.map(w => [w.lat, w.lng]), n: currentTargetName, s: manualStartMarker ? fixedStartCoords : null };
-        const encoded = btoa(JSON.stringify(data)); shareUrl += '?r=' + encoded; text = `Följ min rutt till ${currentTargetName}!`;
+        const encoded = btoa(JSON.stringify(data)); shareUrl += '?r=' + encoded; text = t('followRouteText', {target: currentTargetName});
     }
     const d = {title: title, text: text, url: shareUrl}; 
-    if(navigator.share) { navigator.share(d).catch(e => console.log("Delning avbruten")); } else { prompt("Kopiera länken för att dela rutt:", shareUrl); }
+    if(navigator.share) { navigator.share(d).catch(e => console.log("Delning avbruten")); } else { prompt(t('copyRouteLink'), shareUrl); }
 }
 
 function startLiveSharing() {
@@ -2186,8 +2350,8 @@ function startLiveSharing() {
     liveChannel = pusher.subscribe(`private-live-${liveSessionId}`);
     liveChannel.bind('pusher:subscription_succeeded', () => { isLiveSharing = true; broadcastLiveState(); if(!liveBroadcastInterval) { liveBroadcastInterval = setInterval(() => { if (isLiveSharing) broadcastLiveState(); }, 3000); } });
     let shareUrl = window.location.origin + window.location.pathname + '?live=' + liveSessionId;
-    const d = {title: 'Följ mig live!', text: `Följ jakten live! 🔴`, url: shareUrl};
-    if(navigator.share) { navigator.share(d).catch(e => console.log("Delning avbruten")); } else { prompt("Kopiera länken för att dela live-rutt:", shareUrl); }
+    const d = {title: t('followLiveTitle'), text: t('followLiveText'), url: shareUrl};
+    if(navigator.share) { navigator.share(d).catch(e => console.log("Delning avbruten")); } else { prompt(t('copyLiveLink'), shareUrl); }
 }
 
 function resumeLiveSharing() {
@@ -2207,8 +2371,8 @@ function shareOnlyApp() {
     const appTitles = { 'sv': 'Hur långt?', 'en': 'How far?', 'ru': 'Как далеко?', 'am': 'ምን ያህል ይርቃል?', 'ar': 'كم تبعد؟' };
     const appName = appTitles[currentLang] || appTitles['en'];
     
-    const d = {title: appName, text: `Kolla in den här appen! 🗺️`, url: shareUrl}; 
-    if(navigator.share) { navigator.share(d).catch(e => console.log("Delning avbruten")); } else { prompt("Kopiera länken för att dela appen:", shareUrl); }
+    const d = {title: appName, text: t('checkAppText'), url: shareUrl}; 
+    if(navigator.share) { navigator.share(d).catch(e => console.log("Delning avbruten")); } else { prompt(t('copyAppLink'), shareUrl); }
 }
 
 // --- DEVELOPER MODE ---
@@ -2236,7 +2400,7 @@ function openDeveloperMode() {
 
     // --- BETA MODE TOGGLE ---
     const betaHeader = document.createElement('h4');
-    betaHeader.innerText = "🧪 BETA & FUNKTIONER";
+    betaHeader.innerText = t('devBetaTitle');
     betaHeader.style.margin = "10px 0 5px 0";
     betaHeader.style.textAlign = "center";
     menu.appendChild(betaHeader);
@@ -2244,7 +2408,7 @@ function openDeveloperMode() {
     Object.keys(appFeatures).forEach(key => {
         const active = isFeatureOn(key);
         const btn = document.createElement('button');
-        btn.innerText = `${appFeatures[key].name}: ${active ? 'PÅ ✅' : 'AV ❌'}`;
+        btn.innerText = `${appFeatures[key].name}: ${active ? t('devOn') : t('devOff')}`;
         btn.style.padding = '10px'; btn.style.borderRadius = '10px'; btn.style.border = 'none';
         btn.style.marginBottom = '15px';
         btn.style.background = active ? '#4CAF50' : '#444';

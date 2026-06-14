@@ -2,14 +2,14 @@
 function startARTest() {
     playClickSound();
     const btn = document.getElementById('beta-ar-btn');
-    if(btn) btn.innerText = "⏳ Laddar 3D-motor...";
+    if(btn) btn.innerText = t('arLoading');
 
     // iOS 13+ Kräver användarens tillåtelse för att läsa rörelsesensorer
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         DeviceOrientationEvent.requestPermission()
             .then(permissionState => {
                 if (permissionState === 'granted') { loadARLibraries(); } 
-                else { alert("Rörelsesensorer måste tillåtas för att AR ska fungera."); if(btn) btn.innerText = "📷 TESTA AR"; }
+                else { alert(t('arPermissionError')); if(btn) btn.innerText = t('arTestBtn'); }
             })
             .catch(console.error);
     } else {
@@ -29,9 +29,9 @@ function loadARLibraries() {
         .then(() => loadScript("https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"))
         .then(() => { initARScene(); })
         .catch(err => {
-            alert("Kunde inte ladda AR. Kontrollera nätverket.");
+            alert(t('arNetworkError'));
             const btn = document.getElementById('beta-ar-btn');
-            if(btn) btn.innerText = "📷 TESTA AR";
+            if(btn) btn.innerText = t('arTestBtn');
         });
 }
 
@@ -73,9 +73,9 @@ const COMPASS_SMOOTHING_FACTOR = 0.10; // Gör kompasspilen mjukare
 
 function initARScene() {
     if (!currentRouteCoords || currentRouteCoords.length === 0) {
-        alert("Du måste ha en aktiv rutt för att starta AR-spelet!");
+        alert(t('arNoRouteError'));
         const btn = document.getElementById('beta-ar-btn');
-        if(btn) btn.innerText = "📷 TESTA AR";
+        if(btn) btn.innerText = t('arTestBtn');
         return;
     }
 
@@ -169,7 +169,7 @@ function initARScene() {
         signBox.setAttribute('position', '0 2.5 0');
 
         const signText = document.createElement('a-text');
-        signText.setAttribute('value', 'START');
+        signText.setAttribute('value', t('arStartText'));
         signText.setAttribute('color', '#FFFFFF');
         signText.setAttribute('align', 'center');
         signText.setAttribute('position', '0 0 0.11');
@@ -201,7 +201,7 @@ function initARScene() {
         endSignBox.setAttribute('position', '0 2.5 0'); 
 
         const endSignText = document.createElement('a-text');
-        endSignText.setAttribute('value', 'MÅL');
+        endSignText.setAttribute('value', t('arGoalText'));
         endSignText.setAttribute('color', '#FFFFFF');
         endSignText.setAttribute('align', 'center');
         endSignText.setAttribute('position', '0 0 0.11'); 
@@ -253,7 +253,7 @@ function initARScene() {
 
     const scoreCard = document.createElement('div');
     scoreCard.id = "ar-score-card";
-    scoreCard.innerHTML = `🍎 Äpplen: <b>${window.arScore} / ${window.arTotalApples}</b>`;
+    scoreCard.innerHTML = `${activeTheme.path} ${getThemePathName()}: <b>${window.arScore} / ${window.arTotalApples}</b>`;
     scoreCard.style.cssText = "background: rgba(255,255,255,0.9); padding: 10px 20px; border-radius: 15px; text-align: center; font-weight: bold; font-size: 1.2rem; box-shadow: 0 4px 10px rgba(0,0,0,0.3); color: #333;";
     uiContainer.appendChild(scoreCard);
 
@@ -276,7 +276,7 @@ function initARScene() {
     document.body.appendChild(uiContainer);
 
     const closeBtn = document.createElement('button');
-    closeBtn.innerText = "✖ STÄNG AR-KAMERAN";
+    closeBtn.innerText = t('arCloseBtn');
     closeBtn.style.cssText = "position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 9999999; background: #f44336; color: white; padding: 15px 25px; border-radius: 15px; font-weight: bold; border: none; box-shadow: 0 5px 15px rgba(0,0,0,0.4); font-size: 1rem;";
     closeBtn.onclick = () => { window.location.reload(); };
     document.body.appendChild(closeBtn);
@@ -430,7 +430,7 @@ window.handleARPositionUpdate = function() {
         if (window.arScore > oldScore) {
             
             const scoreCard = document.getElementById('ar-score-card');
-            if (scoreCard) scoreCard.innerHTML = `🍎 Äpplen: <b>${window.arScore} / ${window.arTotalApples}</b>`;
+            if (scoreCard) scoreCard.innerHTML = `${activeTheme.path} ${getThemePathName()}: <b>${window.arScore} / ${window.arTotalApples}</b>`;
             playClickSound();
 
             let newlyEaten = false;
@@ -467,7 +467,7 @@ window.handleARPositionUpdate = function() {
         if (progressPercent >= 99 && window.arScore >= window.arTotalApples) {
             if(!window.arGoalReached) {
                 window.arGoalReached = true; 
-                alert(`🎉 You did it! Du kom fram till målet och samlade ${window.arScore} äpplen! Awesome!`);
+                alert(t('arVictory', {score: window.arScore, pathName: getThemePathName().toLowerCase()}));
                 
                 const endSign = document.getElementById('ar-end-sign');
                 if (endSign) {
