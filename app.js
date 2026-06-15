@@ -37,7 +37,7 @@ const i18n = {
         btnSkip: "Jag har koll! Let's go!",
         btnTutorial: "Visa mig hur man gör",
         tut1: "Här kan du byta mellan bil och gång! 🚗🚶",
-        tut2: "Planerar du en rutt? Långtryck på kartan för att välja en egen startpunkt! 📍",
+        tut2: "Planerar du en rutt? Långtryck på kartan för att wybrać en egen startpunkt! 📍",
         tut3: "Sök efter ditt mål med röst, text, eller klicka direkt på kartan! 🔍",
         tut4: "När du valt mål kan du långtrycka på kartan igen för att lägga till via-punkter längs vägen! 💡",
         tut11: "Blev rutten fel? Tryck på Rensa här nere för att börja om! 🗑️",
@@ -539,7 +539,7 @@ const i18n = {
         arNetworkError: "تعذر تحميل الواقع المعزز. تحقق من الشبكة.",
         arNoRouteError: "يجب أن يكون لديك مسار نشط لبدء لعبة الواقع المعزز!",
         arCloseBtn: "✖ إغلاق كاميرا الواقع المعزز",
-        arVictory: "🎉 رائع! لقد وصلت إلى الهدف وجمعت {score} {pathName}! عمل رائع!",
+        arVictory: "🎉 رائع! لقد وصلت إلى الهدف وجمع {score} {pathName}! عمل رائع!",
         arStartText: "ابدأ",
         arGoalText: "الهدف",
         welcome: "مرحباً! {player}",
@@ -1174,15 +1174,7 @@ function getPusherConfig() {
     };
 }
 
-function getBearing(lat1, lng1, lat2, lng2) {
-    const toRad = Math.PI / 180; const toDeg = 180 / Math.PI;
-    const dLng = (lng2 - lng1) * toRad;
-    const y = Math.sin(dLng) * Math.cos(lat2 * toRad);
-    const x = Math.cos(lat1 * toRad) * Math.sin(lat2 * toRad) - Math.sin(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.cos(dLng);
-    const brng = Math.atan2(y, x) * toDeg;
-    return (brng + 360) % 360;
-}
-
+// --- INITIALIZE MAP ---
 function initMap() {
     applyThemeUI(); 
     checkInstallState();
@@ -1201,7 +1193,6 @@ function initMap() {
             }
         } catch(e) {}
     } else if (localStorage.getItem('tutorial_done') === 'true') {
-        // Fallback om the precis uppdaterat från gammal version, men vi vill tvinga fram den en gång
         shouldShowWelcome = true; 
     }
 
@@ -1238,7 +1229,6 @@ function initMap() {
     };
     clearControl.addTo(map);
 
-    // --- RUND HJÄLPKNAPP (❓) SYMMETRISKT PLACERAD PÅ VÄNSTER KARTKANT ---
     const helpControl = L.control({position: 'bottomleft'});
     helpControl.onAdd = function () {
         const btn = L.DomUtil.create('button', '');
@@ -1256,7 +1246,7 @@ function initMap() {
         btn.style.alignItems = 'center';
         btn.style.justifyContent = 'center';
         btn.style.marginBottom = '15px';
-        btn.style.marginLeft = '10px'; // Ger lite extra luft från kanten för symmetri
+        btn.style.marginLeft = '10px'; 
         btn.onclick = function(e) { L.DomEvent.stopPropagation(e); startTutorial(); };
         L.DomEvent.disableClickPropagation(btn); 
         return btn;
@@ -1514,7 +1504,9 @@ function toggleGameMap() {
                 dragging: true, 
                 touchZoom: true, 
                 scrollWheelZoom: true, 
-                doubleClickZoom: false 
+                doubleClickZoom: false,
+                rotate: true,
+                bearing: 0
             }).setView(userCoords || [59.3, 14.1], 15); 
             
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(gameMap); 
@@ -1524,11 +1516,6 @@ function toggleGameMap() {
                 isGameMapZoomedOut = false; 
                 
                 if (zoomBtn) zoomBtn.innerText = t('btnCenter');
-
-                if (els.gameMapElement) {
-                    els.gameMapElement.style.transform = `translateZ(0) rotate(0deg)`;
-                    renderedHeading = 0; 
-                }
             });
             
             gameMap.on('zoomstart', () => {
@@ -1581,23 +1568,20 @@ function updateGameMapView(forceCenter = false) {
             gameMap.fitBounds(bounds, { padding: [40, 140] });
         }
         
-        if (els.gameMapElement) {
-            els.gameMapElement.style.transform = `translateZ(0) rotate(0deg)`;
-        }
+        if (gameMap.setBearing) gameMap.setBearing(0);
     } else if (gameMapAutoCenter || forceCenter) {
         let targetZoom = forceCenter ? 16 : (gameMap.getZoom() || 16);
         gameMap.setView(userCoords, targetZoom);
         
         if (currentHeading !== null) { 
-            if (els.gameMapElement) { 
-                let currentRot = renderedHeading % 360; 
-                if (currentRot < 0) currentRot += 360; 
-                let diff = currentHeading - currentRot; 
-                if (diff > 180) diff -= 360; 
-                if (diff < -180) diff += 360; 
-                renderedHeading += diff; 
-                els.gameMapElement.style.transform = `translateZ(0) rotate(${-renderedHeading}deg)`; 
-            } 
+            let currentRot = renderedHeading % 360; 
+            if (currentRot < 0) currentRot += 360; 
+            let diff = currentHeading - currentRot; 
+            if (diff > 180) diff -= 360; 
+            if (diff < -180) diff += 360; 
+            renderedHeading += diff; 
+            
+            if (gameMap.setBearing) gameMap.setBearing(renderedHeading);
         }
     }
     
@@ -2398,7 +2382,6 @@ function openDeveloperMode() {
 
     const title = document.createElement('h3'); title.innerText = t('devTitle'); title.style.margin = '0 0 10px 0'; title.style.textAlign = 'center'; title.style.letterSpacing = '2px'; menu.appendChild(title);
 
-    // --- BETA MODE TOGGLE ---
     const betaHeader = document.createElement('h4');
     betaHeader.innerText = t('devBetaTitle');
     betaHeader.style.margin = "10px 0 5px 0";
@@ -2417,7 +2400,6 @@ function openDeveloperMode() {
         menu.appendChild(btn);
     });
 
-    // --- SPRÅKVAL ---
     const langTitle = document.createElement('h4'); langTitle.innerText = t('devLang'); langTitle.style.margin = '10px 0 5px 0'; langTitle.style.textAlign = 'center'; menu.appendChild(langTitle);
     
     const langGrid = document.createElement('div'); langGrid.style.display = 'grid'; langGrid.style.gridTemplateColumns = '1fr 1fr'; langGrid.style.gap = '8px'; menu.appendChild(langGrid);
@@ -2432,7 +2414,6 @@ function openDeveloperMode() {
         langGrid.appendChild(btn);
     });
 
-    // --- TEMAVAL ---
     const themeTitle = document.createElement('h4'); themeTitle.innerText = t('devTheme'); themeTitle.style.margin = '15px 0 5px 0'; themeTitle.style.textAlign = 'center'; menu.appendChild(themeTitle);
 
     const currentThemeId = localStorage.getItem('app_theme_override');
@@ -2450,7 +2431,6 @@ function openDeveloperMode() {
         menu.appendChild(btn);
     });
 
-    // --- ÅTERSTÄLL ---
     const resetBtn = document.createElement('button'); resetBtn.innerText = t('devReset');
     resetBtn.style.background = '#FF9800'; resetBtn.style.color = 'white'; resetBtn.style.padding = '12px'; resetBtn.style.borderRadius = '10px'; resetBtn.style.marginTop = '15px'; resetBtn.style.fontWeight = 'bold'; resetBtn.style.border = 'none'; resetBtn.style.cursor = 'pointer';
     resetBtn.onclick = () => {
@@ -2460,7 +2440,6 @@ function openDeveloperMode() {
     };
     menu.appendChild(resetBtn);
 
-    // --- STÄNG ---
     const closeBtn = document.createElement('button'); closeBtn.innerText = t('devClose'); 
     closeBtn.style.background = '#ff4444'; closeBtn.style.color = 'white'; closeBtn.style.padding = '12px'; closeBtn.style.borderRadius = '10px'; closeBtn.style.marginTop = '5px'; closeBtn.style.fontWeight = 'bold'; closeBtn.style.border = 'none'; closeBtn.style.cursor = 'pointer'; 
     closeBtn.onclick = () => menu.remove(); 
