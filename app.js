@@ -1,5 +1,3 @@
-const APP_VERSION = APP_CURRENT_VERSION; 
-
 // --- BETA & FEATURE FLAGS ---
 const appFeatures = {
     beta_mode: { id: 'beta_active', name: 'Beta Mode', default: false }
@@ -824,8 +822,7 @@ function saveWelcomeState() {
     const isChecked = chk ? chk.checked : false;
     const data = {
         timestamp: Date.now(),
-        dontShowAgain: isChecked,
-        version: APP_VERSION
+        dontShowAgain: isChecked
     };
     localStorage.setItem('welcome_overlay_data', JSON.stringify(data));
 }
@@ -1186,7 +1183,7 @@ function initMap() {
             const welcomeData = JSON.parse(welcomeDataStr);
             const hoursSinceLastSeen = (Date.now() - welcomeData.timestamp) / (1000 * 60 * 60);
 
-            if (welcomeData.dontShowAgain && welcomeData.version === APP_VERSION) {
+            if (welcomeData.dontShowAgain) {
                 shouldShowWelcome = false;
             } else if (!welcomeData.dontShowAgain && hoursSinceLastSeen < 3) {
                 shouldShowWelcome = false;

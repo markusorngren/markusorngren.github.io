@@ -1,10 +1,8 @@
-importScripts('./version.js'); 
-
-const CACHE_NAME = 'mouse-tracker-' + APP_CURRENT_VERSION; 
+// Uppdaterad för v
+const CACHE_NAME = 'mouse-tracker-v57'; 
 const MAP_CACHE = 'mouse-map-tiles-v1'; 
 const ASSETS = [
   './',
-  './version.js', // Viktigt att denna cachas!
   './index.html',
   './style.css',
   './ar.js',
