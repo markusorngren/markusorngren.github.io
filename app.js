@@ -406,7 +406,7 @@ const i18n = {
         offlineSearch: "ከመስመር ውጭ ሆነው ፍለጋ አይሰራም። እባክዎ ካርታውን ወይም የተቀመጡ ቦታዎችን ይጠቀሙ!",
         shareRouteTitle: "ጀብዱውን ይቀላቀሉ!",
         followRouteText: "መንገዴን ወደ {target} ይከተሉ!",
-        copyRouteLink: "መንገዱን ለማጋራት አገናኙን ይቅዱ፡",
+        copyRouteLink: "መንገዱ ለማጋራት አገናኙን ይቅዱ፡",
         followLiveTitle: "በቀጥታ ይከተሉኝ!",
         followLiveText: "አደኑን በቀጥታ ይከተሉ! 🔴",
         copyLiveLink: "የቀጥታ መንገዱን ለማጋራት አገናኙን ይቅዱ፡",
@@ -758,6 +758,37 @@ let isLiveSharing = false;
 let isLiveReceiver = false;
 let liveSessionId = null;
 let liveBroadcastInterval = null;
+
+function getPusherConfig() {
+    return {
+        cluster: pusherCluster,
+        channelAuthorization: {
+            customHandler: (params, callback) => {
+                const stringToSign = params.socketId + ':' + params.channelName;
+                const signature = CryptoJS.HmacSHA256(stringToSign, pusherSecret).toString(CryptoJS.enc.Hex);
+                callback(null, { auth: pusherKey + ':' + signature });
+            }
+        }
+    };
+}
+
+// Räknar ut kompassriktningen mellan två GPS-koordinater
+function getBearing(startLat, startLng, destLat, destLng) {
+    const toRad = Math.PI / 180;
+    const toDeg = 180 / Math.PI;
+
+    startLat = startLat * toRad;
+    startLng = startLng * toRad;
+    destLat = destLat * toRad;
+    destLng = destLng * toRad;
+
+    const y = Math.sin(destLng - startLng) * Math.cos(destLat);
+    const x = Math.cos(startLat) * Math.sin(destLat) -
+              Math.sin(startLat) * Math.cos(destLat) * Math.cos(destLng - startLng);
+    const bearing = Math.atan2(y, x) * toDeg;
+
+    return (bearing + 360) % 360;
+}
 
 let savedGameState = 'MAP';
 let savedInitialTotalKm = 0;
@@ -1156,19 +1187,6 @@ function checkInstallState() {
             if (iosPrompt) iosPrompt.classList.remove('hidden');
         }, 3000); 
     }
-}
-
-function getPusherConfig() {
-    return {
-        cluster: pusherCluster,
-        channelAuthorization: {
-            customHandler: (params, callback) => {
-                const stringToSign = params.socketId + ':' + params.channelName;
-                const signature = CryptoJS.HmacSHA256(stringToSign, pusherSecret).toString(CryptoJS.enc.Hex);
-                callback(null, { auth: pusherKey + ':' + signature });
-            }
-        }
-    };
 }
 
 // --- INITIALIZE MAP ---
