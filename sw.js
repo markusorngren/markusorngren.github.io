@@ -1,5 +1,5 @@
 // Uppdaterad för v
-const CACHE_NAME = 'mouse-tracker-v62'; 
+const CACHE_NAME = 'mouse-tracker-v63'; 
 const MAP_CACHE = 'mouse-map-tiles-v1'; 
 const ASSETS = [
   './',
@@ -61,13 +61,12 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // För appens filer (HTML, CSS, JS)
+// För appens filer (HTML, CSS, JS)
+  // NETWORK FIRST - Försök hämta senaste koden från nätet, annars använd cachen
   e.respondWith(
-    caches.match(e.request).then(res => {
-      if (res) return res;
-      return fetch(e.request).catch((err) => {
-        console.warn("Offline-läge aktivt, nätverksanrop misslyckades:", err);
-      });
+    fetch(e.request).catch((err) => {
+      console.warn("Offline-läge aktivt, hämtar från cachen istället:", err);
+      return caches.match(e.request);
     })
   );
 });
