@@ -871,10 +871,10 @@ const tutorialSteps = [
     { target: 'share-btn-live', textKey: 'tut9', pos: 'bottom', action: 'open_share' },
     { target: 'share-btn-app', textKey: 'tut10', pos: 'bottom', action: 'open_share' },
     { target: 'share-btn-facebook', textKey: 'tut17', pos: 'bottom', action: 'open_share' },
-	{ target: 'start-btn', textKey: 'tut6', pos: 'top' },
+    { target: 'start-btn', textKey: 'tut6', pos: 'top' },
     { target: 'path', textKey: 'tut12', pos: 'center', action: 'start_dummy_game' },
-    { target: 'toggle-game-view-btn', textKey: 'tut13', pos: 'bottom' },
-    { target: 'zoom-toggle-btn', textKey: 'tut14', pos: 'bottom', action: 'show_dummy_map' },
+    { target: 'toggle-game-view-btn', textKey: 'tut13', pos: 'top' }, // Ändrad från 'bottom'
+    { target: 'zoom-toggle-btn', textKey: 'tut14', pos: 'top', action: 'show_dummy_map' }, // Ändrad från 'bottom'
     { target: 'game-map-wrapper', textKey: 'tut15', pos: 'center' },
     { target: 'path', textKey: 'tut16', pos: 'center', action: 'show_victory_dance' }
 ];
