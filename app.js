@@ -35,7 +35,7 @@ const i18n = {
         btnSkip: "Jag har koll! Let's go!",
         btnTutorial: "Visa mig hur man gör",
         tut1: "Här kan du byta mellan bil och gång! 🚗🚶",
-        tut2: "Planerar du en rutt? Långtryck på kartan för att wybrać en egen startpunkt! 📍",
+        tut2: "Planerar du en rutt? Långtryck på kartan för att skapa en startpunkt! 📍",
         tut3: "Sök efter ditt mål med röst, text, eller klicka direkt på kartan! 🔍",
         tut4: "När du valt mål kan du långtrycka på kartan igen för att lägga till via-punkter längs vägen! 💡",
         tut11: "Blev rutten fel? Tryck på Rensa här nere för att börja om! 🗑️",
