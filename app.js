@@ -1521,6 +1521,7 @@ function toggleGameMap() {
                 scrollWheelZoom: true, 
                 doubleClickZoom: false,
                 rotate: true,
+				touchRotate: true,
                 bearing: 0
             }).setView(userCoords || [59.3, 14.1], 15); 
             
