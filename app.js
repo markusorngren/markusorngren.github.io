@@ -1932,7 +1932,7 @@ function startGame(isRestoring = false, restoreData = null) {
 
     isGameMapVisible = false; els.gameMapWrapper.classList.add('hidden'); const distDisplay = document.getElementById('game-distance-display'); if (distDisplay) distDisplay.classList.remove('hidden');
     els.pathGrid.classList.remove('hidden');
-    els.mapPage.classList.add('hidden'); els.gamePage.classList.remove('hidden'); if(!isLiveReceiver) els.shareBtn.classList.add('hidden');
+    els.mapPage.classList.add('hidden'); els.gamePage.classList.remove('hidden');
     requestWakeLock(); els.pathGrid.innerHTML = `<div id="the-mouse">${activeTheme.player}</div>`;
 
     const toggleBtn = document.getElementById('toggle-game-view-btn');

@@ -1,5 +1,5 @@
 // Uppdaterad för v
-const CACHE_NAME = 'mouse-tracker-v64'; 
+const CACHE_NAME = 'mouse-tracker-v65'; 
 const MAP_CACHE = 'mouse-map-tiles-v1'; 
 const ASSETS = [
   './',
