@@ -71,15 +71,6 @@ const i18n = {
         devBetaTitle: "🧪 BETA & FUNKTIONER",
         devOn: "PÅ ✅",
         devOff: "AV ❌",
-        arLoading: "⏳ Laddar 3D-motor...",
-        arPermissionError: "Rörelsesensorer måste tillåtas för att AR ska fungera.",
-        arTestBtn: "📷 TESTA AR",
-        arNetworkError: "Kunde inte ladda AR. Kontrollera nätverket.",
-        arNoRouteError: "Du måste ha en aktiv rutt för att starta AR-spelet!",
-        arCloseBtn: "✖ STÄNG AR-KAMERAN",
-        arVictory: "🎉 Grymt jobbat! Du kom fram till målet och samlade {score} {pathName}! Awesome!",
-        arStartText: "START",
-        arGoalText: "MÅL",
         welcome: "Hej! {player}",
         helpFind: "Hjälp {name} att hitta {targetName}!",
         okGotIt: "Okej! Jag förstår!",
@@ -186,15 +177,6 @@ const i18n = {
         devBetaTitle: "🧪 BETA & FEATURES",
         devOn: "ON ✅",
         devOff: "OFF ❌",
-        arLoading: "⏳ Loading 3D engine...",
-        arPermissionError: "Motion sensors must be allowed for AR to work.",
-        arTestBtn: "📷 TEST AR",
-        arNetworkError: "Could not load AR. Check your network.",
-        arNoRouteError: "You must have an active route to start the AR game!",
-        arCloseBtn: "✖ CLOSE AR CAMERA",
-        arVictory: "🎉 Awesome! You reached the goal and collected {score} {pathName}! Great job!",
-        arStartText: "START",
-        arGoalText: "GOAL",
         welcome: "Hello! {player}",
         helpFind: "Help {name} find {targetName}!",
         okGotIt: "Okay! I understand!",
@@ -301,15 +283,6 @@ const i18n = {
         devBetaTitle: "🧪 БЕТА И ФУНКЦИИ",
         devOn: "ВКЛ ✅",
         devOff: "ВЫКЛ ❌",
-        arLoading: "⏳ Загрузка 3D-движка...",
-        arPermissionError: "Датчики движения должны быть разрешены для работы AR.",
-        arTestBtn: "📷 ТЕСТ AR",
-        arNetworkError: "Не удалось загрузить AR. Проверьте сеть.",
-        arNoRouteError: "У вас должен быть активный маршрут, чтобы начать игру AR!",
-        arCloseBtn: "✖ ЗАКРЫТЬ КАМЕРУ AR",
-        arVictory: "🎉 Отлично! Вы достигли цели и собрали {score} {pathName}! Потрясающе!",
-        arStartText: "СТАРТ",
-        arGoalText: "ЦЕЛЬ",
         welcome: "Привет! {player}",
         helpFind: "Помогите {name} найти {targetName}!",
         okGotIt: "Понятно!",
@@ -416,15 +389,6 @@ const i18n = {
         devBetaTitle: "🧪 ቤታ እና ባህሪዎች",
         devOn: "በርቷል ✅",
         devOff: "ጠፍቷል ❌",
-        arLoading: "⏳ የ 3D ሞተርን በመጫን ላይ...",
-        arPermissionError: "የኤአር(AR) እንዲሰራ የእንቅስቃሴ ዳሳሾች ሊፈቀዱ ይገባል።",
-        arTestBtn: "📷 ኤአር (AR) ሞክር",
-        arNetworkError: "ኤአር(AR) መጫን አልተቻለም። አውታረ መረብዎን ያረጋግጡ።",
-        arNoRouteError: "የኤአር(AR) ጨዋታ ለመጀመር ንቁ መንገድ ሊኖርዎት ይገባል!",
-        arCloseBtn: "✖ የኤአር(AR) ካሜራ ዝጋ",
-        arVictory: "🎉 አድርገውታል! ግቡ ላይ ደርሰው {score} {pathName} ሰብስበዋል! ምርጥ!",
-        arStartText: "ጀምር",
-        arGoalText: "ግም",
         welcome: "ሰላም! {player}",
         helpFind: "{name} {targetName} እንዲያገኝ እርዱት!",
         okGotIt: "እሺ! ገባኝ!",
@@ -531,15 +495,6 @@ const i18n = {
         devBetaTitle: "🧪 تجريبي وميزات",
         devOn: "تشغيل ✅",
         devOff: "إيقاف ❌",
-        arLoading: "⏳ جاري تحميل المحرك ثلاثي الأبعاد...",
-        arPermissionError: "يجب السماح لأجهزة استشعار الحركة لكي يعمل الواقع المعزز.",
-        arTestBtn: "📷 اختبار الواقع المعزز",
-        arNetworkError: "تعذر تحميل الواقع المعزز. تحقق من الشبكة.",
-        arNoRouteError: "يجب أن يكون لديك مسار نشط لبدء لعبة الواقع المعزز!",
-        arCloseBtn: "✖ إغلاق كاميرا الواقع المعزز",
-        arVictory: "🎉 رائع! لقد وصلت إلى الهدف وجمع {score} {pathName}! عمل رائع!",
-        arStartText: "ابدأ",
-        arGoalText: "الهدف",
         welcome: "مرحباً! {player}",
         helpFind: "ساعد {name} في العثور على {targetName}!",
         okGotIt: "حسناً! فهمت!",
@@ -1673,10 +1628,6 @@ function checkRestoreGame() {
 function handlePositionUpdate(pos) {
     if (isLiveReceiver) return; userCoords = [pos.coords.latitude, pos.coords.longitude];
     
-    if (typeof window.handleARPositionUpdate === 'function') {
-        window.handleARPositionUpdate();
-    }
-
     if (pos.coords.heading !== null && !isNaN(pos.coords.heading)) { currentHeading = pos.coords.heading; } 
     else if (lastUserCoordsForHeading) { const dist = L.latLng(lastUserCoordsForHeading).distanceTo(userCoords); if (dist > 2) { currentHeading = getBearing(lastUserCoordsForHeading[0], lastUserCoordsForHeading[1], userCoords[0], userCoords[1]); } }
     if (!lastUserCoordsForHeading || L.latLng(lastUserCoordsForHeading).distanceTo(userCoords) > 2) { lastUserCoordsForHeading = [...userCoords]; }
@@ -1942,20 +1893,6 @@ function startGame(isRestoring = false, restoreData = null) {
     if (zoomBtn) zoomBtn.classList.add('hidden');
 
     if (!isRestoring && !isLiveReceiver && travelMode === 2 && currentRouteCoords.length > 0) { let distToTarget = 0; let splitIndex = 0; let minD = Infinity; currentRouteCoords.forEach((c, i) => { const d = L.latLng(c).distanceTo(currentTargetCoords); if (d < minD) { minD = d; splitIndex = i; } }); for (let i = 0; i < splitIndex; i++) { distToTarget += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]); } const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', ''); const totalDistanceKm = parseFloat(distStr) || 1; const f = modes[travelMode].factor; const r = totalDistanceKm % f; const tKm = distToTarget / 1000; midpointStepIndex = r > 0.05 ? (tKm < r ? 0 : Math.floor((tKm - r) / f) + 1) : Math.floor(tKm / f); }
-    
-    if (isFeatureOn('beta_mode') && !isLiveReceiver) {
-        let arBtn = document.getElementById('beta-ar-btn');
-        if (!arBtn) {
-            arBtn = document.createElement('button');
-            arBtn.id = 'beta-ar-btn';
-            arBtn.innerText = t('arTestBtn');
-            arBtn.style.cssText = "background: #9C27B0; color: white; border-radius: 20px; padding: 6px 15px; font-size: 0.75rem; font-weight: bold; border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: pointer;";
-            arBtn.onclick = startARTest;
-            
-            const topBar = document.getElementById('cancel-game-btn').parentNode;
-            if (topBar) topBar.insertBefore(arBtn, document.getElementById('cancel-game-btn'));
-        }
-    }
 
     for (let i = 0; i < initialTotalKm; i++) {
         const step = document.createElement('div'); step.className = 'step'; step.id = `step-${i}`;

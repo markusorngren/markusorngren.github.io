@@ -83,6 +83,12 @@ body {
 
 @media (orientation: landscape) {
     #map-page { flex-direction: row; }
+    
+    #game-page { 
+        padding-right: 180px !important; /* Ger plats åt knapparna så fönstret centreras i resterande yta */
+        box-sizing: border-box !important; 
+    }
+
     .panel { 
         width: 300px; height: 100%; border-radius: 0 !important; 
         box-shadow: -4px 0 15px rgba(0,0,0,0.1) !important;
@@ -98,8 +104,63 @@ body {
     #voice-btn { grid-column: 1 / span 2; order: 3; width: 100%; }
     #text-btn  { grid-column: 1 / span 2; order: 4; width: 100%; }
     #locate-btn { grid-column: 1 / span 2; order: 5; width: 100%; }
-    .apple-grid { grid-template-columns: repeat(10, 1fr) !important; max-width: 80% !important; padding-top: 30px !important; }
-    #game-map-wrapper { max-width: 80% !important; }
+    
+    .apple-grid { 
+        grid-template-columns: repeat(10, 1fr) !important; 
+        max-width: 800px !important; 
+        width: 95% !important;
+        padding-top: 30px !important; 
+    }
+    #game-map-wrapper { 
+        max-width: 800px !important; 
+        width: 95% !important;
+    }
+
+    /* Flyttar ner Avbryt för att göra plats för Dela-knappen */
+    #cancel-game-btn {
+        top: 70px !important;
+        left: auto !important;
+        right: 15px !important;
+        transform: none !important;
+        width: 150px !important;
+        padding: 12px 0 !important;
+        box-sizing: border-box !important;
+    }
+    
+    /* Flyttar ner spelets kontroller */
+    #game-controls {
+        top: 130px !important; 
+        bottom: auto !important;
+        left: auto !important;
+        right: 15px !important;
+        transform: none !important;
+        flex-direction: column !important; 
+        width: 150px !important;
+        padding: 0 !important;
+        gap: 10px !important;
+        box-sizing: border-box !important;
+    }
+
+    #game-controls button, #game-distance-display {
+        width: 100% !important;
+        box-sizing: border-box !important;
+        text-align: center !important;
+        justify-content: center !important;
+    }
+
+    /* Placerar Dela-knappen till vänster om versionsnumret, ovanför Avbryt */
+    #game-page:not(.hidden) ~ #share-btn {
+        top: 15px !important;
+        left: auto !important;
+        right: 70px !important;
+    }
+
+    /* Ser till att Dela-menyn också fäster på högersidan i spelläget */
+    #game-page:not(.hidden) ~ #share-menu {
+        top: 65px !important;
+        left: auto !important;
+        right: 15px !important;
+    }
 }
 
 #map { flex: 1; width: 100%; min-height: 0; z-index: 1; }

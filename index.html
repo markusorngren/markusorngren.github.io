@@ -48,7 +48,6 @@
 </head>
 <body>
 <div id="version-tag">V...</div>
-<button id="share-btn" onclick="shareApp(event)">🔗</button>
 
 <div id="welcome-overlay">
     <div class="welcome-content">
@@ -125,16 +124,17 @@
         <div id="game-map"></div>
     </div>
     
-    <div style="position: absolute; bottom: max(30px, env(safe-area-bottom-inset, 20px)); left: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; gap: 15px; z-index: 10000; width: 100%; padding: 0 15px; box-sizing: border-box;">
+    <div id="game-controls" style="position: absolute; bottom: max(30px, env(safe-area-bottom-inset, 20px)); left: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; gap: 15px; z-index: 10000; width: 100%; padding: 0 15px; box-sizing: border-box;">
         <div id="game-distance-display" class="hidden" style="font-weight: bold; font-size: 0.9rem; background: rgba(255,255,255,0.9); padding: 5px 12px; border-radius: 20px; color: #333; box-shadow: 0 2px 5px rgba(0,0,0,0.2);"></div>
         <button id="toggle-game-view-btn" style="background:#2196F3; color:white; border-radius: 20px; padding: 6px 15px; font-size: 0.75rem; font-weight: bold; border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2);" onclick="toggleGameMap()"></button>
         <button id="zoom-toggle-btn" class="hidden" style="background:#4CAF50; color:white; border-radius: 20px; padding: 6px 15px; font-size: 0.75rem; font-weight: bold; border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2);" onclick="toggleGameZoom()"></button>
     </div>
 </div>
 
+<button id="share-btn" onclick="shareApp(event)">🔗</button>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/leaflet-rotate@0.2.8/dist/leaflet-rotate.min.js" defer></script>
-    <script src="ar.js" defer></script>
     <script src="app.js" defer></script>
 </body>
 </html>
