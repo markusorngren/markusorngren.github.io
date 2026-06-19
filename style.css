@@ -110,11 +110,13 @@ body {
         max-width: 800px !important; 
         width: 95% !important;
         padding-top: 30px !important; 
+        margin-top: 15px !important; /* Fix för landscape - tar bort de 70px från inline style */
         margin-bottom: 15px !important;
     }
     #game-map-wrapper { 
         max-width: 800px !important; 
         width: 95% !important;
+        margin-top: 15px !important; /* Fix för landscape - tar bort de 70px från inline style */
         margin-bottom: 15px !important;
     }
 
