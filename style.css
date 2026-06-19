@@ -110,10 +110,12 @@ body {
         max-width: 800px !important; 
         width: 95% !important;
         padding-top: 30px !important; 
+        margin-bottom: 15px !important;
     }
     #game-map-wrapper { 
         max-width: 800px !important; 
         width: 95% !important;
+        margin-bottom: 15px !important;
     }
 
     /* Samlar alla spelknappar till höger i en fast bredd över hela höjden */
@@ -294,13 +296,13 @@ button:active { transform: scale(0.95); }
     display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; width: 95%; 
     max-width: 280px; margin-top: 10px; padding: 25px 10px 10px 10px; 
     background: rgba(255,255,255,0.5); border-radius: 15px; position: relative; 
-    height: 60vh; min-height: 350px; overflow-y: auto; box-sizing: border-box;
+    flex: 1; margin-bottom: 80px; overflow-y: auto; box-sizing: border-box;
 }
 
 /* Justerade dimensioner och ram för kartans wrapper */
 #game-map-wrapper {
     display: block; width: 95%; max-width: 280px; margin-top: 10px; 
-    height: 60vh; min-height: 350px; padding: 0; background: transparent; 
+    flex: 1; margin-bottom: 80px; padding: 0; background: transparent; 
     border: 10px solid rgba(255,255,255,0.5); border-radius: 15px; overflow: hidden; 
     position: relative; z-index: 5; box-sizing: border-box;
 }
