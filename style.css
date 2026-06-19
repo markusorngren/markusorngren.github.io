@@ -381,3 +381,22 @@ button:active { transform: scale(0.95); }
 .leaflet-top.leaflet-left {
     display: none !important;
 }
+
+/* --- AUTO-FIT ÄPPEL ZOOM STILAR --- */
+.apple-grid.zoomed-out {
+    grid-template-columns: repeat(var(--apple-cols, 10), 1fr) !important;
+    overflow-y: hidden !important;
+    align-content: start; /* Ser till att de bygger snyggt uppifrån */
+}
+
+.apple-grid.zoomed-out .step {
+    width: var(--apple-size, 25px) !important;
+    height: var(--apple-size, 25px) !important;
+    font-size: var(--apple-font, 0.8rem) !important;
+}
+
+.apple-grid.zoomed-out #the-mouse {
+    font-size: calc(var(--apple-font, 0.8rem) * 1.3) !important;
+    margin-top: calc(var(--apple-size, 25px) * -0.2) !important;
+    margin-left: calc(var(--apple-size, 25px) * -0.15) !important;
+}

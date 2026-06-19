@@ -382,7 +382,7 @@ const i18n = {
         copyRouteLink: "መንገዱ ለማጋራት አገናኙን ይቅዱ፡",
         followLiveTitle: "በቀጥታ ይከተሉኝ!",
         followLiveText: "አደኑን በቀጥታ ይከተሉ! 🔴",
-        copyLiveLink: "የቀጥታ መንገዱን ለማጋራት አገናኙን ይቅዱ፡",
+        copyLiveLink: "የቀጥታ መንገዱ ለማጋራት አገናኙን ይቅዱ፡",
         checkAppText: "ይህን መተግበሪያ ይመልከቱ! 🗺️",
         copyAppLink: "መተግበሪያውን ለማጋራት አገናኙን ይቅዱ፡",
         btnFacebookGroup: "የእኛ የፌስቡክ ቡድን 👥",
@@ -686,6 +686,8 @@ function applyTranslations() {
         } else {
             zoomBtn.innerText = isGameMapZoomedOut ? t('btnZoomIn') : t('btnZoomOut');
         }
+    } else if (zoomBtn && !isGameMapVisible && gameState === 'GAME') {
+        zoomBtn.innerText = isApplesZoomedOut ? t('btnZoomIn') : t('btnZoomOut');
     }
 
     const iosDesc = document.getElementById('ios-desc'); if(iosDesc) iosDesc.innerHTML = t('iosInstall');
@@ -772,10 +774,12 @@ let wakeLock = null; let currentRouteCoords = []; let historicalRouteCoords = []
 let maxStepsReached = 0; let lastRouteIndex = 0; let hasReachedMidpoint = false; 
 let midpointStepIndex = -1; let isCelebratingTurn = false; 
 let gameMap = null; let gameRouteLine = null, gameUserMarker = null;
+
 let isGameMapVisible = false;
 let isGameMapZoomedOut = false;
 let gameMapAutoCenter = true;   
 let isProgrammaticMove = false; 
+let isApplesZoomedOut = false;
 
 let travelMode = 0; 
 const modes = [
@@ -828,8 +832,8 @@ const tutorialSteps = [
     { target: 'share-btn-facebook', textKey: 'tut17', pos: 'bottom', action: 'open_share' },
     { target: 'start-btn', textKey: 'tut6', pos: 'top' },
     { target: 'path', textKey: 'tut12', pos: 'center', action: 'start_dummy_game' },
-    { target: 'toggle-game-view-btn', textKey: 'tut13', pos: 'top' }, // Ändrad från 'bottom'
-    { target: 'zoom-toggle-btn', textKey: 'tut14', pos: 'top', action: 'show_dummy_map' }, // Ändrad från 'bottom'
+    { target: 'toggle-game-view-btn', textKey: 'tut13', pos: 'top' }, 
+    { target: 'zoom-toggle-btn', textKey: 'tut14', pos: 'top', action: 'show_dummy_map' }, 
     { target: 'game-map-wrapper', textKey: 'tut15', pos: 'center' },
     { target: 'path', textKey: 'tut16', pos: 'center', action: 'show_victory_dance' }
 ];
@@ -1076,7 +1080,7 @@ function pauseAutoScroll() {
     
     scrollResumeTimeout = setTimeout(() => {
         isUserScrolling = false;
-        if (gameState === 'GAME') {
+        if (gameState === 'GAME' && !isApplesZoomedOut) {
             moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 2)));
         }
     }, 4000); 
@@ -1312,6 +1316,10 @@ function initMap() {
         if (!document.getElementById('tutorial-overlay').classList.contains('hidden')) {
             showTutorialStep(currentTutorialStep);
         }
+        if (gameState === 'GAME' && !isGameMapVisible) {
+            if (isApplesZoomedOut) autoFitApples();
+            checkAppleZoomVisibility();
+        }
     });
 }
 
@@ -1435,6 +1443,33 @@ function clearMapData() {
     updateLocateBtnText(); saveSession(); broadcastLiveState();
 }
 
+function handleZoomClick() {
+    if (!els.gameMapWrapper.classList.contains('hidden')) {
+        toggleGameZoom();
+    } else {
+        toggleApplesZoom();
+    }
+}
+
+function checkAppleZoomVisibility() {
+    const zoomBtn = document.getElementById('zoom-toggle-btn');
+    if (!zoomBtn || gameState !== 'GAME' || isGameMapVisible) return;
+
+    if (isApplesZoomedOut) {
+        zoomBtn.classList.remove('hidden');
+        return;
+    }
+
+    const grid = els.pathGrid;
+    // Kontrollera om listan svämmar över (behöver scrollas)
+    // Lägger till 5px felmarginal för att undvika att knappen blinkar in på gränsfall.
+    if (grid.scrollHeight > grid.clientHeight + 5) {
+        zoomBtn.classList.remove('hidden');
+    } else {
+        zoomBtn.classList.add('hidden');
+    }
+}
+
 function toggleGameZoom() {
     if (!gameMapAutoCenter) {
         gameMapAutoCenter = true;
@@ -1450,6 +1485,65 @@ function toggleGameZoom() {
     updateGameMapView(true);
 }
 
+function toggleApplesZoom() {
+    isApplesZoomedOut = !isApplesZoomedOut;
+    const zoomBtn = document.getElementById('zoom-toggle-btn');
+    const grid = els.pathGrid;
+
+    if (isApplesZoomedOut) {
+        grid.classList.add('zoomed-out');
+        if (zoomBtn) zoomBtn.innerText = t('btnZoomIn');
+        autoFitApples();
+    } else {
+        grid.classList.remove('zoomed-out');
+        if (zoomBtn) zoomBtn.innerText = t('btnZoomOut');
+        grid.style.removeProperty('--apple-size');
+        grid.style.removeProperty('--apple-cols');
+        grid.style.removeProperty('--apple-font');
+        setTimeout(() => {
+            moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 1)));
+            checkAppleZoomVisibility();
+        }, 50);
+    }
+}
+
+function autoFitApples() {
+    const container = els.pathGrid;
+    if (!container || !isApplesZoomedOut || gameState !== 'GAME') return;
+
+    const N = initialTotalKm;
+    if (N <= 0) return;
+
+    const style = window.getComputedStyle(container);
+    const padLeft = parseFloat(style.paddingLeft);
+    const padRight = parseFloat(style.paddingRight);
+    const padTop = parseFloat(style.paddingTop);
+    const padBottom = parseFloat(style.paddingBottom);
+
+    const W = container.clientWidth - padLeft - padRight;
+    const H = container.clientHeight - padTop - padBottom;
+    const gap = 5;
+
+    let bestS = 8; // Fallback till minsta möjliga
+    for (let s = 40; s >= 8; s--) { // Starta aldrig större än default (40px)
+        let cols = Math.floor((W + gap) / (s + gap));
+        if (cols <= 0) cols = 1;
+        let rows = Math.ceil(N / cols);
+        if (rows * s + (rows - 1) * gap <= H) {
+            bestS = s;
+            break; // Hittat den största storleken under 40px som får plats!
+        }
+    }
+
+    container.style.setProperty('--apple-size', bestS + 'px');
+    container.style.setProperty('--apple-cols', Math.floor((W + gap) / (bestS + gap)));
+    container.style.setProperty('--apple-font', (bestS * 0.6) + 'px');
+
+    setTimeout(() => {
+        moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 1)));
+    }, 50);
+}
+
 function toggleGameMap() {
     isGameMapVisible = !isGameMapVisible; 
     const toggleBtn = document.getElementById('toggle-game-view-btn');
@@ -1461,7 +1555,7 @@ function toggleGameMap() {
         if (toggleBtn) toggleBtn.innerText = `${activeTheme.path} ${getThemePathName()}`;
         
         if (zoomBtn) {
-            zoomBtn.classList.remove('hidden');
+            zoomBtn.classList.remove('hidden'); // Karta behöver alltid knappen
             zoomBtn.innerText = isGameMapZoomedOut ? t('btnZoomIn') : t('btnZoomOut');
         }
         
@@ -1505,7 +1599,19 @@ function toggleGameMap() {
         els.gameMapWrapper.classList.add('hidden'); 
         els.pathGrid.classList.remove('hidden'); 
         if (toggleBtn) toggleBtn.innerText = t('btnMap');
-        if (zoomBtn) zoomBtn.classList.add('hidden');
+        
+        if (zoomBtn) {
+            zoomBtn.innerText = isApplesZoomedOut ? t('btnZoomIn') : t('btnZoomOut');
+        }
+        
+        if (isApplesZoomedOut) {
+            setTimeout(() => { autoFitApples(); checkAppleZoomVisibility(); }, 50);
+        } else {
+            setTimeout(() => {
+                moveMouse(Math.max(0, Math.min(maxStepsReached, initialTotalKm - 1)));
+                checkAppleZoomVisibility();
+            }, 50);
+        }
     }
 }
 
@@ -1888,7 +1994,9 @@ function startGame(isRestoring = false, restoreData = null) {
     if (toggleBtn) toggleBtn.innerText = t('btnMap');
 
     const zoomBtn = document.getElementById('zoom-toggle-btn');
-    if (zoomBtn) zoomBtn.classList.add('hidden');
+    if (zoomBtn) {
+        zoomBtn.innerText = isApplesZoomedOut ? t('btnZoomIn') : t('btnZoomOut');
+    }
 
     if (!isRestoring && !isLiveReceiver && travelMode === 2 && currentRouteCoords.length > 0) { let distToTarget = 0; let splitIndex = 0; let minD = Infinity; currentRouteCoords.forEach((c, i) => { const d = L.latLng(c).distanceTo(currentTargetCoords); if (d < minD) { minD = d; splitIndex = i; } }); for (let i = 0; i < splitIndex; i++) { distToTarget += map.distance(currentRouteCoords[i], currentRouteCoords[i+1]); } const distStr = els.distInfo.innerText.split(' ')[0].replace('<b>', '').replace('</b>', ''); const totalDistanceKm = parseFloat(distStr) || 1; const f = modes[travelMode].factor; const r = totalDistanceKm % f; const tKm = distToTarget / 1000; midpointStepIndex = r > 0.05 ? (tKm < r ? 0 : Math.floor((tKm - r) / f) + 1) : Math.floor(tKm / f); }
 
@@ -1917,8 +2025,10 @@ function startGame(isRestoring = false, restoreData = null) {
     }
     
     setTimeout(() => { 
+        if (isApplesZoomedOut) autoFitApples();
         moveMouse(isLiveReceiver ? maxStepsReached : (isRestoring ? maxStepsReached : 0)); 
         updateBetaDistances(); 
+        checkAppleZoomVisibility();
     }, 100); 
     if(!isLiveReceiver) broadcastLiveState();
     if (!isLiveReceiver && !isRestoring) saveSession();
@@ -2282,7 +2392,6 @@ function shareNormal() {
 }
 
 function startLiveSharing() {
-    // --- NY KOD: Skicka vidare om vi redan är en följare ---
     if (isLiveReceiver && liveSessionId) {
         let shareUrl = window.location.origin + window.location.pathname + '?live=' + liveSessionId;
         const d = {title: t('followLiveTitle'), text: t('followLiveText'), url: shareUrl};
@@ -2293,7 +2402,6 @@ function startLiveSharing() {
         }
         return;
     }
-    // --------------------------------------------------------
 
     if (!liveSessionId) liveSessionId = Math.random().toString(36).substr(2, 9);
     if (!pusher) { pusher = new Pusher(pusherKey, getPusherConfig()); }

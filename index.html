@@ -125,7 +125,7 @@
     <div id="game-controls" style="position: absolute; bottom: max(30px, env(safe-area-bottom-inset, 20px)); left: 0; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; z-index: 10000; padding: 0 15px; box-sizing: border-box;">
         <div id="game-distance-display" class="hidden" style="font-weight: bold; font-size: 0.9rem; background: rgba(255,255,255,0.9); padding: 10px 15px; border-radius: 20px; color: #333; box-shadow: 0 4px 10px rgba(0,0,0,0.2); display: flex; align-items: center;"></div>
         <button id="toggle-game-view-btn" style="background:#2196F3; color:white; border-radius: 20px; padding: 10px 15px; font-size: 0.9rem; font-weight: bold; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3);" onclick="toggleGameMap()"></button>
-        <button id="zoom-toggle-btn" class="hidden" style="background:#4CAF50; color:white; border-radius: 20px; padding: 10px 15px; font-size: 0.9rem; font-weight: bold; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3);" onclick="toggleGameZoom()"></button>
+        <button id="zoom-toggle-btn" class="hidden" style="background:#4CAF50; color:white; border-radius: 20px; padding: 10px 15px; font-size: 0.9rem; font-weight: bold; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3);" onclick="handleZoomClick()"></button>
         <button id="cancel-game-btn" style="position: fixed; top: max(20px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); background:#ff4444; color:white; border-radius: 20px; padding: 10px 20px; font-size: 0.9rem; font-weight: bold; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 10000;" onclick="stopGame()"></button>
     </div>
 </div>
