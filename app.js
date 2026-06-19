@@ -1574,20 +1574,19 @@ function toggleGameMap() {
             
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(gameMap); 
             
-            gameMap.on('dragstart', () => { 
-                gameMapAutoCenter = false; 
-                isGameMapZoomedOut = false; 
-                
-                if (zoomBtn) zoomBtn.innerText = t('btnCenter');
-            });
-            
-            gameMap.on('zoomstart', () => {
+            const releaseMap = () => {
                 if (!isProgrammaticMove) {
                     gameMapAutoCenter = false;
                     isGameMapZoomedOut = false;
-                    if (zoomBtn) zoomBtn.innerText = t('btnCenter');
+                    const zb = document.getElementById('zoom-toggle-btn');
+                    if (zb) zb.innerText = t('btnCenter');
                 }
-            });
+            };
+
+            gameMap.on('movestart', releaseMap);
+            gameMap.on('dragstart', releaseMap);
+            gameMap.on('zoomstart', releaseMap);
+            gameMap.on('rotatestart', releaseMap);
         }
         
         gameMapAutoCenter = true; 
