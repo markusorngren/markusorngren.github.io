@@ -2233,7 +2233,9 @@ function setupInteractions() { document.querySelectorAll('.slot-btn').forEach((b
 function playClickSound() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); const o = audioCtx.createOscillator(); o.type='triangle'; o.frequency.setValueAtTime(3000, audioCtx.currentTime); o.start(); o.stop(audioCtx.currentTime+0.1); }
 
 function shareApp(e) { 
-    if (isLiveReceiver) { alert(t('alreadyLive')); return; }
+    // SPÄRREN ÄR NU BORTTAGEN SÅ ATT MOTTAGARE KAN ÖPPNA MENYN
+    // if (isLiveReceiver) { alert(t('alreadyLive')); return; }
+    
     const oldMenu = document.getElementById('share-menu'); if (oldMenu) { oldMenu.remove(); return; }
 
     const menu = document.createElement('div'); menu.id = 'share-menu';
@@ -2282,6 +2284,19 @@ function shareNormal() {
 }
 
 function startLiveSharing() {
+    // --- NY KOD: Skicka vidare om vi redan är en följare ---
+    if (isLiveReceiver && liveSessionId) {
+        let shareUrl = window.location.origin + window.location.pathname + '?live=' + liveSessionId;
+        const d = {title: t('followLiveTitle'), text: t('followLiveText'), url: shareUrl};
+        if(navigator.share) { 
+            navigator.share(d).catch(e => console.log("Delning avbruten")); 
+        } else { 
+            prompt(t('copyLiveLink'), shareUrl); 
+        }
+        return;
+    }
+    // --------------------------------------------------------
+
     if (!liveSessionId) liveSessionId = Math.random().toString(36).substr(2, 9);
     if (!pusher) { pusher = new Pusher(pusherKey, getPusherConfig()); }
     liveChannel = pusher.subscribe(`private-live-${liveSessionId}`);
