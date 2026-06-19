@@ -1240,7 +1240,6 @@ function initMap() {
         liveChannel = pusher.subscribe(`private-live-${liveSessionId}`);
         liveChannel.bind('pusher:subscription_succeeded', () => { els.distInfo.innerHTML = t('liveWaiting', {name: getThemeName()}); });
         liveChannel.bind('client-update', handleLiveUpdate);
-        window.history.replaceState({}, document.title, window.location.pathname);
     } else {
         const routeData = urlParams.get('r');
         if (routeData) {
@@ -1255,7 +1254,6 @@ function initMap() {
                     manualStartMarker = L.circleMarker(data.s, { radius: 8, fillColor: "#4CAF50", color: "#fff", weight: 2, fillOpacity: 1 }).addTo(map);
                     manualStartMarker.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); removeManualStartPoint(); });
                 }
-                window.history.replaceState({}, document.title, window.location.pathname);
                 els.welcomeOverlay.classList.add('hidden');
             } catch (e) { console.error("Error", e); }
         }
