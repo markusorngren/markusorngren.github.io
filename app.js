@@ -2233,10 +2233,23 @@ function setupInteractions() { document.querySelectorAll('.slot-btn').forEach((b
 function playClickSound() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); const o = audioCtx.createOscillator(); o.type='triangle'; o.frequency.setValueAtTime(3000, audioCtx.currentTime); o.start(); o.stop(audioCtx.currentTime+0.1); }
 
 function shareApp(e) { 
-    // SPÄRREN ÄR NU BORTTAGEN SÅ ATT MOTTAGARE KAN ÖPPNA MENYN
-    // if (isLiveReceiver) { alert(t('alreadyLive')); return; }
-    
-    const oldMenu = document.getElementById('share-menu'); if (oldMenu) { oldMenu.remove(); return; }
+    // Om vi redan är i en livesändning (som mottagare eller sändare),
+    // öppna telefonens inbyggda delningsmeny direkt.[cite: 1]
+    if ((isLiveReceiver || isLiveSharing) && liveSessionId) {
+        let shareUrl = window.location.origin + window.location.pathname + '?live=' + liveSessionId;
+        const d = {title: t('followLiveTitle'), text: t('followLiveText'), url: shareUrl};
+        
+        if (navigator.share) { 
+            navigator.share(d).catch(err => console.log("Delning avbruten")); 
+        } else { 
+            prompt(t('copyLiveLink'), shareUrl); 
+        }
+        return; // Avsluta funktionen här så att den anpassade menyn inte ritas ut
+    }
+
+    // --- Ursprunglig kod för den anpassade menyn (om ingen livesändning pågår) ---
+    const oldMenu = document.getElementById('share-menu'); 
+    if (oldMenu) { oldMenu.remove(); return; }
 
     const menu = document.createElement('div'); menu.id = 'share-menu';
     menu.style.position = 'fixed'; menu.style.top = '65px'; menu.style.left = '15px'; menu.style.zIndex = '10001'; menu.style.background = 'white'; menu.style.borderRadius = '15px'; menu.style.padding = '10px'; menu.style.boxShadow = '0 5px 20px rgba(0,0,0,0.3)'; menu.style.display = 'flex'; menu.style.flexDirection = 'column'; menu.style.gap = '8px'; menu.style.border = `2px solid var(--primary)`;
@@ -2270,7 +2283,15 @@ function shareApp(e) {
     
     document.body.appendChild(menu);
 
-    setTimeout(() => { const close = (event) => { if (!menu.contains(event.target) && event.target.id !== 'share-btn' && !event.target.closest('#tutorial-overlay')) { menu.remove(); document.removeEventListener('click', close); } }; document.addEventListener('click', close); }, 100);
+    setTimeout(() => { 
+        const close = (event) => { 
+            if (!menu.contains(event.target) && event.target.id !== 'share-btn' && !event.target.closest('#tutorial-overlay')) { 
+                menu.remove(); 
+                document.removeEventListener('click', close); 
+            } 
+        }; 
+        document.addEventListener('click', close); 
+    }, 100);
 }
 
 function shareNormal() {
