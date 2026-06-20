@@ -186,7 +186,7 @@ const els = {
 };
 
 // --- EGEN MODAL FÖR ATT SLIPPA WEBBLÄSARENS STANDARD ---
-function showCustomModal({ title, text, placeholder, showInput, okText, cancelText, onResult }) {
+function showCustomModal({ title, text, placeholder, showInput, okText, cancelText, onResult, datalistOptions, historyItems }) {
     const overlay = document.createElement('div');
     overlay.style.position = 'fixed'; overlay.style.top = '0'; overlay.style.left = '0'; overlay.style.width = '100vw'; overlay.style.height = '100svh'; overlay.style.background = 'rgba(0,0,0,0.6)'; overlay.style.zIndex = '100000'; overlay.style.display = 'flex'; overlay.style.alignItems = 'center'; overlay.style.justifyContent = 'center';
     
@@ -204,7 +204,34 @@ function showCustomModal({ title, text, placeholder, showInput, okText, cancelTe
     let iEl;
     if (showInput) {
         iEl = document.createElement('input'); iEl.type = 'text'; iEl.placeholder = placeholder || ''; iEl.style.width = '100%'; iEl.style.padding = '10px'; iEl.style.boxSizing = 'border-box'; iEl.style.borderRadius = '10px'; iEl.style.border = '2px solid #ccc'; iEl.style.marginBottom = '15px'; iEl.style.fontSize = '1rem'; iEl.style.textAlign = 'center';
+        
+        if (datalistOptions && datalistOptions.length > 0) {
+            const dlId = 'dl_' + Math.random().toString(36).substr(2, 9);
+            iEl.setAttribute('list', dlId);
+            const dl = document.createElement('datalist');
+            dl.id = dlId;
+            datalistOptions.forEach(opt => {
+                const option = document.createElement('option'); option.value = opt; dl.appendChild(option);
+            });
+            modal.appendChild(dl);
+        }
         modal.appendChild(iEl);
+
+        if (historyItems && historyItems.length > 0) {
+            const histContainer = document.createElement('div');
+            histContainer.style.display = 'flex'; histContainer.style.flexWrap = 'wrap'; histContainer.style.gap = '8px'; histContainer.style.justifyContent = 'center'; histContainer.style.marginBottom = '15px';
+            historyItems.forEach(item => {
+                const hBtn = document.createElement('button');
+                hBtn.innerText = item;
+                hBtn.style.padding = '6px 12px'; hBtn.style.borderRadius = '15px'; hBtn.style.border = '1px solid #ddd'; hBtn.style.background = '#f4f4f4'; hBtn.style.fontSize = '0.85rem'; hBtn.style.color = '#333'; hBtn.style.cursor = 'pointer';
+                hBtn.onclick = () => { 
+                    overlay.remove(); 
+                    if (onResult) onResult(item); 
+                };
+                histContainer.appendChild(hBtn);
+            });
+            modal.appendChild(histContainer);
+        }
     }
     
     const btnRow = document.createElement('div'); btnRow.style.display = 'flex'; btnRow.style.gap = '10px';
@@ -800,12 +827,15 @@ function broadcastLiveState() {
 // --- NEW FUNCTION: Execute Live Search using Custom Modal ---
 function executeLiveSearch() {
     let q = els.searchInput.value.trim();
+    let searchHistory = JSON.parse(localStorage.getItem('mouse_live_search_history')) || [];
+
     if (!q) {
         showCustomModal({
             title: t('promptLiveSearchTitle'),
             text: t('promptLiveSearchDesc'),
             showInput: true,
             placeholder: 'Sökord',
+            historyItems: searchHistory,
             okText: 'Sök',
             cancelText: t('btnCancel'),
             onResult: (val) => { if (val) handleLiveSearchInput(val); }
@@ -818,26 +848,17 @@ function executeLiveSearch() {
 function handleLiveSearchInput(q) {
     els.searchContainer.classList.add('hidden');
     els.searchInput.value = "";
-
-    if(!savedLiveChannels[q]) {
-        showCustomModal({
-            title: t('promptSaveLiveTitle'),
-            text: t('promptSaveLiveDesc', {channel: q}),
-            showInput: true,
-            placeholder: q,
-            okText: 'Spara',
-            cancelText: t('btnSkip'),
-            onResult: (alias) => {
-                if (alias !== null && alias !== "") {
-                    savedLiveChannels[q] = alias;
-                    localStorage.setItem('mouse_live_favs', JSON.stringify(savedLiveChannels));
-                }
-                window.location.href = window.location.origin + window.location.pathname + '?live=' + encodeURIComponent(q);
-            }
-        });
-    } else {
-        window.location.href = window.location.origin + window.location.pathname + '?live=' + encodeURIComponent(q);
+    
+    q = q.trim();
+    if (q) {
+        let searchHistory = JSON.parse(localStorage.getItem('mouse_live_search_history')) || [];
+        searchHistory = searchHistory.filter(item => item !== q); 
+        searchHistory.unshift(q); 
+        if (searchHistory.length > 6) searchHistory.pop(); 
+        localStorage.setItem('mouse_live_search_history', JSON.stringify(searchHistory));
     }
+
+    window.location.href = window.location.origin + window.location.pathname + '?live=' + encodeURIComponent(q);
 }
 
 // --- NEW FUNCTION: Background Live Listener ---
@@ -1917,16 +1938,27 @@ function startLiveSharingExternal() {
 }
 
 function startLiveSharingInternal() {
+    let broadcastHistory = JSON.parse(localStorage.getItem('mouse_live_broadcast_history')) || [];
     showCustomModal({
         title: t('promptCustomChannelTitle'),
         text: t('promptCustomChannelDesc'),
         showInput: true,
         placeholder: 'Kanalnamn',
+        datalistOptions: broadcastHistory,
         okText: t('start', {target: ''}).trim(),
         cancelText: t('btnCancel'),
         onResult: (customName) => {
             if (customName) {
-                liveSessionId = customName.trim();
+                customName = customName.trim();
+                if (customName) {
+                    let hist = JSON.parse(localStorage.getItem('mouse_live_broadcast_history')) || [];
+                    hist = hist.filter(item => item !== customName);
+                    hist.unshift(customName);
+                    if (hist.length > 10) hist.pop();
+                    localStorage.setItem('mouse_live_broadcast_history', JSON.stringify(hist));
+                }
+
+                liveSessionId = customName;
                 if (!pusher) { pusher = new Pusher(pusherKey, getPusherConfig()); }
                 liveChannel = pusher.subscribe(`private-live-${liveSessionId}`);
                 liveChannel.bind('pusher:subscription_succeeded', () => { 
