@@ -1,574 +1,3 @@
-// --- BETA & FEATURE FLAGS ---
-const appFeatures = {
-    beta_mode: { id: 'beta_active', name: 'Beta Mode', default: false }
-};
-
-function isFeatureOn(key) {
-    const val = localStorage.getItem('feat_' + appFeatures[key].id);
-    if (val === null) return appFeatures[key].default;
-    return val === 'true';
-}
-
-function toggleFeature(key) {
-    const current = isFeatureOn(key);
-    localStorage.setItem('feat_' + appFeatures[key].id, !current);
-    location.reload(); 
-}
-
-// --- LANGUAGE / TRANSLATIONS ENGINE ---
-function getDeviceLanguage() {
-    const lang = navigator.language || navigator.userLanguage;
-    if (lang.toLowerCase().startsWith('sv')) return 'sv';
-    if (lang.toLowerCase().startsWith('ru')) return 'ru';
-    if (lang.toLowerCase().startsWith('am')) return 'am';
-    if (lang.toLowerCase().startsWith('ar')) return 'ar';
-    return 'en'; // Fallback
-}
-
-let currentLang = localStorage.getItem('app_lang') || getDeviceLanguage();
-
-const i18n = {
-    sv: {
-        welcomeTitle: "Välkommen till spelet! 🐭",
-        welcomeDesc2: "Redo att starta resan och hjälpa {name} hitta {targetName}?",
-        dontShowAgain: "Visa inte igen",
-        btnSkip: "Jag har koll! Let's go!",
-        btnTutorial: "Visa mig hur man gör",
-        tut1: "Här kan du byta mellan bil och gång! 🚗🚶",
-        tut2: "Vill du skapa en annan startpunkt? Långtryck på kartan! 📍",
-        tut3: "Sök efter ditt mål med röst, text, eller klicka direkt på kartan! 🔍",
-        tut4: "När du valt mål kan du långtrycka på kartan igen för att lägga till via-punkter längs vägen! 💡",
-        tut11: "Blev rutten fel? Tryck på Rensa här nere för att börja om! 🗑️",
-        tut5: "Vill du spara rutten? Långtryck på en av dessa knappar för att spara! 💾",
-        tut6: "När rutten är klar, tryck här för att starta spelet! 🚀",
-        tut7: "Det finns olika sätt att dela! 🔗",
-        tut8: "Här kan du dela rutten så andra kan öppna den i sin telefon! 🗺️",
-        tut9: "Med Live-delning kan dina vänner följa din resa på kartan i realtid! 🔴",
-        tut10: "Och här kan du snabbt tipsa om själva appen till en kompis! 📱",
-		tut17: "Dela din erfarenhet om appen i facebookgruppen. 👥",
-        tut12: "Här ser du hur många {pathName} du har kvar att samla! 🍎",
-        tut13: "Klicka här för att byta till kartvyn och se var du är på vägen! 🗺️",
-        tut14: "Här kan du snabbt zooma ut för att se hela rutten, eller centrera på dig själv! 🔍",
-        tut15: "Du kan också zooma och panera med fingrarna direkt på kartan, precis som vanligt! ✌️",
-        tut16: "När du når målet firar vi med konfetti och segerdans! 🎉",
-        btnNext: "Nästa ➔",
-        btnFinish: "Okej, jag fattar!",
-        tutSkip: "Hoppa över",
-        iosFooter1: "Tryck på ",
-        iosFooter2: " och välj ",
-        iosAddHome: "Lägg till på hemskärmen",
-        installWarning: "⚠️ Öppna i Safari/Chrome för att spara appen!",
-        offlineSearch: "Sökningen fungerar tyvärr inte när du är offline. Använd kartan eller sparade platser istället!",
-        shareRouteTitle: "Häng med på äventyr!",
-        followRouteText: "Följ min rutt till {target}!",
-        copyRouteLink: "Kopiera länken för att dela rutt:",
-        followLiveTitle: "Följ mig live!",
-        followLiveText: "Följ jakten live! 🔴",
-        copyLiveLink: "Kopiera länken för att dela live-rutt:",
-        checkAppText: "Kolla in den här appen! 🗺️",
-        copyAppLink: "Kopiera länken för att dela appen:",
-        btnFacebookGroup: "Vår Facebookgrupp 👥",
-        devBetaTitle: "🧪 BETA & FUNKTIONER",
-        devOn: "PÅ ✅",
-        devOff: "AV ❌",
-        welcome: "Hej! {player}",
-        helpFind: "Hjälp {name} att hitta {targetName}!",
-        okGotIt: "Okej! Jag förstår!",
-        searchingGps: "Söker din GPS... 📍",
-        whereToDrive: "Vart ska vi åka? {player}",
-        whereToWalk: "Vart ska vi gå? {player}",
-        start: "STARTA {target}",
-        voiceSearch: "🎤 RÖST SÖK",
-        textSearch: "✎ TEXT SÖK",
-        locateMe: "🎯 HITTA MEJ",
-        cancel: "AVBRYT",
-        clear: "RENSA",
-        searchPlaceholder: "Vart ska vi?",
-        saveSlot: "SPARA {num}",
-        promptSaveAs: "Spara som:",
-        promptSaveWaypoints: "Vill du spara med via-punkter?",
-        addressSearch: "Söker adress...",
-        markedLocation: "Markerad plats",
-        kmTo: "<b>{dist} km</b> till {target}",
-        kmToAndBack: "<b>{dist} km</b> till {target} och tillbaka",
-        kmBird: "<b>{dist} km</b> (fågelvägen)",
-        kmBirdAndBack: "<b>{dist} km</b> till målet och tillbaka (fågelvägen)",
-        voiceListening: "LYSSNAR...",
-        didIHearRight: "HÖRDE JAG RÄTT?",
-        voiceError: "FEL 🛑",
-        micDenied: "Du måste tillåta mikrofonen i webbläsaren för att röstsöket ska fungera.",
-        heardNothing: "Hörde inget! {player} Säg adressen lite högre.",
-        voiceNoMatch: "Kunde tyvärr inte tyda vad du sa. Testa igen! {target}",
-        voiceNotSupported: "Tyvärr stöder inte din webbläsare röstsök. Testa Google Chrome eller Safari!",
-        liveConnecting: "🔴 Ansluter till sändaren...",
-        liveWaiting: "🟢 Väntar på {name}s uppdatering...",
-        liveFollowing: "🔴 Du följer resan till {target}...",
-        alreadyLive: "Du följer redan en live-sändning!",
-        shareStatic: "Dela rutt (Statisk)",
-        shareLive: "Dela LIVE 🔴",
-        shareAppBtn: "Dela appen 📱",
-        btnCancel: "Avbryt",
-        btnZoomOut: "🔍 ZOOMA UT",
-        btnZoomIn: "🔍 ZOOMA IN",
-        btnCenter: "🔍 CENTRERA",
-        setStartPoint: "📍 Sätt som startpunkt",
-        waypointDit: "🏁 På vägen dit",
-        waypointHem: "🏁 På vägen tillbaka",
-        addWaypoint: "🏁 Lägg till via-punkt",
-        kmLeft: "{dist} km kvar",
-        iosInstall: "Installera appen för att få fullskärm och snabb åtkomst!",
-        iosClose: "Kanske senare",
-        btnMap: "🗺️ KARTA",
-        devTitle: "🛠 DEV MODE",
-        devLang: "🌐 SPRÅK / LANGUAGE",
-        devTheme: "🎨 TEMA / THEMES",
-        devClose: "Stäng",
-        devReset: "🔄 Återställ Inställningar",
-        themes: {
-            default: { name: 'musen', targetName: 'osten', pathName: 'ÄPPLEN' },
-            easter: { name: 'påskharen', targetName: 'påskägget', pathName: 'GODIS' },
-            midsummer: { name: 'grodan', targetName: 'jordgubben', pathName: 'BLOMMOR' },
-            halloween: { name: 'spöket', targetName: 'pumpan', pathName: 'FLADDERMÖSS' },
-            christmas: { name: 'tomten', targetName: 'julklappen', pathName: 'KAKOR' },
-            newyear: { name: 'raketen', targetName: 'fyrverkeriet', pathName: 'STJÄRNOR' },
-            birthday: { name: 'födelsedagsbarnet', targetName: 'tårtan', pathName: 'BALLONGER' }
-        }
-    },
-    en: {
-        welcomeTitle: "Welcome to the game! 🐭",
-        welcomeDesc2: "Ready to start the journey and help {name} find {targetName}?",
-        dontShowAgain: "Do not show again for this version",
-        btnSkip: "I know how it works! Let's go!",
-        btnTutorial: "Show me how",
-        tut1: "Here you can switch between driving and walking! 🚗🚶",
-        tut2: "Planning a route? Long-press on the map to set a custom starting point! 📍",
-        tut3: "Search for your destination using voice, text, or tap directly on the map! 🔍",
-        tut4: "Once you have a destination, long-press the map to add waypoints! 💡",
-        tut11: "Did the route go wrong? Tap Clear down here to start over! 🗑️",
-        tut5: "Want to save the route? Long-press one of these buttons! 💾",
-        tut7: "Share the route in advance, or share Live so friends can follow along! 🔴",
-        tut8: "Share a static link to your route so others can see it! 🗺️",
-        tut9: "With Live-sharing, friends can follow your movement on the map in real time! 🔴",
-        tut10: "Share a link to the app itself with a friend! 📱",
-        tut17: "Share your experience about the app in the Facebook group. 👥",
-        tut6: "When your route is ready, tap here to start the game! 🚀",
-        tut12: "Here you can see how many {pathName} you have left to collect! 🍎",
-        tut13: "Click here to switch to the map view and see where you are! 🗺️",
-        tut14: "Here you can quick-zoom out to see the full route, or center back on yourself! 🔍",
-        tut15: "You can also pinch to zoom and pan directly on the map, just like normal! ✌️",
-        tut16: "When you reach the goal, we celebrate with confetti and a victory dance! 🎉",
-        btnNext: "Next ➔",
-        btnFinish: "Got it!",
-        tutSkip: "Skip",
-        iosFooter1: "Tap ",
-        iosFooter2: " and choose ",
-        iosAddHome: "Add to Home Screen",
-        installWarning: "⚠️ Open in Safari/Chrome to save the app!",
-        offlineSearch: "Search doesn't work offline. Please use the map or saved locations instead!",
-        shareRouteTitle: "Join the adventure!",
-        followRouteText: "Follow my route to {target}!",
-        copyRouteLink: "Copy link to share route:",
-        followLiveTitle: "Follow me live!",
-        followLiveText: "Follow the hunt live! 🔴",
-        copyLiveLink: "Copy link to share live route:",
-        checkAppText: "Check out this app! 🗺️",
-        copyAppLink: "Copy link to share app:",
-        btnFacebookGroup: "Our Facebook Group 👥",
-        devBetaTitle: "🧪 BETA & FEATURES",
-        devOn: "ON ✅",
-        devOff: "OFF ❌",
-        welcome: "Hello! {player}",
-        helpFind: "Help {name} find {targetName}!",
-        okGotIt: "Okay! I understand!",
-        searchingGps: "Searching GPS... 📍",
-        whereToDrive: "Where are we driving? {player}",
-        whereToWalk: "Where are we walking? {player}",
-        start: "START {target}",
-        voiceSearch: "🎤 VOICE SEARCH",
-        textSearch: "✎ TEXT SEARCH",
-        locateMe: "🎯 LOCATE ME",
-        cancel: "CANCEL",
-        clear: "CLEAR",
-        searchPlaceholder: "Where to?",
-        saveSlot: "SAVE {num}",
-        promptSaveAs: "Save as:",
-        promptSaveWaypoints: "Do you want to save with waypoints?",
-        addressSearch: "Searching address...",
-        markedLocation: "Marked location",
-        kmTo: "<b>{dist} km</b> to {target}",
-        kmToAndBack: "<b>{dist} km</b> to {target} and back",
-        kmBird: "<b>{dist} km</b> (as the crow flies)",
-        kmBirdAndBack: "<b>{dist} km</b> to target and back (as the crow flies)",
-        voiceListening: "LISTENING...",
-        didIHearRight: "DID I HEAR RIGHT?",
-        voiceError: "ERROR 🛑",
-        micDenied: "You must allow microphone access in your browser.",
-        heardNothing: "Didn't catch that! {player} Speak a little louder.",
-        voiceNoMatch: "Couldn't figure out what you said. Try again! {target}",
-        voiceNotSupported: "Sorry, your browser doesn't support voice search.",
-        liveConnecting: "🔴 Connecting to broadcaster...",
-        liveWaiting: "🟢 Waiting for {name}'s update...",
-        liveFollowing: "🔴 Following journey to {target}...",
-        alreadyLive: "You are already following a live session!",
-        shareStatic: "Share route (Static)",
-        shareLive: "Share LIVE 🔴",
-        shareAppBtn: "Share app 📱",
-        btnCancel: "Cancel",
-        btnZoomOut: "🔍 ZOOM OUT",
-        btnZoomIn: "🔍 ZOOM IN",
-        btnCenter: "🔍 CENTER",
-        setStartPoint: "📍 Set as starting point",
-        waypointDit: "🏁 On the way there",
-        waypointHem: "🏁 On the way back",
-        addWaypoint: "🏁 Add waypoint",
-        kmLeft: "{dist} km left",
-        iosInstall: "Install the app for full screen and quick access!",
-        iosClose: "Maybe later",
-        btnMap: "🗺️ MAP",
-        devTitle: "🛠 DEV MODE",
-        devLang: "🌐 LANGUAGE",
-        devTheme: "🎨 THEMES",
-        devClose: "Close",
-        devReset: "🔄 Reset Settings",
-        themes: {
-            default: { name: 'the mouse', targetName: 'the cheese', pathName: 'APPLES' },
-            easter: { name: 'the easter bunny', targetName: 'the egg', pathName: 'CANDY' },
-            midsummer: { name: 'the frog', targetName: 'the strawberry', pathName: 'FLOWERS' },
-            halloween: { name: 'the ghost', targetName: 'the pumpkin', pathName: 'BATS' },
-            christmas: { name: 'Santa', targetName: 'the present', pathName: 'COOKIES' },
-            newyear: { name: 'the rocket', targetName: 'the fireworks', pathName: 'STARS' },
-            birthday: { name: 'the birthday kid', targetName: 'the cake', pathName: 'BALLOONS' }
-        }
-    },
-    ru: {
-        welcomeTitle: "Добро пожаловать в игру! 🐭",
-        welcomeDesc2: "Готовы начать путешествие и помочь {name} найти {targetName}?",
-        dontShowAgain: "Больше не показывать для этой версии",
-        btnSkip: "Я знаю, как это работает! Поехали!",
-        btnTutorial: "Покажите, как",
-        tut1: "Здесь вы можете переключаться между автомобилем и пешком! 🚗🚶",
-        tut2: "Планируете маршрут? Долгое нажатие на карту установит точку старта! 📍",
-        tut3: "Ищите пункт назначения голосом, текстом или нажатием на карту! 🔍",
-        tut4: "Указав цель, сделайте долгое нажатие на карту, чтобы добавить путевые точки! 💡",
-        tut11: "Маршрут неверный? Нажмите Очистить, чтобы начать заново! 🗑️",
-        tut5: "Хотите сохранить маршрут? Долгое нажатие на одну из этих кнопок! 💾",
-        tut7: "Поделитесь маршрутом заранее или в прямом эфире, чтобы друзья могли следить! 🔴",
-        tut8: "Поделитесь статической ссылкой на ваш маршрут! 🗺️",
-        tut9: "С Live-трансляцией друзья могут следить за вашим движением на карте в реальном времени! 🔴",
-        tut10: "Поделитесь ссылкой на само приложение с другом! 📱",
-        tut17: "Поделитесь своим опытом о приложении в группе Facebook. 👥",
-        tut6: "Когда маршрут готов, нажмите здесь, чтобы начать игру! 🚀",
-        tut12: "Здесь вы видите, сколько {pathName} осталось собрать! 🍎",
-        tut13: "Нажмите здесь, чтобы переключиться на карту и узнать, где вы! 🗺️",
-        tut14: "Здесь вы можете отдалить или центрировать карту! 🔍",
-        tut15: "Вы также можете масштабировать карту пальцами! ✌️",
-        tut16: "Когда вы достигнете цели, будет победный танец и конфетти! 🎉",
-        btnNext: "Далее ➔",
-        btnFinish: "Понятно!",
-        tutSkip: "Пропустить",
-        iosFooter1: "Нажмите ",
-        iosFooter2: " и выберите ",
-        iosAddHome: "На экран Домой",
-        installWarning: "⚠️ Откройте в Safari/Chrome, чтобы сохранить приложение!",
-        offlineSearch: "Поиск не работает в автономном режиме. Используйте карту или сохраненные места!",
-        shareRouteTitle: "Присоединяйтесь к приключению!",
-        followRouteText: "Следуйте по моему маршруту в {target}!",
-        copyRouteLink: "Скопируйте ссылку, чтобы поделиться маршрутом:",
-        followLiveTitle: "Следите за мной в прямом эфире!",
-        followLiveText: "Следите за охотой в прямом эфире! 🔴",
-        copyLiveLink: "Скопируйте ссылку, чтобы поделиться живым маршрутом:",
-        checkAppText: "Зацените это приложение! 🗺️",
-        copyAppLink: "Скопируйте ссылку, чтобы поделиться приложением:",
-        btnFacebookGroup: "Наша группа в Facebook 👥",
-        devBetaTitle: "🧪 БЕТА И ФУНКЦИИ",
-        devOn: "ВКЛ ✅",
-        devOff: "ВЫКЛ ❌",
-        welcome: "Привет! {player}",
-        helpFind: "Помогите {name} найти {targetName}!",
-        okGotIt: "Понятно!",
-        searchingGps: "Поиск GPS... 📍",
-        whereToDrive: "Куда едем? {player}",
-        whereToWalk: "Куда идем? {player}",
-        start: "СТАРТ {target}",
-        voiceSearch: "🎤 ГОЛОС",
-        textSearch: "✎ ТЕКСТ",
-        locateMe: "🎯 ГДЕ Я",
-        cancel: "ОТМЕНА",
-        clear: "ОЧИСТИТЬ",
-        searchPlaceholder: "Куда?",
-        saveSlot: "СОХРАНИТЬ {num}",
-        promptSaveAs: "Сохранить как:",
-        promptSaveWaypoints: "Сохранить с путевыми точками?",
-        addressSearch: "Поиск адреса...",
-        markedLocation: "Отмеченное место",
-        kmTo: "<b>{dist} км</b> до {target}",
-        kmToAndBack: "<b>{dist} км</b> до {target} и обратно",
-        kmBird: "<b>{dist} км</b> (по прямой)",
-        kmBirdAndBack: "<b>{dist} км</b> туда и обратно (по прямой)",
-        voiceListening: "СЛУШАЮ...",
-        didIHearRight: "Я ПРАВИЛЬНО ПОНЯЛ?",
-        voiceError: "ОШИБКА 🛑",
-        micDenied: "Вам нужно разрешить доступ к микрофону.",
-        heardNothing: "Ничего не услышал! {player} Говорите громче.",
-        voiceNoMatch: "Не удалось распознать. Попробуйте еще раз! {target}",
-        voiceNotSupported: "Ваш браузер не поддерживает голосовой поиск.",
-        liveConnecting: "🔴 Подключение к трансляции...",
-        liveWaiting: "🟢 Ожидание обновления от {name}...",
-        liveFollowing: "🔴 Вы следите за маршрутом к {target}...",
-        alreadyLive: "Вы уже следите за трансляцией!",
-        shareStatic: "Поделиться маршрутом (Статика)",
-        shareLive: "Поделиться LIVE 🔴",
-        shareAppBtn: "Поделиться приложением 📱",
-        btnCancel: "Отмена",
-        btnZoomOut: "🔍 ОТДАЛИТЬ",
-        btnZoomIn: "🔍 ПРИБЛИЗИТЬ",
-        btnCenter: "🔍 В ЦЕНТР",
-        setStartPoint: "📍 Установить как точку старта",
-        waypointDit: "🏁 По пути туда",
-        waypointHem: "🏁 По пути обратно",
-        addWaypoint: "🏁 Добавить путевую точку",
-        kmLeft: "осталось {dist} км",
-        iosInstall: "Установите приложение для полного экрана!",
-        iosClose: "Возможно позже",
-        btnMap: "🗺️ КАРТА",
-        devTitle: "🛠 РЕЖИМ РАЗРАБОТЧИКА",
-        devLang: "🌐 ЯЗЫК / LANGUAGE",
-        devTheme: "🎨 ТЕМЫ / THEMES",
-        devClose: "Закрыть",
-        devReset: "🔄 Сброс настроек",
-        themes: {
-            default: { name: 'мыши', targetName: 'сыр', pathName: 'ЯБЛОКИ' },
-            easter: { name: 'пасхальному кролику', targetName: 'пасхальное яйцо', pathName: 'КОНФЕТЫ' },
-            midsummer: { name: 'лягушке', targetName: 'клубнику', pathName: 'ЦВЕТЫ' },
-            halloween: { name: 'призраку', targetName: 'тыкву', pathName: 'ЛЕТУЧИЕ МЫШИ' },
-            christmas: { name: 'Санте', targetName: 'подарок', pathName: 'ПЕЧЕНЬЕ' },
-            newyear: { name: 'ракете', targetName: 'фейерверк', pathName: 'ЗВЕЗДЫ' },
-            birthday: { name: 'имениннику', targetName: 'торт', pathName: 'ШАРИКИ' }
-        }
-    },
-    am: {
-        welcomeTitle: "ወደ ጨዋታው በደህና መጡ! 🐭",
-        welcomeDesc2: "ጉዞውን ለመጀመር እና {name} {targetName} እንዲያገኝ ለመርዳት ዝግጁ ነዎት?",
-        dontShowAgain: "ለዚህ ስሪት እንደገና አታሳይ",
-        btnSkip: "እንዴት እንደሚሰራ አውቃለሁ! እንሂድ!",
-        btnTutorial: "እንዴት እንደሆነ አሳየኝ",
-        tut1: "እዚህ በማሽከርከር እና በእግር መሄድ መካከል መቀየር ይችላሉ! 🚗🚶",
-        tut2: "መንገድ እያቀዱ ነው? መነሻ ነጥብ ለማዘጋጀት ካርታውን በረጅሙ ይጫኑ! 📍",
-        tut3: "ድምጽ፣ ጽሑፍ በመጠቀም ወይም በቀጥታ ካርታው ላይ በመጫን መድረሻዎን ይፈልጉ! 🔍",
-        tut4: "መድረሻ ካለዎት በኋላ የማቆሚያ ነጥቦችን ለማከል ካርታውን በረጅሙ ይጫኑ! 💡",
-        tut11: "መንገዱ ተሳስቷል? ካርታውን ለማጽዳት እና እንደገና ለመጀመር አጽዳን ይጫኑ! 🗑️",
-        tut5: "መንገዱን ማስቀመጥ ይፈልጋሉ? ከእነዚህ አዝራሮች ውስጥ አንዱን በረጅሙ ይጫኑ! 💾",
-        tut7: "መንገዱን አስቀድመው ያጋሩ፣ ወይም ጓደኞችዎ እንዲከታተሉዎት በቀጥታ ያጋሩ! 🔴",
-        tut8: "ሌሎች እንዲያዩት ቋሚ አገናኝ ያጋሩ! 🗺️",
-        tut9: "በቀጥታ ስርጭት ጓደኞችዎ እንቅስቃሴዎን በካርታው ላይ በቅጽበት መከታተል ይችላሉ! 🔴",
-        tut10: "የመተግበሪያውን አገናኝ ለጓደኛዎ ያጋሩ! 📱",
-        tut17: "ስለመተግበሪያው ያለዎትን ተሞክሮ በፌስቡክ ቡድን ውስጥ ያጋሩ። 👥",
-        tut6: "መንገድዎ ዝግጁ ሲሆን ጨዋታውን ለመጀመር እዚህ ይጫኑ! 🚀",
-        tut12: "ምን ያህል {pathName} እንደሚቀርዎ እዚህ ማየት ይችላሉ! 🍎",
-        tut13: "ወደ ካርታ እይታ ለመቀየር እና የት እንዳሉ ለማየት እዚህ ጠቅ ያድርጉ! 🗺️",
-        tut14: "ካርታውን ለማሳነስ ወይም መሃል ለማድረግ እዚህ መጫን ይችላሉ! 🔍",
-        tut15: "በጣትዎም ካርታውን ማጉላት እና ማሳነስ ይችላሉ! ✌️",
-        tut16: "ግቡ ላይ ሲደርሱ የድል ጭፈራ እና ኮንፈቲ ይኖራል! 🎉",
-        btnNext: "ቀጣይ ➔",
-        btnFinish: "ገባኝ!",
-        tutSkip: "ዝለል",
-        iosFooter1: "ይጫኑ ",
-        iosFooter2: " እና ይምረጡ ",
-        iosAddHome: "ወደ መነሻ ማያ ገጽ አክል",
-        installWarning: "⚠️ መተግበሪያውን ለማስቀመጥ በ Safari/Chrome ይክፈቱ!",
-        offlineSearch: "ከመስመር ውጭ ሆነው ፍለጋ አይሰራም። እባክዎ ካርታውን ወይም የተቀመጡ ቦታዎችን ይጠቀሙ!",
-        shareRouteTitle: "ጀብዱውን ይቀላቀሉ!",
-        followRouteText: "መንገዴን ወደ {target} ይከተሉ!",
-        copyRouteLink: "መንገዱ ለማጋራት አገናኙን ይቅዱ፡",
-        followLiveTitle: "በቀጥታ ይከተሉኝ!",
-        followLiveText: "አደኑን በቀጥታ ይከተሉ! 🔴",
-        copyLiveLink: "የቀጥታ መንገዱ ለማጋራት አገናኙን ይቅዱ፡",
-        checkAppText: "ይህን መተግበሪያ ይመልከቱ! 🗺️",
-        copyAppLink: "መተግበሪያውን ለማጋራት አገናኙን ይቅዱ፡",
-        btnFacebookGroup: "የእኛ የፌስቡክ ቡድን 👥",
-        devBetaTitle: "🧪 ቤታ እና ባህሪዎች",
-        devOn: "በርቷል ✅",
-        devOff: "ጠፍቷል ❌",
-        welcome: "ሰላም! {player}",
-        helpFind: "{name} {targetName} እንዲያገኝ እርዱት!",
-        okGotIt: "እሺ! ገባኝ!",
-        searchingGps: "ጂፒኤስ በመፈለግ ላይ... 📍",
-        whereToDrive: "ወደ የት እንጓዝ? {player}",
-        whereToWalk: "የት እንሂድ? {player}",
-        start: "ጀምር {target}",
-        voiceSearch: "🎤 የድምፅ ፍለጋ",
-        textSearch: "✎ የጽሑፍ ፍለጋ",
-        locateMe: "🎯 እኔን ፈልግ",
-        cancel: "ሰርዝ",
-        clear: "አጽዳ",
-        searchPlaceholder: "የት እንሂድ?",
-        saveSlot: "አስቀምጥ {num}",
-        promptSaveAs: "እንደዚህ አስቀምጥ:",
-        promptSaveWaypoints: "ከማቆሚያ ነጥቦች ጋር ያስቀምጡ?",
-        addressSearch: "አድራሻ በመፈለግ ላይ...",
-        markedLocation: "ምልክት የተደረገበት ቦታ",
-        kmTo: "<b>{dist} ኪ.ሜ</b> ወደ {target}",
-        kmToAndBack: "<b>{dist} ኪ.ሜ</b> ወደ {target} እና ወደ ኋላ",
-        kmBird: "<b>{dist} ኪ.ሜ</b> (በቀጥታ መስመር)",
-        kmBirdAndBack: "<b>{dist} ኪ.ሜ</b> ወደ መድረሻው እና ወደ ኋላ (በቀጥታ)",
-        voiceListening: "በማዳመጥ ላይ...",
-        didIHearRight: "በትክክል ሰማሁ?",
-        voiceError: "ስህተት 🛑",
-        micDenied: "ማይክሮፎን መጠቀም መፍቀድ አለብዎት።",
-        heardNothing: "ምንም አልሰማሁም! {player} ትንሽ ከፍ አድርገው ይናገሩ።",
-        voiceNoMatch: "የተናገሩት አልተለየም። እንደገና ይሞክሩ! {target}",
-        voiceNotSupported: "ይቅርታ፣ የእርስዎ ብሮውዘር የድምፅ ፍለጋን አይደግፍም።",
-        liveConnecting: "🔴 ከስርጭቱ ጋር በመገናኘት ላይ...",
-        liveWaiting: "🟢 የ {name}ን መረጃ በመጠበቅ ላይ...",
-        liveFollowing: "🔴 ጉዞውን ወደ {target} እየተከታተሉ ነው...",
-        alreadyLive: "እርስዎ ቀድሞውኑ የቀጥታ ስርጭት እየተከታተሉ ነው!",
-        shareStatic: "መንገድ አጋራ (መደበኛ)",
-        shareLive: "በቀጥታ አጋራ 🔴",
-        shareAppBtn: "መተግበሪያ አጋራ 📱",
-        btnCancel: "ሰርዝ",
-        btnZoomOut: "🔍 አሳንስ",
-        btnZoomIn: "🔍 አጉላ",
-        btnCenter: "🔍 ማዕከል",
-        setStartPoint: "📍 እንደ መነሻ ነጥብ ያድርጉ",
-        waypointDit: "🏁 በመሄጃው መንገድ ላይ",
-        waypointHem: "🏁 በመመለሻው መንገድ ላይ",
-        addWaypoint: "🏁 የማቆሚያ ነጥብ ያክሉ",
-        kmLeft: "{dist} ኪ.ሜ ቀርቷል",
-        iosInstall: "ሙሉ ስክሪን ለማግኘት መተግበሪያውን ይጫኑ!",
-        iosClose: "ምናልባት በኋላ",
-        btnMap: "🗺️ ካርታ",
-        devTitle: "🛠 DEV MODE",
-        devLang: "🌐 ቋንቋ / LANGUAGE",
-        devTheme: "🎨 ገጽታዎች / THEMES",
-        devClose: "ዝጋ",
-        devReset: "🔄 ዳግም አስጀምር",
-        themes: {
-            default: { name: 'አይጥ', targetName: 'አይብ', pathName: 'ፖም' },
-            easter: { name: 'የፋሲካ ጥንቸል', targetName: 'እንቁላል', pathName: 'ከረሜላ' },
-            midsummer: { name: 'እንቁራሪት', targetName: 'እንጆሪ', pathName: 'አበቦች' },
-            halloween: { name: 'መንፈስ', targetName: 'ዱባ', pathName: 'የሌሊት ወፎች' },
-            christmas: { name: 'ሳንታ', targetName: 'ስጦታ', pathName: 'ብስኩቶች' },
-            newyear: { name: 'ሮኬት', targetName: 'ርችት', pathName: 'ከዋክብት' },
-            birthday: { name: 'የልደት ልጅ', targetName: 'ኬክ', pathName: 'ፊኛዎች' }
-        }
-    },
-    ar: {
-        welcomeTitle: "مرحبًا بك في اللعبة! 🐭",
-        welcomeDesc2: "هل أنت مستعد لبدء الرحلة ومساعدة {name} في العثور على {targetName}؟",
-        dontShowAgain: "لا تظهر مرة أخرى لهذا الإصدار",
-        btnSkip: "أعرف كيف يعمل! لننطلق!",
-        btnTutorial: "أرني كيف",
-        tut1: "هنا يمكنك التبديل بين القيادة والمشي! 🚗🚶",
-        tut2: "تخطط لمسار؟ اضغط مطولاً على الخريطة لتعيين نقطة بداية! 📍",
-        tut3: "ابحث عن وجهتك باستخدام الصوت أو النص أو النقر مباشرة على الخريطة! 🔍",
-        tut4: "بمجرد تحديد الوجهة، اضغط مطولاً على الخريطة لإضافة نقاط طريق! 💡",
-        tut11: "هل المسار خاطئ؟ اضغط على مسح لتنظيف الخريطة والبدء من جديد! 🗑️",
-        tut5: "هل تريد حفظ المسار؟ اضغط مطولاً على أحد هذه الأزرار! 💾",
-        tut7: "شارك المسار مسبقًا، أو شارك مباشرة ليتمكن الأصدقاء من المتابعة! 🔴",
-        tut8: "شارك رابطًا ثابتًا لمسارك ليتمكن الآخرون من رؤيته! 🗺️",
-        tut9: "من خلال المشاركة المباشرة، يمكن للأصدقاء متابعة حركتك على الخريطة في الوقت الفعلي! 🔴",
-        tut10: "شارك رابط التطبيق مع صديق! 📱",
-        tut17: "شارك تجربتك عن التطبيق في مجموعة الفيسبوك. 👥",
-        tut6: "عندما يكون مسارك جاهزًا، انقر هنا لبدء اللعبة! 🚀",
-        tut12: "هنا يمكنك رؤية عدد {pathName} المتبقية لجمعها! 🍎",
-        tut13: "انقر هنا للتبديل إلى عرض الخريطة ورؤية موقعك! 🗺️",
-        tut14: "هنا يمكنك تصغير الخريطة أو توسيطها! 🔍",
-        tut15: "يمكنك أيضًا التكبير بأصابعك مباشرة على الخريطة! ✌️",
-        tut16: "عندما تصل إلى الهدف، سنحتفل بقصاصات الورق الملونة ورقصة النصر! 🎉",
-        btnNext: "التالي ➔",
-        btnFinish: "فهمت!",
-        tutSkip: "تخطي",
-        iosFooter1: "اضغط على ",
-        iosFooter2: " واختر ",
-        iosAddHome: "إضافة إلى الشاشة الرئيسية",
-        installWarning: "⚠️ افتح في Safari/Chrome لحفظ التطبيق!",
-        offlineSearch: "البحث لا يعمل عندما تكون غير متصل بالإنترنت. يرجى استخدام الخريطة أو المواقع المحفوظة بدلاً من ذلك!",
-        shareRouteTitle: "انضم إلى المغامرة!",
-        followRouteText: "اتبع مساري إلى {target}!",
-        copyRouteLink: "انسخ الرابط لمشاركة المسار:",
-        followLiveTitle: "اتبعني مباشرة!",
-        followLiveText: "اتبع المطاردة مباشرة! 🔴",
-        copyLiveLink: "انسخ الرابط لمشاركة المسار المباشر:",
-        checkAppText: "تحقق من هذا التطبيق! 🗺️",
-        copyAppLink: "انسخ الرابط لمشاركة التطبيق:",
-        btnFacebookGroup: "مجموعتنا على الفيسبوك 👥",
-        devBetaTitle: "🧪 تجريبي وميزات",
-        devOn: "تشغيل ✅",
-        devOff: "إيقاف ❌",
-        welcome: "مرحباً! {player}",
-        helpFind: "ساعد {name} في العثور على {targetName}!",
-        okGotIt: "حسناً! فهمت!",
-        searchingGps: "جاري البحث عن GPS... 📍",
-        whereToDrive: "إلى أين سنذهب بالسيارة؟ {player}",
-        whereToWalk: "إلى أين سنمشي؟ {player}",
-        start: "ابدأ {target}",
-        voiceSearch: "🎤 بحث صوتي",
-        textSearch: "✎ بحث نصي",
-        locateMe: "🎯 حدد موقعي",
-        cancel: "إلغاء",
-        clear: "مسح",
-        searchPlaceholder: "إلى أين؟",
-        saveSlot: "حفظ {num}",
-        promptSaveAs: "حفظ باسم:",
-        promptSaveWaypoints: "هل تريد الحفظ مع نقاط الطريق؟",
-        addressSearch: "جاري البحث عن العنوان...",
-        markedLocation: "موقع محدد",
-        kmTo: "<b>{dist} كم</b> إلى {target}",
-        kmToAndBack: "<b>{dist} كم</b> إلى {target} والعودة",
-        kmBird: "<b>{dist} كم</b> (بخط مستقيم)",
-        kmBirdAndBack: "<b>{dist} كم</b> للهدف والعودة (بخط مستقيم)",
-        voiceListening: "أستمع...",
-        didIHearRight: "هل سمعت بشكل صحيح؟",
-        voiceError: "خطأ 🛑",
-        micDenied: "يجب عليك السماح بالوصول إلى الميكروفون في متصفح متصفحك.",
-        heardNothing: "لم أسمع شيئاً! {player} تحدث بصوت أعلى قليلاً.",
-        voiceNoMatch: "لم أتمكن من فهم ما قلته. حاول مرة أخرى! {target}",
-        voiceNotSupported: "عذراً، متصفحك لا يدعم البحث الصوتي.",
-        liveConnecting: "🔴 جاري الاتصال بالبث...",
-        liveWaiting: "🟢 في انتظار تحديث {name}...",
-        liveFollowing: "🔴 تتابع الرحلة إلى {target}...",
-        alreadyLive: "أنت تتابع بثاً مباشراً بالفعل!",
-        shareStatic: "مشاركة المسار (ثابت)",
-        shareLive: "مشاركة مباشر 🔴",
-        shareAppBtn: "مشاركة التطبيق 📱",
-        btnCancel: "إلغاء",
-        btnZoomOut: "🔍 تصغير",
-        btnZoomIn: "🔍 تكبير",
-        btnCenter: "🔍 تمركز",
-        setStartPoint: "📍 تعيين كنقطة بداية",
-        waypointDit: "🏁 في الطريق إلى هناك",
-        waypointHem: "🏁 في طريق العودة",
-        addWaypoint: "🏁 إضافة نقطة طريق",
-        kmLeft: "متبقي {dist} كم",
-        iosInstall: "قم بتثبيت التطبيق للحصول على شاشة كاملة ووصول سريع!",
-        iosClose: "ربما لاحقاً",
-        btnMap: "🗺️ خريطة",
-        devTitle: "🛠 وضع المطور",
-        devLang: "🌐 اللغة / LANGUAGE",
-        devTheme: "🎨 السمات / THEMES",
-        devClose: "إغلاق",
-        devReset: "🔄 إعادة ضبط الإعدادات",
-        themes: {
-            default: { name: 'الفأر', targetName: 'الجبن', pathName: 'تفاح' },
-            easter: { name: 'أرنب عيد الفصح', targetName: 'بيضة الفصح', pathName: 'حلوى' },
-            midsummer: { name: 'الضفدع', targetName: 'الفراولة', pathName: 'زهور' },
-            halloween: { name: 'الشبح', targetName: 'اليقطين', pathName: 'خفافيش' },
-            christmas: { name: 'سانتا', targetName: 'الهدية', pathName: 'بسكويت' },
-            newyear: { name: 'الصاروخ', targetName: 'الألعاب النارية', pathName: 'نجوم' },
-            birthday: { name: 'صاحب عيد الميلاد', targetName: 'الكعكة', pathName: 'بالونات' }
-        }
-    }
-};
-
-function t(key, params = {}) {
-    let str = i18n[currentLang]?.[key] || i18n['en'][key] || key;
-    for (let p in params) { str = str.replace(`{${p}}`, params[p]); }
-    return str;
-}
-
-function getThemeName() { return i18n[currentLang]?.themes?.[activeTheme.id]?.name || activeTheme.name; }
-function getThemeTarget() { return i18n[currentLang]?.themes?.[activeTheme.id]?.targetName || activeTheme.targetName; }
-function getThemePathName() { return i18n[currentLang]?.themes?.[activeTheme.id]?.pathName || "APPLES"; }
 function getWhereToText() { return t(travelMode === 0 ? 'whereToDrive' : 'whereToWalk', {player: activeTheme.player}); }
 
 if ('serviceWorker' in navigator) {
@@ -597,59 +26,6 @@ if ('serviceWorker' in navigator) {
         });
     });
 }
-
-// --- DYNAMIC VOICE LANG ---
-const manualLangOverride = localStorage.getItem('app_lang');
-let dynamicVoiceLang = 'en-US';
-
-if (manualLangOverride) {
-    const langCodeMap = { 'sv': 'sv-SE', 'en': 'en-US', 'ru': 'ru-RU', 'am': 'am-ET', 'ar': 'ar-SA' };
-    dynamicVoiceLang = langCodeMap[manualLangOverride] || 'en-US';
-} else {
-    const langCodeMap = { 'sv': 'sv-SE', 'en': 'en-US', 'ru': 'ru-RU', 'am': 'am-ET', 'ar': 'ar-SA' };
-    dynamicVoiceLang = langCodeMap[currentLang] || 'en-US';
-}
-
-function updateVoiceLangFromCountry(countryCode) {
-    if (manualLangOverride) return;
-
-    if (!countryCode) return;
-    const cc = countryCode.toLowerCase();
-    const langMap = { 
-        'se': 'sv-SE', 'no': 'no-NO', 'dk': 'da-DK', 'fi': 'fi-FI', 
-        'gb': 'en-GB', 'us': 'en-US', 'de': 'de-DE', 'fr': 'fr-FR', 
-        'es': 'es-ES', 'it': 'it-IT', 'ru': 'ru-RU', 'et': 'am-ET', 'er': 'ti-ER',
-        'ae': 'ar-AE', 'sa': 'ar-SA', 'eg': 'ar-EG', 'ma': 'ar-MA', 'iq': 'ar-IQ'
-    };
-    if (langMap[cc]) {
-        dynamicVoiceLang = langMap[cc];
-    }
-}
-
-// --- THEME ENGINE ---
-const themes = {
-    default:   { id: 'default', player: '🐭', target: '🧀', path: '🍎', color: '#4CAF50', name: 'musen', targetName: 'osten' },
-    easter:    { id: 'easter', player: '🐰', target: '🥚', path: '🍬', color: '#FFEB3B', name: 'påskharen', targetName: 'påskägget' },
-    midsummer: { id: 'midsummer', player: '🐸', target: '🍓', path: '🌸', color: '#8BC34A', name: 'grodan', targetName: 'jordgubben' },
-    halloween: { id: 'halloween', player: '👻', target: '🎃', path: '🦇', color: '#FF9800', name: 'spöket', targetName: 'pumpan' },
-    christmas: { id: 'christmas', player: '🎅', target: '🎁', path: '🍪', color: '#F44336', name: 'tomten', targetName: 'julklappen' },
-    newyear:   { id: 'newyear', player: '🚀', target: '🎆', path: '✨', color: '#3F51B5', name: 'raketen', targetName: 'fyrverkeriet' },
-    birthday:  { id: 'birthday', player: '🥳', target: '🎂', path: '🎈', color: '#E91E63', name: 'födelsedagsbarnet', targetName: 'tårtan' } 
-};
-
-function getCurrentTheme() {
-    const today = new Date();
-    const month = today.getMonth() + 1;
-    const date = today.getDate();
-    if ((month === 12 && date >= 30) || (month === 1 && date <= 2)) return themes.newyear;
-    if ((month === 3 && date >= 20) || (month === 4 && date <= 15)) return themes.easter;
-    if (month === 6 && date >= 15 && date <= 25) return themes.midsummer;
-    if ((month === 10 && date >= 20) || (month === 11 && date <= 5)) return themes.halloween;
-    if (month === 12) return themes.christmas;
-    return themes.default;
-}
-
-let activeTheme = themes[localStorage.getItem('app_theme_override')] || getCurrentTheme(); 
 
 function applyTranslations() {
     const appTitles = { 'sv': 'Hur långt?', 'en': 'How far?', 'ru': 'Как далеко?', 'am': 'ምን ያህል ይርቃል?', 'ar': 'كم تبعد؟' };
@@ -711,10 +87,13 @@ const pusherSecret = "553a46ceea1b0e804297";
 const pusherCluster = "eu";
 let pusher = null;
 let liveChannel = null;
+let backgroundChannels = [];
 let isLiveSharing = false;
 let isLiveReceiver = false;
 let liveSessionId = null;
 let liveBroadcastInterval = null;
+
+let savedLiveChannels = JSON.parse(localStorage.getItem('mouse_live_favs')) || {};
 
 function getPusherConfig() {
     return {
@@ -806,6 +185,45 @@ const els = {
     gameMapWrapper: document.getElementById('game-map-wrapper')
 };
 
+// --- EGEN MODAL FÖR ATT SLIPPA WEBBLÄSARENS STANDARD ---
+function showCustomModal({ title, text, placeholder, showInput, okText, cancelText, onResult }) {
+    const overlay = document.createElement('div');
+    overlay.style.position = 'fixed'; overlay.style.top = '0'; overlay.style.left = '0'; overlay.style.width = '100vw'; overlay.style.height = '100svh'; overlay.style.background = 'rgba(0,0,0,0.6)'; overlay.style.zIndex = '100000'; overlay.style.display = 'flex'; overlay.style.alignItems = 'center'; overlay.style.justifyContent = 'center';
+    
+    const modal = document.createElement('div');
+    modal.style.background = 'white'; modal.style.padding = '20px'; modal.style.borderRadius = '15px'; modal.style.width = '80%'; modal.style.maxWidth = '300px'; modal.style.textAlign = 'center'; modal.style.boxShadow = '0 10px 30px rgba(0,0,0,0.3)';
+    
+    const tEl = document.createElement('h3'); tEl.innerText = title; tEl.style.marginTop = '0'; tEl.style.color = '#333';
+    modal.appendChild(tEl);
+    
+    if (text) {
+        const dEl = document.createElement('p'); dEl.innerText = text; dEl.style.fontSize = '0.9rem'; dEl.style.color = '#555'; dEl.style.marginBottom = '15px'; dEl.style.whiteSpace = 'pre-wrap';
+        modal.appendChild(dEl);
+    }
+    
+    let iEl;
+    if (showInput) {
+        iEl = document.createElement('input'); iEl.type = 'text'; iEl.placeholder = placeholder || ''; iEl.style.width = '100%'; iEl.style.padding = '10px'; iEl.style.boxSizing = 'border-box'; iEl.style.borderRadius = '10px'; iEl.style.border = '2px solid #ccc'; iEl.style.marginBottom = '15px'; iEl.style.fontSize = '1rem'; iEl.style.textAlign = 'center';
+        modal.appendChild(iEl);
+    }
+    
+    const btnRow = document.createElement('div'); btnRow.style.display = 'flex'; btnRow.style.gap = '10px';
+    
+    if (cancelText) {
+        const btnCancel = document.createElement('button'); btnCancel.innerText = cancelText; btnCancel.style.flex = '1'; btnCancel.style.padding = '10px'; btnCancel.style.borderRadius = '10px'; btnCancel.style.border = 'none'; btnCancel.style.background = '#eee'; btnCancel.style.color = '#333';
+        btnCancel.onclick = () => { overlay.remove(); if (onResult) onResult(null); };
+        btnRow.appendChild(btnCancel);
+    }
+    
+    const btnOk = document.createElement('button'); btnOk.innerText = okText || 'OK'; btnOk.style.flex = '1'; btnOk.style.padding = '10px'; btnOk.style.borderRadius = '10px'; btnOk.style.border = 'none'; btnOk.style.background = 'var(--primary)'; btnOk.style.color = 'white';
+    btnOk.onclick = () => { overlay.remove(); if (onResult) onResult(showInput ? iEl.value.trim() : true); };
+    btnRow.appendChild(btnOk);
+    
+    modal.appendChild(btnRow);
+    overlay.appendChild(modal); document.body.appendChild(overlay);
+    if (showInput) iEl.focus();
+}
+
 // --- WELCOME & TUTORIAL LOGIC ---
 function saveWelcomeState() {
     const chk = document.getElementById('dont-show-again-chk');
@@ -860,7 +278,6 @@ function skipTutorial() {
     const shareMenu = document.getElementById('share-menu');
     if (shareMenu) shareMenu.remove();
 
-    // --- Städning för victory dance i tutorial ---
     clearInterval(window.tutorialConfettiInterval);
     window.tutorialConfettiInterval = null;
     document.querySelectorAll('.confetti').forEach(c => c.remove());
@@ -870,9 +287,7 @@ function skipTutorial() {
         m.innerHTML = activeTheme.player;
     }
     document.getElementById('tutorial-spotlight').style.display = 'block'; 
-    // ------------------------------------------------
 
-    // Revert till kartsidan om vi avslutar under dummy-spelet
     if (els.gamePage && !els.gamePage.classList.contains('hidden')) {
         els.gamePage.classList.add('hidden');
         els.mapPage.classList.remove('hidden');
@@ -900,11 +315,8 @@ function nextTutorialStep() {
 
 function showTutorialStep(index) {
     const step = tutorialSteps[index];
-
-    // Återställ spotlight display om den var gömd under victory dance
     document.getElementById('tutorial-spotlight').style.display = 'block';
 
-    // --- Hantera Actions (Share och Dummy Game) ---
     if (step.action === 'open_share') {
         if (!document.getElementById('share-menu')) {
             shareApp({}); 
@@ -933,7 +345,6 @@ function showTutorialStep(index) {
         const toggleBtn = document.getElementById('toggle-game-view-btn');
         if (toggleBtn) toggleBtn.innerText = `${activeTheme.path} ${getThemePathName()}`;
 
-        // Ensure zoom button is visible so the tutorial can attach to it
         const zoomBtn = document.getElementById('zoom-toggle-btn');
         if (zoomBtn) {
             zoomBtn.classList.remove('hidden');
@@ -949,7 +360,6 @@ function showTutorialStep(index) {
         els.gameMapWrapper.classList.add('hidden');
         els.pathGrid.classList.remove('hidden');
         
-        // Göm spotlight så att konfettin och skärmen inte blir nermörkad
         document.getElementById('tutorial-spotlight').style.display = 'none';
 
         const m = document.getElementById('the-mouse');
@@ -965,7 +375,6 @@ function showTutorialStep(index) {
         const openMenu = document.getElementById('share-menu');
         if (openMenu) openMenu.remove();
     }
-    // -----------------------------------------------
 
     const targetEl = step.target.startsWith('.') ? document.querySelector(step.target) : document.getElementById(step.target);
     
@@ -980,7 +389,6 @@ function showTutorialStep(index) {
     const textEl = document.getElementById('tutorial-text');
     const nextBtn = document.getElementById('tutorial-next');
 
-    // Infogar pathName för game view stegen
     textEl.innerHTML = t(step.textKey, { pathName: getThemePathName().toLowerCase() });
     
     if (index === tutorialSteps.length - 1) {
@@ -992,7 +400,6 @@ function showTutorialStep(index) {
     if (targetEl) {
         let rect = targetEl.getBoundingClientRect();
         
-        // --- LOGIK FÖR SPARA-KNAPPARNA (Bara de 4 knapparna) ---
         if (step.target === '.save-btn-container') {
             const slotBtns = targetEl.querySelectorAll('.slot-btn');
             if (slotBtns.length > 0) {
@@ -1010,7 +417,6 @@ function showTutorialStep(index) {
                 };
             }
         }
-        // --- LOGIK FÖR SÖK-KNAPPARNA (Bara Text och Röst) ---
         else if (step.target === '.action-container') {
             const textBtn = document.getElementById('text-btn');
             const voiceBtn = document.getElementById('voice-btn');
@@ -1029,7 +435,6 @@ function showTutorialStep(index) {
                 };
             }
         }
-        // --------------------------------------------------------
 
         let centerLeft = rect.left + rect.width / 2;
         
@@ -1227,11 +632,6 @@ function initMap() {
     };
     helpControl.addTo(map);
 
-    if (sessionRaw && sessionRaw.hasManualStart && fixedStartCoords) {
-        manualStartMarker = L.circleMarker(fixedStartCoords, { radius: 8, fillColor: "#4CAF50", color: "#fff", weight: 2, fillOpacity: 1 }).addTo(map);
-        manualStartMarker.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); removeManualStartPoint(); });
-    }
-
     const urlParams = new URLSearchParams(window.location.search);
     const liveId = urlParams.get('live');
     if (liveId) {
@@ -1273,6 +673,16 @@ function initMap() {
 
         if (navigator.geolocation) {
             navigator.geolocation.watchPosition(handlePositionUpdate, null, { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 });
+        }
+        
+        // --- BACKGROUND LISTENING FOR FAVORITE LIVE CHANNELS ---
+        if (Object.keys(savedLiveChannels).length > 0 && !savedIsLiveSharing) {
+            if (!pusher) pusher = new Pusher(pusherKey, getPusherConfig());
+            for (const ch in savedLiveChannels) {
+                const bgChan = pusher.subscribe(`private-live-${ch}`);
+                bgChan.bind('client-update', (data) => handleBackgroundLiveUpdate(ch, data));
+                backgroundChannels.push(bgChan);
+            }
         }
     }
 
@@ -1387,6 +797,74 @@ function broadcastLiveState() {
     });
 }
 
+// --- NEW FUNCTION: Execute Live Search using Custom Modal ---
+function executeLiveSearch() {
+    let q = els.searchInput.value.trim();
+    if (!q) {
+        showCustomModal({
+            title: t('promptLiveSearchTitle'),
+            text: t('promptLiveSearchDesc'),
+            showInput: true,
+            placeholder: 'Sökord',
+            okText: 'Sök',
+            cancelText: t('btnCancel'),
+            onResult: (val) => { if (val) handleLiveSearchInput(val); }
+        });
+        return;
+    }
+    handleLiveSearchInput(q);
+}
+
+function handleLiveSearchInput(q) {
+    els.searchContainer.classList.add('hidden');
+    els.searchInput.value = "";
+
+    if(!savedLiveChannels[q]) {
+        showCustomModal({
+            title: t('promptSaveLiveTitle'),
+            text: t('promptSaveLiveDesc', {channel: q}),
+            showInput: true,
+            placeholder: q,
+            okText: 'Spara',
+            cancelText: t('btnSkip'),
+            onResult: (alias) => {
+                if (alias !== null && alias !== "") {
+                    savedLiveChannels[q] = alias;
+                    localStorage.setItem('mouse_live_favs', JSON.stringify(savedLiveChannels));
+                }
+                window.location.href = window.location.origin + window.location.pathname + '?live=' + encodeURIComponent(q);
+            }
+        });
+    } else {
+        window.location.href = window.location.origin + window.location.pathname + '?live=' + encodeURIComponent(q);
+    }
+}
+
+// --- NEW FUNCTION: Background Live Listener ---
+let autoPromptCooldown = false;
+function handleBackgroundLiveUpdate(channelId, data) {
+    if (isLiveReceiver || isLiveSharing || autoPromptCooldown) return;
+
+    autoPromptCooldown = true;
+    const alias = savedLiveChannels[channelId] || channelId;
+    
+    // Custom Confirm to avoid native dialog
+    showCustomModal({
+        title: "Sändning upptäckt! 🔴",
+        text: t('autoJoinLive', {name: alias}),
+        okText: 'Ja',
+        cancelText: 'Nej',
+        onResult: (res) => {
+            if (res) {
+                window.location.href = window.location.origin + window.location.pathname + '?live=' + encodeURIComponent(channelId);
+            }
+        }
+    });
+    
+    setTimeout(() => { autoPromptCooldown = false; }, 60000);
+}
+
+
 function handleLiveUpdate(parsed) {
     if (!parsed) return;
     if (parsed.initialTotalKm) initialTotalKm = parsed.initialTotalKm;
@@ -1461,8 +939,6 @@ function checkAppleZoomVisibility() {
     }
 
     const grid = els.pathGrid;
-    // Kontrollera om listan svämmar över (behöver scrollas)
-    // Lägger till 5px felmarginal för att undvika att knappen blinkar in på gränsfall.
     if (grid.scrollHeight > grid.clientHeight + 5) {
         zoomBtn.classList.remove('hidden');
     } else {
@@ -1524,14 +1000,14 @@ function autoFitApples() {
     const H = container.clientHeight - padTop - padBottom;
     const gap = 5;
 
-    let bestS = 8; // Fallback till minsta möjliga
-    for (let s = 40; s >= 8; s--) { // Starta aldrig större än default (40px)
+    let bestS = 8; 
+    for (let s = 40; s >= 8; s--) { 
         let cols = Math.floor((W + gap) / (s + gap));
         if (cols <= 0) cols = 1;
         let rows = Math.ceil(N / cols);
         if (rows * s + (rows - 1) * gap <= H) {
             bestS = s;
-            break; // Hittat den största storleken under 40px som får plats!
+            break; 
         }
     }
 
@@ -1555,7 +1031,7 @@ function toggleGameMap() {
         if (toggleBtn) toggleBtn.innerText = `${activeTheme.path} ${getThemePathName()}`;
         
         if (zoomBtn) {
-            zoomBtn.classList.remove('hidden'); // Karta behöver alltid knappen
+            zoomBtn.classList.remove('hidden');
             zoomBtn.innerText = isGameMapZoomedOut ? t('btnZoomIn') : t('btnZoomOut');
         }
         
@@ -2300,7 +1776,7 @@ async function executeTextSearch() {
             if (d[0].address && d[0].address.country_code) updateVoiceLangFromCountry(d[0].address.country_code); 
             let parts = d[0].display_name.split(','); let firstPart = parts[0].trim();
             if (!isNaN(firstPart)) { currentTargetName = (d[0].address && d[0].address.road) ? (d[0].address.road + ' ' + firstPart) : firstPart; } 
-            else { if (d[0].address && d[0].address.road && firstPart === d[0].address.road) { currentTargetName = d[0].address.road + (d[0].address.house_number ? ' ' + d[0].address.house_number : ''); } else { currentTargetName = firstPart; } }
+            else { if (d[0].address && d[0].address.road && firstPart === d[0].address.road) { currentTargetName = d[0].address.road + (d[0].address.house_number ? ' ' + d[0].address.housenumber : ''); } else { currentTargetName = firstPart; } }
             setTarget({lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon)}, true, true, true); map.flyTo(currentTargetCoords, 18); els.searchContainer.classList.add('hidden');
         }
     } catch (e) { alert(t('offlineSearch')); }
@@ -2339,10 +1815,30 @@ function saveCurrentPos(i) {
 function setupInteractions() { document.querySelectorAll('.slot-btn').forEach((b, i) => { let lastTriggerTime = 0; const triggerSave = (e) => { const now = Date.now(); if (now - lastTriggerTime < 7000) return; lastTriggerTime = now; if (e && typeof e.preventDefault === 'function') { e.preventDefault(); e.stopPropagation(); } saveCurrentPos(i); }; b.oncontextmenu = (e) => { triggerSave(e); return false; }; let pressTimer; b.addEventListener('touchstart', (e) => { pressTimer = setTimeout(() => triggerSave(e), 600); }, {passive: true}); b.addEventListener('touchend', () => clearTimeout(pressTimer)); }); }
 function playClickSound() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); const o = audioCtx.createOscillator(); o.type='triangle'; o.frequency.setValueAtTime(3000, audioCtx.currentTime); o.start(); o.stop(audioCtx.currentTime+0.1); }
 
+
+function startLiveSharingMenu() {
+    const oldMenu = document.getElementById('share-live-menu'); 
+    if (oldMenu) { oldMenu.remove(); return; }
+
+    const menu = document.createElement('div'); menu.id = 'share-live-menu';
+    menu.style.position = 'fixed'; menu.style.top = '65px'; menu.style.left = '15px'; menu.style.zIndex = '10002'; menu.style.background = 'white'; menu.style.borderRadius = '15px'; menu.style.padding = '10px'; menu.style.boxShadow = '0 5px 20px rgba(0,0,0,0.3)'; menu.style.display = 'flex'; menu.style.flexDirection = 'column'; menu.style.gap = '8px'; menu.style.border = `2px solid #ff4444`;
+
+    const btnInternal = document.createElement('button'); btnInternal.className = 'wp-menu-btn'; btnInternal.style.background = '#ff4444'; btnInternal.innerText = t('shareLiveInternal');
+    btnInternal.onclick = () => { menu.remove(); startLiveSharingInternal(); };
+
+    const btnExternal = document.createElement('button'); btnExternal.className = 'wp-menu-btn'; btnExternal.style.background = 'var(--blue)'; btnExternal.innerText = t('shareLiveExternal');
+    btnExternal.onclick = () => { menu.remove(); startLiveSharingExternal(); };
+
+    const btnCancel = document.createElement('button'); btnCancel.innerText = t('btnCancel'); btnCancel.style.fontSize = '0.7rem'; btnCancel.style.background = 'none'; btnCancel.onclick = () => menu.remove();
+
+    menu.appendChild(btnInternal); menu.appendChild(btnExternal); menu.appendChild(btnCancel);
+    document.body.appendChild(menu);
+
+    setTimeout(() => { const close = (event) => { if (!menu.contains(event.target) && event.target.id !== 'share-btn-live') { menu.remove(); document.removeEventListener('click', close); } }; document.addEventListener('click', close); }, 100);
+}
+
+
 function shareApp(e) { 
-    // SPÄRREN ÄR NU BORTTAGEN SÅ ATT MOTTAGARE KAN ÖPPNA MENYN
-    // if (isLiveReceiver) { alert(t('alreadyLive')); return; }
-    
     const oldMenu = document.getElementById('share-menu'); if (oldMenu) { oldMenu.remove(); return; }
 
     const menu = document.createElement('div'); menu.id = 'share-menu';
@@ -2352,7 +1848,7 @@ function shareApp(e) {
     btnNormal.onclick = () => { menu.remove(); shareNormal(); };
 
     const btnLive = document.createElement('button'); btnLive.id = 'share-btn-live'; btnLive.className = 'wp-menu-btn'; btnLive.style.background = '#ff4444'; btnLive.innerText = t('shareLive');
-    btnLive.onclick = () => { menu.remove(); startLiveSharing(); };
+    btnLive.onclick = () => { menu.remove(); startLiveSharingMenu(); };
 
     const btnShareApp = document.createElement('button'); btnShareApp.id = 'share-btn-app'; btnShareApp.className = 'wp-menu-btn'; btnShareApp.style.background = 'var(--primary)'; btnShareApp.innerText = t('shareAppBtn');
     btnShareApp.onclick = () => { menu.remove(); shareOnlyApp(); };
@@ -2390,7 +1886,7 @@ function shareNormal() {
     if(navigator.share) { navigator.share(d).catch(e => console.log("Delning avbruten")); } else { prompt(t('copyRouteLink'), shareUrl); }
 }
 
-function startLiveSharing() {
+function startLiveSharingExternal() {
     if (isLiveReceiver && liveSessionId) {
         let shareUrl = window.location.origin + window.location.pathname + '?live=' + liveSessionId;
         const d = {title: t('followLiveTitle'), text: t('followLiveText'), url: shareUrl};
@@ -2403,12 +1899,52 @@ function startLiveSharing() {
     }
 
     if (!liveSessionId) liveSessionId = Math.random().toString(36).substr(2, 9);
+
     if (!pusher) { pusher = new Pusher(pusherKey, getPusherConfig()); }
     liveChannel = pusher.subscribe(`private-live-${liveSessionId}`);
-    liveChannel.bind('pusher:subscription_succeeded', () => { isLiveSharing = true; broadcastLiveState(); if(!liveBroadcastInterval) { liveBroadcastInterval = setInterval(() => { if (isLiveSharing) broadcastLiveState(); }, 3000); } });
-    let shareUrl = window.location.origin + window.location.pathname + '?live=' + liveSessionId;
+    liveChannel.bind('pusher:subscription_succeeded', () => { 
+        isLiveSharing = true; 
+        broadcastLiveState(); 
+        if(!liveBroadcastInterval) { 
+            liveBroadcastInterval = setInterval(() => { if (isLiveSharing) broadcastLiveState(); }, 3000); 
+        } 
+    });
+
+    let shareUrl = window.location.origin + window.location.pathname + '?live=' + encodeURIComponent(liveSessionId);
+    
     const d = {title: t('followLiveTitle'), text: t('followLiveText'), url: shareUrl};
     if(navigator.share) { navigator.share(d).catch(e => console.log("Delning avbruten")); } else { prompt(t('copyLiveLink'), shareUrl); }
+}
+
+function startLiveSharingInternal() {
+    showCustomModal({
+        title: t('promptCustomChannelTitle'),
+        text: t('promptCustomChannelDesc'),
+        showInput: true,
+        placeholder: 'Kanalnamn',
+        okText: t('start', {target: ''}).trim(),
+        cancelText: t('btnCancel'),
+        onResult: (customName) => {
+            if (customName) {
+                liveSessionId = customName.trim();
+                if (!pusher) { pusher = new Pusher(pusherKey, getPusherConfig()); }
+                liveChannel = pusher.subscribe(`private-live-${liveSessionId}`);
+                liveChannel.bind('pusher:subscription_succeeded', () => { 
+                    isLiveSharing = true; 
+                    broadcastLiveState(); 
+                    if(!liveBroadcastInterval) { 
+                        liveBroadcastInterval = setInterval(() => { if (isLiveSharing) broadcastLiveState(); }, 3000); 
+                    } 
+                });
+                
+                showCustomModal({
+                    title: t('liveInternalSuccessTitle'),
+                    text: t('liveInternalSuccessDesc', {name: liveSessionId}),
+                    okText: 'OK'
+                });
+            }
+        }
+    });
 }
 
 function resumeLiveSharing() {
