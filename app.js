@@ -186,7 +186,7 @@ const els = {
 };
 
 // --- EGEN MODAL FÖR ATT SLIPPA WEBBLÄSARENS STANDARD ---
-function showCustomModal({ title, text, placeholder, showInput, okText, cancelText, onResult, datalistOptions, historyItems }) {
+function showCustomModal({ title, text, placeholder, showInput, initialValue, okText, cancelText, onResult, datalistOptions, historyItems }) {
     const overlay = document.createElement('div');
     overlay.style.position = 'fixed'; overlay.style.top = '0'; overlay.style.left = '0'; overlay.style.width = '100vw'; overlay.style.height = '100svh'; overlay.style.background = 'rgba(0,0,0,0.6)'; overlay.style.zIndex = '100000'; overlay.style.display = 'flex'; overlay.style.alignItems = 'center'; overlay.style.justifyContent = 'center';
     
@@ -203,7 +203,9 @@ function showCustomModal({ title, text, placeholder, showInput, okText, cancelTe
     
     let iEl;
     if (showInput) {
-        iEl = document.createElement('input'); iEl.type = 'text'; iEl.placeholder = placeholder || ''; iEl.style.width = '100%'; iEl.style.padding = '10px'; iEl.style.boxSizing = 'border-box'; iEl.style.borderRadius = '10px'; iEl.style.border = '2px solid #ccc'; iEl.style.marginBottom = '15px'; iEl.style.fontSize = '1rem'; iEl.style.textAlign = 'center';
+        iEl = document.createElement('input'); iEl.type = 'text'; iEl.placeholder = placeholder || ''; 
+        if (initialValue) iEl.value = initialValue;
+        iEl.style.width = '100%'; iEl.style.padding = '10px'; iEl.style.boxSizing = 'border-box'; iEl.style.borderRadius = '10px'; iEl.style.border = '2px solid #ccc'; iEl.style.marginBottom = '15px'; iEl.style.fontSize = '1rem'; iEl.style.textAlign = 'center';
         
         if (datalistOptions && datalistOptions.length > 0) {
             const dlId = 'dl_' + Math.random().toString(36).substr(2, 9);
@@ -702,13 +704,23 @@ function initMap() {
             navigator.geolocation.watchPosition(handlePositionUpdate, null, { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 });
         }
         
-        // --- BACKGROUND LISTENING FOR FAVORITE LIVE CHANNELS ---
-        if (Object.keys(savedLiveChannels).length > 0 && !savedIsLiveSharing) {
-            if (!pusher) pusher = new Pusher(pusherKey, getPusherConfig());
-            for (const ch in savedLiveChannels) {
-                const bgChan = pusher.subscribe(`private-live-${ch}`);
-                bgChan.bind('client-update', (data) => handleBackgroundLiveUpdate(ch, data));
-                backgroundChannels.push(bgChan);
+        // --- BACKGROUND LISTENING FOR FAVORITE & HISTORY LIVE CHANNELS ---
+        if (!savedIsLiveSharing) {
+            const searchHistory = JSON.parse(localStorage.getItem('mouse_live_search_history')) || [];
+            
+            const channelsToListen = new Set([
+                ...Object.keys(savedLiveChannels),
+                ...searchHistory
+            ]);
+
+            if (channelsToListen.size > 0) {
+                if (!pusher) pusher = new Pusher(pusherKey, getPusherConfig());
+                
+                channelsToListen.forEach(ch => {
+                    const bgChan = pusher.subscribe(`private-live-${ch}`);
+                    bgChan.bind('client-update', (data) => handleBackgroundLiveUpdate(ch, data));
+                    backgroundChannels.push(bgChan);
+                });
             }
         }
     }
@@ -1939,11 +1951,13 @@ function startLiveSharingExternal() {
 
 function startLiveSharingInternal() {
     let broadcastHistory = JSON.parse(localStorage.getItem('mouse_live_broadcast_history')) || [];
+    let lastUsedName = broadcastHistory.length > 0 ? broadcastHistory[0] : '';
     showCustomModal({
         title: t('promptCustomChannelTitle'),
         text: t('promptCustomChannelDesc'),
         showInput: true,
         placeholder: 'Kanalnamn',
+        initialValue: lastUsedName,
         datalistOptions: broadcastHistory,
         okText: t('start', {target: ''}).trim(),
         cancelText: t('btnCancel'),
