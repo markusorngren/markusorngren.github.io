@@ -894,7 +894,7 @@ function handleBackgroundLiveUpdate(channelId, data) {
         }
     });
     
-    setTimeout(() => { autoPromptCooldown = false; }, 60000);
+    setTimeout(() => { autoPromptCooldown = false; }, 10000);
 }
 
 
@@ -1404,8 +1404,11 @@ async function requestWakeLock() { try { if ('wakeLock' in navigator) wakeLock =
 function releaseWakeLock() { if (wakeLock !== null) wakeLock.release().then(() => { wakeLock = null; }); }
 
 document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && gameState === 'GAME') {
-        requestWakeLock();
+    if (document.visibilityState === 'visible') {
+        if (gameState === 'GAME') requestWakeLock();
+        if (typeof pusher !== 'undefined' && pusher && pusher.connection.state !== 'connected') {
+            pusher.connect();
+        }
     }
 });
 
