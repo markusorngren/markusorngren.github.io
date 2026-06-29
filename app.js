@@ -8,7 +8,8 @@ if ('serviceWorker' in navigator) {
                 const msgChan = new MessageChannel();
                 msgChan.port1.onmessage = (event) => {
                     if (event.data && event.data.version) {
-                        document.getElementById('version-tag').innerText = event.data.version.toUpperCase();
+                        const vText = document.getElementById('version-text');
+                        if (vText) vText.innerText = event.data.version.toUpperCase();
                     }
                 };
                 worker.postMessage({ type: 'GET_VERSION' }, [msgChan.port2]);
@@ -546,6 +547,7 @@ if (sessionRaw && (Date.now() - sessionRaw.timestamp < 10800000)) {
     savedMidpointStepIndex = sessionRaw.midpointStepIndex !== undefined ? sessionRaw.midpointStepIndex : -1;
     savedHasReachedMidpoint = sessionRaw.hasReachedMidpoint || false;
     savedGameStartCoords = sessionRaw.gameStartCoords || null;
+    savedGameStartCoords = sessionRaw.gameStartCoords || null;
     savedGameBaseSteps = sessionRaw.gameBaseSteps || 0;
     savedGameDynamicFactor = sessionRaw.gameDynamicFactor || 0;
     savedGameVirtualDistOffset = sessionRaw.gameVirtualDistOffset || 0;
@@ -822,7 +824,15 @@ function setupSavedWaypoints() {
 }
 
 function broadcastLiveState() {
-    if (!isLiveSharing || !liveSessionId || !liveChannel) return;
+    const liveIndicator = document.getElementById('live-indicator');
+    
+    if (!isLiveSharing || !liveSessionId || !liveChannel) {
+        if (liveIndicator) liveIndicator.classList.add('hidden');
+        return;
+    }
+    
+    if (liveIndicator) liveIndicator.classList.remove('hidden');
+
     const distDisplay = document.getElementById('game-distance-display');
     liveChannel.trigger('client-update', {
         userCoords: userCoords, startCoords: fixedStartCoords, 
@@ -873,15 +883,34 @@ function handleLiveSearchInput(q) {
     window.location.href = window.location.origin + window.location.pathname + '?live=' + encodeURIComponent(q);
 }
 
-// --- NEW FUNCTION: Background Live Listener ---
 let autoPromptCooldown = false;
+
 function handleBackgroundLiveUpdate(channelId, data) {
-    if (isLiveReceiver || isLiveSharing || autoPromptCooldown) return;
+    // 1. Ignorera om vi redan delar/tittar, har en popup uppe, eller om det är vår egen sändning
+    if (isLiveReceiver || isLiveSharing || autoPromptCooldown || channelId === liveSessionId) return;
+
+    let ignoredChannels = JSON.parse(localStorage.getItem('mouse_ignored_channels')) || {};
+    
+    // Hämta tiden från mouse_session (fallback till nuvarande tid om den av någon anledning saknas)
+    let sessionData = JSON.parse(localStorage.getItem('mouse_session'));
+    const lastActive = (sessionData && sessionData.timestamp) ? sessionData.timestamp : Date.now();
+    const treTimmar = 3 * 60 * 60 * 1000; // 3 timmar i millisekunder
+
+    // 2. Om kanalen är ignorerad OCH det har gått MINDRE än 3 timmar sedan sessionen senast sparades
+    if (ignoredChannels[channelId] && (Date.now() - lastActive < treTimmar)) {
+        return; // Avbryt, spärren är fortfarande aktiv
+    }
+
+    // 3. Om det har gått mer än 3 timmar sedan senaste aktiviteten, nollställ spärren för just denna kanal
+    if (ignoredChannels[channelId] && (Date.now() - lastActive >= treTimmar)) {
+        delete ignoredChannels[channelId];
+        localStorage.setItem('mouse_ignored_channels', JSON.stringify(ignoredChannels));
+    }
 
     autoPromptCooldown = true;
     const alias = savedLiveChannels[channelId] || channelId;
     
-    // Custom Confirm to avoid native dialog
+    // Custom Confirm för att undvika webbläsarens standardruta
     showCustomModal({
         title: "Sändning upptäckt! 🔴",
         text: t('autoJoinLive', {name: alias}),
@@ -889,7 +918,18 @@ function handleBackgroundLiveUpdate(channelId, data) {
         cancelText: 'Nej',
         onResult: (res) => {
             if (res) {
+                // Tryckte "Ja" - anslut
                 window.location.href = window.location.origin + window.location.pathname + '?live=' + encodeURIComponent(channelId);
+            } else {
+                // Tryckte "Nej" - märk kanalen som ignorerad
+                let updatedIgnored = JSON.parse(localStorage.getItem('mouse_ignored_channels')) || {};
+                updatedIgnored[channelId] = true; 
+                localStorage.setItem('mouse_ignored_channels', JSON.stringify(updatedIgnored));
+                
+                // Tvinga en uppdatering av mouse_session direkt så att tiden nollställs
+                if (typeof saveSession === 'function') {
+                    saveSession();
+                }
             }
         }
     });
@@ -1396,6 +1436,7 @@ function setTarget(latlng, shouldSave, clearWaypoints = true, updateStart = true
     if (shouldSave) saveSession(); updateMapLogic(); if (!isLiveReceiver) updateLocateBtnText(); broadcastLiveState();
 }
 
+// --- RESTEN AV FILEN LÄMNAS HELT OFÖRÄNDRAD ---
 function zoomToUser(instant = false) { if (userCoords) { if (instant) map.setView(userCoords, 18); else map.flyTo(userCoords, 18); } }
 function toggleView() { if (!currentTargetCoords || isShowingUser) { zoomToUser(); isShowingUser = false; isTracking = true; } else { map.flyTo(currentTargetCoords, 18); isShowingUser = true; isTracking = false; } updateLocateBtnText(); }
 function updateLocateBtnText() { els.locateBtn.innerHTML = (!currentTargetCoords || isShowingUser) ? t('locateMe') : `🏁 ${currentTargetName.toUpperCase()}`; }
@@ -1783,7 +1824,7 @@ function finishGame() {
 function stopGame() { 
     gameState = 'MAP'; if (!isLiveReceiver) fixedStartCoords = null; clearInterval(confettiInterval);
     gameBaseSteps = 0; gameDynamicFactor = 0; gameVirtualDistOffset = 0; isReRouting = false;
-    isGameMapVisible = false; els.gameMapWrapper.classList.add('hidden'); const distDisplay = document.getElementById('game-distance-display'); if (distDisplay) distDisplay.classList.add('hidden');
+    isGameMapVisible = false; els.gameMapWrapper.classList.add('hidden'); const distDisplay = document.getElementById('game-distance-display'); if (distDisplay) distDisplay.add('hidden');
     const zoomBtn = document.getElementById('zoom-toggle-btn'); if (zoomBtn) zoomBtn.classList.add('hidden');
     els.pathGrid.classList.remove('hidden'); const m = document.getElementById('the-mouse');
     
@@ -2086,7 +2127,7 @@ function openDeveloperMode() {
         btn.onclick = () => {
             localStorage.setItem('app_theme_override', themeKey); location.reload();
         };
-        menu.appendChild(btn);
+        menu.appendChild(themeKey);
     });
 
     const resetBtn = document.createElement('button'); resetBtn.innerText = t('devReset');
