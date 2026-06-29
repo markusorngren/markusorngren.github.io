@@ -1822,10 +1822,17 @@ function finishGame() {
 }
 
 function stopGame() { 
+    if (isLiveSharing) { stopLiveSharing(); }
     gameState = 'MAP'; if (!isLiveReceiver) fixedStartCoords = null; clearInterval(confettiInterval);
     gameBaseSteps = 0; gameDynamicFactor = 0; gameVirtualDistOffset = 0; isReRouting = false;
-    isGameMapVisible = false; els.gameMapWrapper.classList.add('hidden'); const distDisplay = document.getElementById('game-distance-display'); if (distDisplay) distDisplay.add('hidden');
-    const zoomBtn = document.getElementById('zoom-toggle-btn'); if (zoomBtn) zoomBtn.classList.add('hidden');
+    isGameMapVisible = false; els.gameMapWrapper.classList.add('hidden'); 
+    
+    const distDisplay = document.getElementById('game-distance-display'); 
+    if (distDisplay) distDisplay.classList.add('hidden');
+    
+    const zoomBtn = document.getElementById('zoom-toggle-btn'); 
+    if (zoomBtn) zoomBtn.classList.add('hidden');
+    
     els.pathGrid.classList.remove('hidden'); const m = document.getElementById('the-mouse');
     
     const toggleBtn = document.getElementById('toggle-game-view-btn');
@@ -1924,8 +1931,14 @@ function shareApp(e) {
     const btnNormal = document.createElement('button'); btnNormal.id = 'share-btn-static'; btnNormal.className = 'wp-menu-btn'; btnNormal.style.background = 'var(--blue)'; btnNormal.innerText = t('shareStatic');
     btnNormal.onclick = () => { menu.remove(); shareNormal(); };
 
-    const btnLive = document.createElement('button'); btnLive.id = 'share-btn-live'; btnLive.className = 'wp-menu-btn'; btnLive.style.background = '#ff4444'; btnLive.innerText = t('shareLive');
-    btnLive.onclick = () => { menu.remove(); startLiveSharingMenu(); };
+    const btnLive = document.createElement('button'); btnLive.id = 'share-btn-live'; btnLive.className = 'wp-menu-btn';
+    if (isLiveSharing) {
+        btnLive.style.background = '#333'; btnLive.innerText = t('stopLive');
+        btnLive.onclick = () => { menu.remove(); stopLiveSharing(); };
+    } else {
+        btnLive.style.background = '#ff4444'; btnLive.innerText = t('shareLive');
+        btnLive.onclick = () => { menu.remove(); startLiveSharingMenu(); };
+    }
 
     const btnShareApp = document.createElement('button'); btnShareApp.id = 'share-btn-app'; btnShareApp.className = 'wp-menu-btn'; btnShareApp.style.background = 'var(--primary)'; btnShareApp.innerText = t('shareAppBtn');
     btnShareApp.onclick = () => { menu.remove(); shareOnlyApp(); };
@@ -2046,6 +2059,27 @@ function resumeLiveSharing() {
         if(!liveBroadcastInterval) { 
             liveBroadcastInterval = setInterval(() => { if (isLiveSharing) broadcastLiveState(); }, 3000); 
         } 
+    });
+}
+
+function stopLiveSharing() {
+    if (!isLiveSharing) return;
+    if (liveBroadcastInterval) {
+        clearInterval(liveBroadcastInterval);
+        liveBroadcastInterval = null;
+    }
+    if (pusher && liveSessionId) {
+        pusher.unsubscribe(`private-live-${liveSessionId}`);
+    }
+    isLiveSharing = false;
+    liveSessionId = null;
+    const liveIndicator = document.getElementById('live-indicator');
+    if (liveIndicator) liveIndicator.classList.add('hidden');
+    saveSession();
+    showCustomModal({
+        title: t('liveStoppedTitle'),
+        text: t('liveStoppedDesc'),
+        okText: 'OK'
     });
 }
 

@@ -38,7 +38,7 @@ const i18n = {
         tut2: "Vill du skapa en annan startpunkt? Långtryck på kartan! 📍",
         tut3: "Sök efter ditt mål med röst, text, eller klicka direkt på kartan! 🔍",
         tut4: "När du valt mål kan du långtrycka på kartan igen för att lägga till via-punkter längs vägen! 💡",
-        tut11: "Blev rutten fel? Tryck på Rensa här nere för att börja om! 🗑️",
+        tut11: "Bled rutten fel? Tryck på Rensa här nere för att börja om! 🗑️",
         tut5: "Vill du spara rutten? Långtryck på en av dessa knappar för att spara! 💾",
         tut6: "När rutten är klar, tryck här för att starta spelet! 🚀",
         tut7: "Det finns olika sätt att dela! 🔗",
@@ -72,7 +72,7 @@ const i18n = {
         devOn: "PÅ ✅",
         devOff: "AV ❌",
         welcome: "Hej! {player}",
-        helpFind: "Hjälp {name} att hitta {targetName}!",
+        helpFind: "Hjälp {name} to hitta {targetName}!",
         okGotIt: "Okej! Jag förstår!",
         searchingGps: "Söker din GPS... 📍",
         whereToDrive: "Vart ska vi åka? {player}",
@@ -137,6 +137,9 @@ const i18n = {
         promptSaveLiveTitle: "Spara som favorit?",
         promptSaveLiveDesc: "Vill du spara '{channel}'? Ange ett namn:",
         autoJoinLive: "Sändningen '{name}' är live just nu! Vill du hänga på?",
+        stopLive: "Sluta dela LIVE ⏹️",
+        liveStoppedTitle: "Sändning avslutad ⏹️",
+        liveStoppedDesc: "Du delar inte längre din resa live.",
         
         themes: {
             default: { name: 'musen', targetName: 'osten', pathName: 'ÄPPLEN' },
@@ -256,6 +259,9 @@ const i18n = {
         promptSaveLiveTitle: "Save as favorite?",
         promptSaveLiveDesc: "Do you want to save '{channel}'? Enter a name:",
         autoJoinLive: "The broadcast '{name}' is live right now! Do you want to join?",
+        stopLive: "Stop sharing LIVE ⏹️",
+        liveStoppedTitle: "Broadcast stopped ⏹️",
+        liveStoppedDesc: "You are no longer sharing your journey live.",
 
         themes: {
             default: { name: 'the mouse', targetName: 'the cheese', pathName: 'APPLES' },
@@ -375,6 +381,9 @@ const i18n = {
         promptSaveLiveTitle: "Сохранить в избранное?",
         promptSaveLiveDesc: "Хотите сохранить '{channel}'? Введите имя:",
         autoJoinLive: "Трансляция '{name}' активна! Присоединиться?",
+        stopLive: "Остановить трансляцию LIVE ⏹️",
+        liveStoppedTitle: "Трансляция завершена ⏹️",
+        liveStoppedDesc: "Вы больше не делитесь своим местоположением в прямом эфире.",
 
         themes: {
             default: { name: 'мыши', targetName: 'сыр', pathName: 'ЯБЛОКИ' },
@@ -387,7 +396,7 @@ const i18n = {
         }
     },
     am: {
-        welcomeTitle: "ወደ ጨዋታው በደህና መጡ! 🐭",
+        welcomeTitle: "ወደ ጨዋታው በደህና መጡ! 👑",
         welcomeDesc2: "ጉዞውን ለመጀመር እና {name} {targetName} እንዲያገኝ ለመርዳት ዝግጁ ነዎት?",
         dontShowAgain: "ለዚህ ስሪት እንደገና አታሳይ",
         btnSkip: "እንዴት እንደሚሰራ አውቃለሁ! እንሂድ!",
@@ -398,7 +407,7 @@ const i18n = {
         tut4: "መድረሻ ካለዎት በኋላ የማቆሚያ ነጥቦችን ለማከል ካርታውን በረጅሙ ይጫኑ! 💡",
         tut11: "መንገዱ ተሳስቷል? ካርታውን ለማጽዳት እና እንደገና ለመጀመር አጽዳን ይጫኑ! 🗑️",
         tut5: "መንገዱን ማስቀመጥ ይፈልጋሉ? ከእነዚህ አዝራሮች ውስጥ አንዱን በረጅሙ ይጫኑ! 💾",
-        tut7: "መንገዱን አስቀድመው ያጋሩ፣ ወይም ጓደኞችዎ እንዲከታተሉዎት በቀጥታ ያጋሩ! 🔴",
+        tut7: "መንገዱን አስቀድመው ያጋሩ፡ ወይም ጓደኞችዎ እንዲከታተሉዎት በቀጥታ ያጋሩ! 🔴",
         tut8: "ሌሎች እንዲያዩት ቋሚ አገናኝ ያጋሩ! 🗺️",
         tut9: "በቀጥታ ስርጭት ጓደኞችዎ እንቅስቃሴዎን በካርታው ላይ በቅጽበት መከታተል ይችላሉ! 🔴",
         tut10: "የመተግበሪያውን አገናኝ ለጓደኛዎ ያጋሩ! 📱",
@@ -457,13 +466,13 @@ const i18n = {
         micDenied: "ማይክሮፎን መጠቀም መፍቀድ አለብዎት።",
         heardNothing: "ምንም አልሰማሁም! {player} ትንሽ ከፍ አድርገው ይናገሩ።",
         voiceNoMatch: "የተናገሩት አልተለየም። እንደገና ይሞክሩ! {target}",
-        voiceNotSupported: "ይቅርታ፣ የእርስዎ ብሮውዘር የድምፅ ፍለጋን አይደግፍም።",
+        voiceNotSupported: "ይቅርታ፡ የእርስዎ ብሮውዘር የድምፅ ፍለጋን አይደግፍም።",
         liveConnecting: "🔴 ከስርጭቱ ጋር በመገናኘት ላይ...",
         liveWaiting: "🟢 የ {name}ን መረጃ በመጠበቅ ላይ...",
         liveFollowing: "🔴 ጉዞውን ወደ {target} እየተከታተሉ ነው...",
         alreadyLive: "እርስዎ ቀድሞውኑ የቀጥታ ስርጭት እየተከታተሉ ነው!",
         shareStatic: "መንገድ አጋራ (መደበኛ)",
-        shareLive: "በቀጥታ አጋራ 🔴",
+        shareLive: "በቀጥታ አጋرا 🔴",
         shareAppBtn: "መተግበሪያ አጋራ 📱",
         btnCancel: "ሰርዝ",
         btnZoomOut: "🔍 አሳንስ",
@@ -472,7 +481,7 @@ const i18n = {
         setStartPoint: "📍 እንደ መነሻ ነጥብ ያድርጉ",
         waypointDit: "🏁 በመሄጃው መንገድ ላይ",
         waypointHem: "🏁 በመመለሻው መንገድ ላይ",
-        addWaypoint: "🏁 የማቆሚያ ነጥብ ያክሉ",
+        addWaypoint: "🏁 Add waypoint",
         kmLeft: "{dist} ኪ.ሜ ቀርቷል",
         iosInstall: "ሙሉ ስክሪን ለማግኘት መተግበሪያውን ይጫኑ!",
         iosClose: "ምናልባት በኋላ",
@@ -484,7 +493,7 @@ const i18n = {
         devReset: "🔄 ዳግም አስጀምር",
 
         shareLiveInternal: "መተግበሪያ ውስጥ አጋራ 📲",
-        shareLiveExternal: "በውጭ አጋራ 🌐",
+        shareLiveExternal: "በውጭ አጋرا 🌐",
         promptCustomChannelTitle: "Live ቻናል ይፍጠሩ",
         promptCustomChannelDesc: "ስም ያስገቡ:",
         liveInternalSuccessTitle: "ተጀምሯል! 🔴",
@@ -494,6 +503,9 @@ const i18n = {
         promptSaveLiveTitle: "እንደ ተወዳጅ ያስቀምጡ?",
         promptSaveLiveDesc: "ስም ያስገቡ:",
         autoJoinLive: "ስርጭት '{name}' ቀጥታ ነው! መቀላቀል ይፈልጋሉ?",
+        stopLive: "የቀጥታ ስርጭት አቁም ⏹️",
+        liveStoppedTitle: "ስርጭቱ ተቋርጧል ⏹️",
+        liveStoppedDesc: "ጉዞዎን በቀጥታ ማጋራት አቁመዋል።",
 
         themes: {
             default: { name: 'አይጥ', targetName: 'አይብ', pathName: 'ፖም' },
@@ -613,6 +625,9 @@ const i18n = {
         promptSaveLiveTitle: "حفظ كمفضلة؟",
         promptSaveLiveDesc: "أدخل اسمًا:",
         autoJoinLive: "البث '{name}' نشط الآن! هل تريد الانضمام؟",
+        stopLive: "إيقاف المشاركة المباشرة ⏹️",
+        liveStoppedTitle: "تم إيقاف البث ⏹️",
+        liveStoppedDesc: "لم تعد تشارك رحلتك مباشرة.",
 
         themes: {
             default: { name: 'الفأر', targetName: 'الجبن', pathName: 'تفاح' },
